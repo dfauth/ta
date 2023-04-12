@@ -1,0 +1,14 @@
+DROP TABLE price;
+CREATE TABLE IF NOT EXISTS price (
+    _CODE VARCHAR(255) NOT NULL,
+    _DATE DATETIME NOT NULL,
+    _OPEN DECIMAL(8,3),
+    _HIGH DECIMAL(8,3),
+    _LOW DECIMAL(8,3),
+    _CLOSE DECIMAL(8,3),
+    _VOLUME INTEGER,
+    PRIMARY KEY (_CODE, _DATE)
+);
+select _CODE, MAX(_DATE), count(*) from price group by _CODE;
+
+
