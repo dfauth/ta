@@ -28,6 +28,11 @@ public interface Accumulator<T,R> {
         public Double divide(int size) {
             return acc / size;
         }
+
+        @Override
+        public void set(Integer previous) {
+            acc = Double.valueOf(previous);
+        }
     };
 
     Accumulator<Double,Double> DOUBLE_ACCUMULATOR = new Accumulator<>() {
@@ -51,6 +56,11 @@ public interface Accumulator<T,R> {
         @Override
         public Double divide(int size) {
             return acc / size;
+        }
+
+        @Override
+        public void set(Double previous) {
+            acc = previous;
         }
     };
     Accumulator<BigDecimal, BigDecimal> BD_ACCUMULATOR = new Accumulator<>() {
@@ -78,6 +88,11 @@ public interface Accumulator<T,R> {
         public BigDecimal divide(int size) {
             return acc.divide(BigDecimal.valueOf(size), 3, RoundingMode.HALF_UP);
         }
+
+        @Override
+        public void set(BigDecimal previous) {
+            acc = previous;
+        }
     };
 
     R initial();
@@ -87,4 +102,6 @@ public interface Accumulator<T,R> {
     R subtract(T remove);
 
     R divide(int size);
+
+    void set(T previous);
 }

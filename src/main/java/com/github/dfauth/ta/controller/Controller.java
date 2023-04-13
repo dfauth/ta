@@ -2,6 +2,7 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functions.Accumulator;
 import com.github.dfauth.ta.functions.MovingAverages;
+import com.github.dfauth.ta.functions.RateOfChange;
 import com.github.dfauth.ta.repo.PriceRepository;
 import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,27 @@ public class Controller {
     @ResponseStatus(HttpStatus.OK)
     BigDecimal sma(@PathVariable String _code, @PathVariable int period) {
         log.info("sma/{}/{}",_code,period);
-        List<BigDecimal> l = repository.findByCode(_code).stream().map(Price::get_close).map(MovingAverages.sma(period, Accumulator.BD_ACCUMULATOR)).collect(Collectors.toList());
+        List<BigDecimal> l = repository.findByCode(_code).stream().map(Price::get_close).map(MovingAverages.sma(period, Accumulator.BD_ACCUMULATOR)).flatMap(Optional::stream).collect(Collectors.toList());
+        return l.get(l.size()-1);
+    }
+
+    @GetMapping("/roc/{_code}")
+    @ResponseStatus(HttpStatus.OK)
+    BigDecimal roc(@PathVariable String _code) {
+        return roc(_code,1);
+    }
+
+    @GetMapping("/roc/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    BigDecimal roc(@PathVariable String _code, @PathVariable int period) {
+        log.info("roc/{}/{}",_code,period);
+        List<BigDecimal> l = repository.findByCode(_code).stream()
+                .map(Price::get_close)
+                .map(RateOfChange.roc())
+                .flatMap(Optional::stream)
+                .map(MovingAverages.sma(period))
+                .flatMap(Optional::stream)
+                .collect(Collectors.toList());
         return l.get(l.size()-1);
     }
 
