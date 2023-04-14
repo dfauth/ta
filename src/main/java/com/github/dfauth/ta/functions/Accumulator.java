@@ -2,11 +2,12 @@ package com.github.dfauth.ta.functions;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.function.Supplier;
 
 import static java.math.BigDecimal.ZERO;
 
 public interface Accumulator<T,R> {
-    Accumulator<Integer,Double> INT_ACCUMULATOR = new Accumulator<>() {
+    Supplier<Accumulator<Integer,Double>> INT_ACCUMULATOR = () -> new Accumulator<>() {
 
         private Double acc = 0.0;
         @Override
@@ -35,7 +36,7 @@ public interface Accumulator<T,R> {
         }
     };
 
-    Accumulator<Double,Double> DOUBLE_ACCUMULATOR = new Accumulator<>() {
+    Supplier<Accumulator<Double,Double>> DOUBLE_ACCUMULATOR = () -> new Accumulator<>() {
 
         private Double acc = 0.0;
         @Override
@@ -63,7 +64,7 @@ public interface Accumulator<T,R> {
             acc = previous;
         }
     };
-    Accumulator<BigDecimal, BigDecimal> BD_ACCUMULATOR = new Accumulator<>() {
+    Supplier<Accumulator<BigDecimal, BigDecimal>> BD_ACCUMULATOR = () -> new Accumulator<>() {
 
         private BigDecimal acc = ZERO;
 

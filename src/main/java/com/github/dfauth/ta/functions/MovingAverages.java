@@ -10,7 +10,7 @@ import static com.github.dfauth.ta.functions.Accumulator.BD_ACCUMULATOR;
 public class MovingAverages {
 
     public static Function<BigDecimal, Optional<BigDecimal>> sma(int period) {
-        return sma(period, BD_ACCUMULATOR);
+        return sma(period, BD_ACCUMULATOR.get());
     }
 
     public static <T extends Number, R extends Number> Function<T, Optional<R>> sma(int period, Accumulator<T,R> ops) {

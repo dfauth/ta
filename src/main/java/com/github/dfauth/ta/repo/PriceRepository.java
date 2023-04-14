@@ -5,6 +5,7 @@ import com.github.dfauth.ta.model.PriceCompositeKey;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +18,9 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
     }
 
     default List<Price> findByCode(String _code, int limit) {
-        return findLatestBy_code(_code, limit);
+        List<Price> l = findLatestBy_code(_code, limit);
+        Collections.reverse(l);
+        return l;
     }
 
     default Optional<Price> findLatestByCode(String _code) {
