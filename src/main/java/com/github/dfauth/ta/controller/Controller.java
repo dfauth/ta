@@ -1,6 +1,8 @@
 package com.github.dfauth.ta.controller;
 
+import com.github.dfauth.ta.functions.Accumulator;
 import com.github.dfauth.ta.functions.MovingAverages;
+import com.github.dfauth.ta.functions.RSI;
 import com.github.dfauth.ta.functions.RateOfChange;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
@@ -16,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.github.dfauth.ta.functions.Reducers.latest;
 import static com.github.dfauth.ta.model.Price.parseDate;
 import static com.github.dfauth.ta.model.Price.parsePrice;
 
@@ -38,6 +41,7 @@ public class Controller {
         return prices.size();
     }
 
+    // sma
     @GetMapping("/prices/{_code}/sma/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> sma(@PathVariable String _code, @PathVariable int period) {
@@ -47,9 +51,23 @@ public class Controller {
                 .map(Price::get_close)
                 .map(f)
                 .flatMap(Optional::stream)
-                .reduce((t1,t2) -> t2);
+                .reduce(latest());
     }
 
+    // ema
+    @GetMapping("/prices/{_code}/ema/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<BigDecimal> ema(@PathVariable String _code, @PathVariable int period) {
+        log.info("ema/{}/{}",_code,period);
+        Function<BigDecimal, Optional<BigDecimal>> f = MovingAverages.ema(period);
+        return prices(_code, period+2).stream()
+                .map(Price::get_close)
+                .map(f)
+                .flatMap(Optional::stream)
+                .reduce(latest());
+    }
+
+    // roc
     @GetMapping("/prices/{_code}/roc")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> roc(@PathVariable String _code) {
@@ -65,7 +83,24 @@ public class Controller {
                 .flatMap(Optional::stream)
                 .map(MovingAverages.sma(period))
                 .flatMap(Optional::stream)
-                .reduce((t1,t2) -> t2);
+                .reduce(latest());
+    }
+
+    // rsi
+    @GetMapping("/prices/{_code}/rsi")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<BigDecimal> rsi(@PathVariable String _code) {
+        return rsi(_code,14);
+    }
+
+    @GetMapping("/prices/{_code}/rsi/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<BigDecimal> rsi(@PathVariable String _code, @PathVariable int period) {
+        return prices(_code, period+2).stream()
+                .map(Price::get_close)
+                .map(RSI.rsi(period))
+                .flatMap(Optional::stream)
+                .reduce(latest());
     }
 
     @GetMapping("/price/{_code}/roc/{period}")
@@ -74,6 +109,7 @@ public class Controller {
         return repository.findByCode(_code, period);
     }
 
+    // prices
     @GetMapping("/price/{_code}/close")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> close(@PathVariable String _code) {
@@ -84,6 +120,17 @@ public class Controller {
     @ResponseStatus(HttpStatus.OK)
     Optional<Integer> volume(@PathVariable String _code) {
         return price(_code).map(Price::get_volume);
+    }
+
+    @GetMapping("/prices/{_code}/volume/sma/{_period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<Double> volume(@PathVariable String _code, @PathVariable Integer _period) {
+        return prices(_code,_period+1)
+                .stream()
+                .map(Price::get_volume)
+                .map(MovingAverages.sma(_period, Accumulator.INT_ACCUMULATOR.get()))
+                .flatMap(Optional::stream)
+                .reduce(latest());
     }
 
     @GetMapping("/price/{_code}")

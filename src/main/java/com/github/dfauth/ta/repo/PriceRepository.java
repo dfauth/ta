@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,5 +30,11 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
 
     @Query(value = "SELECT * FROM Price p WHERE p._Code = ?1 order by p._DATE DESC LIMIT ?2", nativeQuery = true)
     List<Price> findLatestBy_code(String _code, int limit);
+
+    @Query(value = "SELECT CODE FROM Price p WHERE p._DATE < ?1 order by CODE DESC", nativeQuery = true)
+    List<String> findCodesBy_date(Date date);
+
+    @Query(value = "SELECT * FROM Price p WHERE p._Code = ?1 and p._DATE < ?2 LIMIT ?3", nativeQuery = true)
+    List<Price> findLatestBy_date(String _code, Date date, int limit);
 
 }
