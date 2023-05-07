@@ -5,13 +5,21 @@ import com.github.dfauth.ta.functions.MovingAverages;
 import com.github.dfauth.ta.functions.RSI;
 import com.github.dfauth.ta.functions.RateOfChange;
 import com.github.dfauth.ta.model.Price;
+import com.github.dfauth.ta.model.Rating;
+import com.github.dfauth.ta.model.Valuation;
 import com.github.dfauth.ta.repo.PriceRepository;
+import com.github.dfauth.ta.repo.ValuationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -29,6 +37,9 @@ public class Controller {
     @Autowired
     private PriceRepository repository;
 
+    @Autowired
+    private ValuationRepository valuationRepo;
+
     // Save
     @PostMapping("/sync/{_code}")
     @ResponseStatus(HttpStatus.CREATED)
@@ -39,6 +50,53 @@ public class Controller {
                 .collect(Collectors.toList());
         repository.saveAll(prices);
         return prices.size();
+    }
+
+    @PostMapping("/sync/valuations/{_date}")
+    @ResponseStatus(HttpStatus.CREATED)
+    Integer valuations(@PathVariable Integer _date, @RequestBody Object[][] args) {
+        log.error("args: ",args);
+        LocalDateTime timestamp = LocalDateTime.of(LocalDate.of(_date / 100, _date % 100, 1), LocalTime.of(0,0));
+        List<Valuation> valuations = Stream.of(args).filter(arr -> toCode(arr[0]).length() > 0).map(arr -> {
+            return new Valuation(
+                    toCode(arr[0]),
+                    new Timestamp(timestamp.toInstant(ZoneOffset.UTC).toEpochMilli()),
+                    Rating.fromString((String)arr[4]),
+                    (Integer) arr[5],
+                    (Integer) arr[6],
+                    (Integer) arr[7],
+                    toBigDecimal(arr[8])
+            );
+        }).collect(Collectors.toList());
+        valuationRepo.saveAll(valuations);
+        return valuations.size();
+    }
+
+    private static BigDecimal toBigDecimal(Object o) {
+        if(o instanceof Integer) {
+            return BigDecimal.valueOf((Integer)o);
+        } else if(o instanceof Double){
+            return BigDecimal.valueOf((Double) o);
+        } else if(o instanceof String){
+            return new BigDecimal((String) o);
+        } else {
+            throw new IllegalArgumentException("Unsupported type: "+o.getClass());
+        }
+    }
+
+    private static String toCode(Object o) {
+        if(o instanceof Integer) {
+            return "ASX:"+ o;
+        } else if(o instanceof String){
+            String s = (String) o;
+            if(s.length() > 0) {
+                return "ASX:"+ s;
+            } else {
+                return s;
+            }
+        } else {
+            throw new IllegalArgumentException("Unsupported type: "+o.getClass());
+        }
     }
 
     // sma
