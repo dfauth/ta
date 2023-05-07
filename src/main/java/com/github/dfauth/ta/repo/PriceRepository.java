@@ -5,6 +5,7 @@ import com.github.dfauth.ta.model.PriceCompositeKey;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -36,5 +37,8 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
 
     @Query(value = "SELECT * FROM Price p WHERE p._Code = ?1 and p._DATE < ?2 LIMIT ?3", nativeQuery = true)
     List<Price> findLatestBy_date(String _code, Date date, int limit);
+
+    @Query(value = "SELECT max(_Date) FROM Price", nativeQuery = true)
+    Timestamp latestPriceDate();
 
 }

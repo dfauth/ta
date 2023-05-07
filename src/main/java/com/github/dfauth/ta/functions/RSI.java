@@ -10,7 +10,7 @@ import static java.math.RoundingMode.HALF_UP;
 
 public class RSI {
 
-    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100.000);
+    public static final BigDecimal HUNDRED = BigDecimal.valueOf(100.000);
 
     public static Function<BigDecimal, Optional<BigDecimal>> rsi(int period) {
 

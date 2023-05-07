@@ -6,6 +6,7 @@ public enum Rating {
 
     STRONG_BUY("Strong Buy"),
     BUY("Buy"),
+    HOLD("Hold"),
     SELL("Sell"),
     STRONG_SELL("Strong Sell");
 
