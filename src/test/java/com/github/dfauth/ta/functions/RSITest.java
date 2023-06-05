@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
 
 import static com.github.dfauth.ta.functions.RSI.rsi;
 import static org.junit.Assert.assertEquals;
@@ -18,7 +17,7 @@ public class RSITest {
     @Test
     public void testIt() {
         assertEquals(
-                IntStream.of(33, 20, 15, 10, 7, 7).mapToObj(BigDecimal::valueOf).collect(Collectors.toList()),
+                DoubleStream.of(2.013,38.350).mapToObj(BigDecimal::valueOf).map(bd -> bd.setScale(3)).collect(Collectors.toList()),
                 DoubleStream.of(adt_prices).boxed()
                         .map(BigDecimal::valueOf)
                         .map(rsi(7))

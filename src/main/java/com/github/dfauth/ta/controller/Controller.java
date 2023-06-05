@@ -2,7 +2,6 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functions.Accumulator;
 import com.github.dfauth.ta.functions.MovingAverages;
-import com.github.dfauth.ta.functions.RSI;
 import com.github.dfauth.ta.functions.RateOfChange;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.Rating;
@@ -26,6 +25,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.github.dfauth.ta.functional.Lists.mapList;
+import static com.github.dfauth.ta.functions.RSI.calculateRSI;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 import static com.github.dfauth.ta.model.Price.parseDate;
 import static com.github.dfauth.ta.model.Price.parsePrice;
@@ -73,12 +74,18 @@ public class Controller {
     }
 
     private static BigDecimal toBigDecimal(Object o) {
-        if(o instanceof Integer) {
+        if(o == null) {
+            return null;
+        } else if(o instanceof Integer) {
             return BigDecimal.valueOf((Integer)o);
         } else if(o instanceof Double){
             return BigDecimal.valueOf((Double) o);
         } else if(o instanceof String){
-            return new BigDecimal((String) o);
+            if("".equals(o)) {
+                return null;
+            } else {
+                return new BigDecimal((String) o);
+            }
         } else {
             throw new IllegalArgumentException("Unsupported type: "+o.getClass());
         }
@@ -154,11 +161,7 @@ public class Controller {
     @GetMapping("/prices/{_code}/rsi/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> rsi(@PathVariable String _code, @PathVariable int period) {
-        return prices(_code, period+2).stream()
-                .map(Price::get_close)
-                .map(RSI.rsi(period))
-                .flatMap(Optional::stream)
-                .reduce(latest());
+        return calculateRSI(mapList(prices(_code, period+2), Price::get_close));
     }
 
     @GetMapping("/price/{_code}/roc/{period}")

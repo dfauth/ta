@@ -41,4 +41,7 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
     @Query(value = "SELECT max(_Date) FROM Price", nativeQuery = true)
     Timestamp latestPriceDate();
 
+    @Query(value = "SELECT * FROM Price where _Date >= ?1", nativeQuery = true)
+    List<Price> activeAsAtDate(Timestamp date);
+
 }

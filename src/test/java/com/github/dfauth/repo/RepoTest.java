@@ -1,6 +1,7 @@
 package com.github.dfauth.repo;
 
 import com.github.dfauth.ta.Application;
+import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
 import com.github.dfauth.ta.repo.ValuationRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,16 @@ public class RepoTest {
         List<Object[]> top50 = valuationRepository.topPotential(latestValuationDate, latestPriceDate, 50);
         top50.stream().forEach(p ->
                 log.error("code: {}, target: {}, price: {}, potential: {}",p[0],p[1],p[2],potential((BigDecimal) p[1], (BigDecimal) p[2])));
+    }
+
+    @Test
+    public void testActive() {
+
+        Timestamp latestPriceDate = priceRepository.latestPriceDate();
+        List<Price> active = priceRepository.activeAsAtDate(latestPriceDate);
+        active.stream().forEach(p -> {
+            log.error("code: {}, date: {}, close: {}, volume: {}", p.get_code(), p.get_date(), p.get_close(), p.get_volume());
+        });
     }
 
     private static BigDecimal potential(BigDecimal num, BigDecimal dem) {
