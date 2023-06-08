@@ -5,10 +5,12 @@ import org.junit.Test;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class PNV {
@@ -297,5 +299,11 @@ public class PNV {
         Optional<BigDecimal> rsi = RSI.calculateRSI(Arrays.asList(window), period);
         assertTrue(rsi.isPresent());
         assertEquals(YAHOO_RSI.doubleValue(), rsi.orElseThrow().doubleValue(), YAHOO_RSI.doubleValue()*0.01);
+    }
+
+    @Test
+    public void testLobf() {
+        Optional<LinearRegression.LineOfBestFit> lobf = LinearRegression.lobf(Arrays.asList(PRICES));
+        assertNotNull(lobf.get());
     }
 }

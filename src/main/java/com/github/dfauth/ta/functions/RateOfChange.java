@@ -25,7 +25,7 @@ public class RateOfChange {
     }
 
     public static Function<BigDecimal, Optional<BigDecimal>> roc(int len) {
-        RingBuffer<BigDecimal> window = new RingBuffer<>(() -> new BigDecimal[len]);
+        RingBuffer<BigDecimal> window = new RingBuffer<>(len);
         AtomicReference<BigDecimal> sum = new AtomicReference<>(ZERO);
         return t -> {
             sum.set(sum.get().add(t));
