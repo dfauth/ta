@@ -5,10 +5,8 @@ import org.junit.Test;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -305,5 +303,28 @@ public class PNV {
     public void testLobf() {
         Optional<LinearRegression.LineOfBestFit> lobf = LinearRegression.lobf(Arrays.asList(PRICES));
         assertNotNull(lobf.get());
+
+        // reference
+        AtomicInteger i = new AtomicInteger(0);
+        double[][] x = Arrays.asList(PRICES)
+                .stream()
+                .map(p -> Map.entry(i.getAndIncrement(), p.doubleValue()))
+                .reduce(new double[2][PRICES.length],
+                        (m, e) -> {
+                            m[0][e.getKey()] = (double) e.getKey();
+                            m[1][e.getKey()] = e.getValue();
+                            return m;
+                        },
+                        (m1, m2) -> {
+                            throw new UnsupportedOperationException();
+                        }
+                );
+        com.github.dfauth.ta.functions.ref.LinearRegression ref = new com.github.dfauth.ta.functions.ref.LinearRegression(x[0], x[1]);
+//        assertEquals(BigDecimal.valueOf(ref.slope()), lobf.get().getSlope());
+//        assertEquals(ref.intercept(), lobf.get().getIntercept().doubleValue(), ref.intercept()*0.01);
+//        assertEquals(ref.R2(), lobf.get().getR2().doubleValue(), ref.R2()*0.01);
+//        assertEquals(ref.slopeStdErr(), lobf.get().getSlopeStdErr().doubleValue(), ref.slopeStdErr()*0.01);
+//        assertEquals(ref.interceptStdErr(), lobf.get().getInterceptStdErr().doubleValue(), ref.interceptStdErr()*0.01);
+        assertEquals(ref.predict(i.get()), lobf.get().predict(i.get()).doubleValue(), ref.predict(i.get())*0.01);
     }
 }

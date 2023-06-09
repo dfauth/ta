@@ -1,14 +1,13 @@
 package com.github.dfauth.ta.functions;
 
-import com.github.dfauth.ta.util.RingBuffer;
-
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static com.github.dfauth.ta.util.RingBuffer.windowfy;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
 
 public class RateOfChange {
 
@@ -17,20 +16,23 @@ public class RateOfChange {
         return t -> {
             try {
                 return Optional.ofNullable(previous.get())
-                        .map(p -> t.divide(p, 3, RoundingMode.HALF_UP).subtract(BigDecimal.ONE));
+                        .map(p -> t.divide(p, 3, HALF_UP).subtract(BigDecimal.ONE));
             } finally {
                 previous.set(t);
             }
         };
     }
 
-    public static Function<BigDecimal, Optional<BigDecimal>> roc(int len) {
-        RingBuffer<BigDecimal> window = new RingBuffer<>(len);
-        AtomicReference<BigDecimal> sum = new AtomicReference<>(ZERO);
-        return t -> {
-            sum.set(sum.get().add(t));
-            window.add(t).ifPresent(v -> sum.set(sum.get().subtract(v)));
-            return Optional.of(sum.get()).filter(x -> window.isFull()).map(v -> v.divide(BigDecimal.valueOf(len), RoundingMode.HALF_UP));
-        };
+    public static Function<BigDecimal, Optional<BigDecimal>> roc(int period) {
+        return windowfy(period, l -> {
+            return Optional.ofNullable(l).filter(_l -> _l.size() >= period).map(_l -> _l.get(period-1).subtract(_l.get(period-2)));
+        });
+    }
+
+    public static Function<BigDecimal, Optional<BigDecimal>> sma(int period) {
+        Function<BigDecimal, BigDecimal> divideByPeriod = _tot -> _tot.divide(BigDecimal.valueOf(period), HALF_UP);
+        return windowfy(period, l -> {
+            return Optional.ofNullable(l).filter(_l -> _l.size() >= period).map(_l -> _l.stream().reduce(ZERO, BigDecimal::add)).map(divideByPeriod);
+        });
     }
 }

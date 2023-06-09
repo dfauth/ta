@@ -14,8 +14,12 @@ public class RingBuffer<T> {
     private final AtomicReference<T>[] buffer;
     private final AtomicInteger current = new AtomicInteger(0);
 
+    public static <T,R> Function<T,Optional<R>> windowfy(int period, Function<List<T>, Optional<R>> f) {
+        return new RingBuffer<T>(period).map(f);
+    }
+
     public RingBuffer(int capacity) {
-        this.buffer = IntStream.range(0,capacity).mapToObj(AtomicReference::new).collect(Collectors.toList()).toArray(AtomicReference[]::new);
+        this.buffer = IntStream.range(0,capacity).mapToObj(i -> new AtomicReference(null)).collect(Collectors.toList()).toArray(AtomicReference[]::new);
     }
 
     public Optional<T> add(T t) {
@@ -69,11 +73,10 @@ public class RingBuffer<T> {
         return stream().collect(Collectors.toList());
     }
 
-    public static <T> Function<T, Optional<T>> windowfy(int size, Function<List<T>,Optional<T>> f) {
-        RingBuffer<T> buffer = new RingBuffer<>(size);
+    public <R> Function<T,Optional<R>> map(Function<List<T>,Optional<R>> f) {
         return t -> {
-            buffer.add(t);
-            return f.apply(buffer.toList());
+            add(t);
+            return f.apply(toList());
         };
     }
 

@@ -171,5 +171,17 @@ public class LinearRegression {
         private final BigDecimal svar;
         private final BigDecimal svar0;
         private final BigDecimal svar1;
+
+        public BigDecimal getSlopeStdErr() {
+            return BigDecimal.valueOf(Math.sqrt(svar1.doubleValue()));
+        }
+
+        public BigDecimal getInterceptStdErr() {
+            return BigDecimal.valueOf(Math.sqrt(svar0.doubleValue()));
+        }
+
+        public BigDecimal predict(int i) {
+            return slope.multiply(BigDecimal.valueOf(i)).add(intercept);
+        }
     }
 }

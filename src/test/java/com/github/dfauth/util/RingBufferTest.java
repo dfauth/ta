@@ -7,13 +7,12 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.github.dfauth.ta.functions.RateOfChange.roc;
-import static com.github.dfauth.ta.util.TryCatch.tryFinally;
+import static com.github.dfauth.ta.util.RingBuffer.windowfy;
 import static org.junit.Assert.*;
 
 @Slf4j
@@ -60,25 +59,18 @@ public class RingBufferTest {
 
     @Test
     public void testList() {
-        RingBuffer<Integer> buffer = new RingBuffer<>(4);
-//        List<Integer> l = buffer.toList();
-        IntStream.range(1,buffer.capacity()).forEach(buffer::add);
-        final AtomicReference<BigDecimal> previous = new AtomicReference<>(null);
-        Function<Integer, Optional<BigDecimal>> f = i -> {
-            return Optional.ofNullable(previous.get()).map(p ->
-                tryFinally(() -> BigDecimal.valueOf(i).subtract(p), () -> previous.set(BigDecimal.valueOf(i)))
-            );
-        };
-        RingBuffer<BigDecimal> buffer1 = buffer.stream().reduce(
-                new RingBuffer<>(buffer.capacity()),
-                (rb,t) -> {
-                    f.apply(t).ifPresent(rb::add);
-                    return rb;
-                },
-                (rb1, rb2) -> {
-                    throw new UnsupportedOperationException("Oops");
-                }
-        );
-//        buffer.map(roc());
+
+        Function<List<Integer>, Optional<BigDecimal>> f = l ->
+            Optional.ofNullable(l)
+                    .filter(_l -> _l.size()>=2)
+                    .map(p -> BigDecimal.valueOf(l.get(l.size()-1) -l.get(l.size()-2)));
+
+        Function<Integer, Optional<BigDecimal>> g = windowfy(4, f);
+        List<BigDecimal> result = IntStream.range(0, 4).mapToObj(g::apply).flatMap(Optional::stream).collect(Collectors.toList());
+        assertEquals(List.of(bd(1),bd(1),bd(1)), result);
+    }
+
+    private BigDecimal bd(int i) {
+        return BigDecimal.valueOf(i);
     }
 }
