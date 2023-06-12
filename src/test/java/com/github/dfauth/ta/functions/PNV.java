@@ -1,12 +1,16 @@
 package com.github.dfauth.ta.functions;
 
+import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -270,24 +274,28 @@ public class PNV {
             "2023-05-18,1.335000,1.365000,1.330000,1.345000,1.345000,1325101\n" +
             "2023-05-19,1.355000,1.415000,1.337500,1.405000,1.405000,2817668";
 
-    public static BigDecimal[] PRICES = toPrices(PRICE_STRING);
+    public static BigDecimal[] PRICES = toClosingPrices("PNV",PRICE_STRING);
 
-    public static BigDecimal[] toPrices(String priceString) {
+    public static List<Price> toPrices(String code, String priceString) {
         try {
             InputStream bais = new ByteArrayInputStream(priceString.getBytes());
             BufferedReader br = new BufferedReader(new InputStreamReader(bais));
             String line;
-            List<BigDecimal> tmp = new ArrayList<>();
+            List<Price> tmp = new ArrayList<>();
             while((line = br.readLine()) != null) {
                 String[] fields = line.split(",");
-                tmp.add(new BigDecimal(fields[4]).setScale(3));
+                tmp.add(Price.parseStrings(code, fields));
             }
 //            Collections.reverse(tmp);
-            return tmp.toArray(BigDecimal[]::new);
+            return tmp;
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
+    }
+
+    public static BigDecimal[] toClosingPrices(String code, String priceString) {
+        return toPrices(code, priceString).stream().map(Price::get_close).collect(Collectors.toList()).toArray(BigDecimal[]::new);
     }
 
     @Test
@@ -304,27 +312,12 @@ public class PNV {
         Optional<LinearRegression.LineOfBestFit> lobf = LinearRegression.lobf(Arrays.asList(PRICES));
         assertNotNull(lobf.get());
 
-        // reference
-        AtomicInteger i = new AtomicInteger(0);
-        double[][] x = Arrays.asList(PRICES)
-                .stream()
-                .map(p -> Map.entry(i.getAndIncrement(), p.doubleValue()))
-                .reduce(new double[2][PRICES.length],
-                        (m, e) -> {
-                            m[0][e.getKey()] = (double) e.getKey();
-                            m[1][e.getKey()] = e.getValue();
-                            return m;
-                        },
-                        (m1, m2) -> {
-                            throw new UnsupportedOperationException();
-                        }
-                );
-        com.github.dfauth.ta.functions.ref.LinearRegression ref = new com.github.dfauth.ta.functions.ref.LinearRegression(x[0], x[1]);
-//        assertEquals(BigDecimal.valueOf(ref.slope()), lobf.get().getSlope());
+        Optional<com.github.dfauth.ta.functions.ref.LinearRegression> ref = com.github.dfauth.ta.functions.ref.LinearRegression.calculate(Arrays.asList(PRICES), BigDecimal::doubleValue);
+        assertEquals(BigDecimal.valueOf(ref.get().getSlope()), lobf.get().getSlope());
 //        assertEquals(ref.intercept(), lobf.get().getIntercept().doubleValue(), ref.intercept()*0.01);
 //        assertEquals(ref.R2(), lobf.get().getR2().doubleValue(), ref.R2()*0.01);
 //        assertEquals(ref.slopeStdErr(), lobf.get().getSlopeStdErr().doubleValue(), ref.slopeStdErr()*0.01);
 //        assertEquals(ref.interceptStdErr(), lobf.get().getInterceptStdErr().doubleValue(), ref.interceptStdErr()*0.01);
-        assertEquals(ref.predict(i.get()), lobf.get().predict(i.get()).doubleValue(), ref.predict(i.get())*0.01);
+//        assertEquals(ref.predict(i.get()), lobf.get().predict(i.get()).doubleValue(), ref.predict(i.get())*0.01);
     }
 }

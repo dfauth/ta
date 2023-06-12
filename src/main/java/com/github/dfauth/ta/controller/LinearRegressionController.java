@@ -1,6 +1,6 @@
 package com.github.dfauth.ta.controller;
 
-import com.github.dfauth.ta.functions.LinearRegression;
+import com.github.dfauth.ta.functions.ref.LinearRegression;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +15,11 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.windowfy;
 import static com.github.dfauth.ta.functions.Reducers.latest;
+import static java.math.RoundingMode.HALF_UP;
 
 @RestController
 @Slf4j
@@ -31,9 +33,12 @@ public class LinearRegressionController {
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> lobf(@PathVariable String _code, @PathVariable int period) {
         log.info("lobf/slope/{}/{}",_code,period);
-        Function<List<BigDecimal>, Optional<LinearRegression.LineOfBestFit>> f = LinearRegression::lobf;
-        Function<List<BigDecimal>, Optional<BigDecimal>> g = f.andThen(Optional::stream).andThen(s -> s.map(LinearRegression.LineOfBestFit::getSlope).findFirst());
-        return closeOperation(_code, period, g);
+        Function<List<BigDecimal>, Optional<LinearRegression>> f = l -> LinearRegression.calculate(l, BigDecimal::doubleValue);
+        Function<List<BigDecimal>, Optional<BigDecimal>> g = f.andThen(Optional::stream).andThen(s -> s.map(LinearRegression::getSlope).map(BigDecimal::valueOf).findFirst());
+//        return closeOperation(_code, period, g);
+        List<Price> prices = prices(_code, period);
+        Optional<LinearRegression> result = f.apply(prices.stream().map(Price::get_close).collect(Collectors.toList()));
+        return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).get_close(), HALF_UP));
     }
 
     private Optional<BigDecimal> closeOperation(String _code, int period, Function<List<BigDecimal>, Optional<BigDecimal>> f1) {

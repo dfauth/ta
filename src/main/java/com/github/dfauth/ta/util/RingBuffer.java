@@ -51,11 +51,12 @@ public class RingBuffer<T> {
     }
 
     public Iterator<T> iterator() {
-        AtomicInteger i = new AtomicInteger(offset());
+        int c = current.get();
+        AtomicInteger i = new AtomicInteger(c < capacity() ? 0 : c - capacity());
         return new Iterator<>() {
             @Override
             public boolean hasNext() {
-                return i.get() <= size();
+                return i.get() < size();
             }
 
             @Override

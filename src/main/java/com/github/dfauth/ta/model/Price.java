@@ -8,6 +8,7 @@ import javax.persistence.Id;
 import javax.persistence.IdClass;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -16,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 @Entity
 @Data
 @IdClass(PriceCompositeKey.class)
-public class Price {
+public class Price implements Candlestick {
 
     @Id private String _code;
     @Id private Timestamp _date;
@@ -45,9 +46,11 @@ public class Price {
 
     public static BigDecimal parsePrice(Object arg) {
         if(arg instanceof Double) {
-            return BigDecimal.valueOf((Double)arg);
+            return BigDecimal.valueOf((Double) arg).setScale(3);
+        } else if(arg instanceof String) {
+            return new BigDecimal((String) arg).setScale(3);
         } else {
-            return BigDecimal.valueOf((Integer)arg);
+            return BigDecimal.valueOf((Integer)arg).setScale(3);
         }
     }
 
@@ -55,7 +58,53 @@ public class Price {
         return Integer.valueOf((String) arg);
     }
 
+    public static Price parseStrings(String code, String[] fields) {
+        return new Price(code,
+                parseDate(fields[0]),
+                parsePrice(fields[1]),
+                parsePrice(fields[2]),
+                parsePrice(fields[3]),
+                parsePrice(fields[4]),
+                parseVolume(fields[5])
+        );
+    }
+
     public PriceCompositeKey getKey() {
         return new PriceCompositeKey(_code, _date);
+    }
+
+    @Override
+    public String getCode() {
+        return get_code();
+    }
+
+    @Override
+    public LocalDate getDate() {
+        return get_date().toLocalDateTime().toLocalDate();
+    }
+
+    @Override
+    public BigDecimal getOpen() {
+        return get_open();
+    }
+
+    @Override
+    public BigDecimal getHigh() {
+        return get_high();
+    }
+
+    @Override
+    public BigDecimal getLow() {
+        return get_low();
+    }
+
+    @Override
+    public BigDecimal getClose() {
+        return get_close();
+    }
+
+    @Override
+    public int getVolume() {
+        return get_volume();
     }
 }

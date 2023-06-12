@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
 import static java.util.function.Predicate.not;
@@ -22,6 +23,12 @@ public class FunctionUtils {
                 l.remove(0);
             }
             return f.apply(l);
+        };
+    }
+
+    public static <T> BinaryOperator<T> unsupported() {
+        return (t1,t2) -> {
+            throw new UnsupportedOperationException();
         };
     }
 

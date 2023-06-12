@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.nullZero;
 import static java.math.BigDecimal.ZERO;
@@ -17,15 +17,36 @@ import static java.util.function.Predicate.not;
 
 public class LinearRegression {
 
+    public static double[][] twoDArray(List<Double> l) {
+
+        return IntStream.range(0,l.size())
+                .mapToObj(i -> Map.entry(i, l.get(i)))
+                .reduce(
+                    new double[2][l.size()],
+                        (arr, e) -> {
+                            arr[0][e.getKey()] = e.getKey();
+                            arr[1][e.getKey()] = e.getValue();
+                            return arr;
+                        },
+                        (arr1, arr2) -> {
+                            throw new UnsupportedOperationException("Oops");
+                        }
+        );
+    }
+
     public static Optional<LineOfBestFit> lobf(List<BigDecimal> y) {
         if (y.size() == 0) {
             Optional.empty();
         }
 
         // first pass
-        AtomicInteger i = new AtomicInteger();
-        List<Map.Entry<Integer, BigDecimal>> points = y.stream().map(_y -> Map.entry(i.getAndIncrement(), _y)).collect(Collectors.toList());
-        FirstPass firstPass = points.stream().reduce(new FirstPass(), (fp, e) -> fp.apply(e.getKey(), e.getValue()), FirstPass::apply);
+        List<Map.Entry<Integer, BigDecimal>> points = IntStream.range(0,y.size()).mapToObj(i -> Map.entry(i, y.get(i))).collect(Collectors.toList());
+        FirstPass firstPass = points
+                .stream()
+                .reduce(new FirstPass(),
+                        (fp, e) -> fp.apply(e.getKey(), e.getValue()),
+                        FirstPass::apply
+                );
 
         return firstPass.secondPass(points);
     }
@@ -42,12 +63,12 @@ public class LinearRegression {
             this(0,ZERO,0);
         }
 
-        public FirstPass apply(Integer key, BigDecimal value) {
-            return new FirstPass(sumx+key, sumy.add(value), sumx2+key*key);
+        public FirstPass apply(Integer x, BigDecimal y) {
+            return new FirstPass(sumx+x, sumy.add(y), sumx2+(x*x));
         }
 
         public FirstPass apply(FirstPass fp) {
-            return new FirstPass(sumx+fp.sumx, sumy.add(fp.sumy), sumx2+fp.sumx2);
+            throw new UnsupportedOperationException();
         }
 
         public Optional<LineOfBestFit> secondPass(List<Map.Entry<Integer, BigDecimal>> points) {
@@ -56,7 +77,12 @@ public class LinearRegression {
             BigDecimal ybar = sumy.divide(n, HALF_UP);
 
             // second pass: compute summary statistics
-            SecondPass secondPass = points.stream().reduce(new SecondPass(xbar, ybar), (sp, e) -> sp.apply(e.getKey(), e.getValue()), SecondPass::apply);
+            SecondPass secondPass = points
+                    .stream()
+                    .reduce(new SecondPass(xbar, ybar),
+                            (sp, e) -> sp.apply(e.getKey(), e.getValue()),
+                            SecondPass::apply
+                    );
 
             return secondPass.thirdPass(points);
         }
@@ -76,32 +102,34 @@ public class LinearRegression {
             this(xbar, ybar, ZERO, ZERO, ZERO);
         }
 
-        public SecondPass apply(Integer key, BigDecimal value) {
+        public SecondPass apply(Integer x, BigDecimal y) {
+            BigDecimal _x = BigDecimal.valueOf(x);
             return new SecondPass(xbar,
                     ybar,
-                    bar(xxbar, BigDecimal.valueOf(key), xbar),
-                    bar(yybar, value, ybar),
-                    bar(xybar, BigDecimal.valueOf(key), xbar, value, ybar)
+                    bar(xxbar, _x, xbar, _x, xbar),
+                    bar(yybar, y, ybar, y, ybar),
+                    bar(xybar, _x, xbar, y, ybar)
             );
-        }
-
-        private static BigDecimal bar(BigDecimal r, BigDecimal x, BigDecimal y) {
-            return bar(r,x,x,y,y);
         }
 
         private static BigDecimal bar(BigDecimal r, BigDecimal x1, BigDecimal x2, BigDecimal y1, BigDecimal y2) {
 //            r + (x1 - y1) * (x2 - y2);
-            return x1.subtract(y1).multiply(x2.subtract(y2)).add(r);
+            return x1.subtract(x2).multiply(y1.subtract(y2)).add(r);
         }
 
         public SecondPass apply(SecondPass sp) {
-            return new SecondPass(xbar, ybar, xxbar.add(sp.xxbar),yybar.add(sp.yybar),xybar.add(sp.xybar));
+            throw new UnsupportedOperationException();
         }
 
         public Optional<LineOfBestFit> thirdPass(List<Map.Entry<Integer, BigDecimal>> points) {
 
             // more statistical analysis
-            SumOfSquares sumOfSquares = points.stream().reduce(new SumOfSquares(this), (ss, e) -> ss.apply(e.getKey(), e.getValue()).orElse(new SumOfSquares(this)), SumOfSquares::apply);
+            SumOfSquares sumOfSquares = points
+                    .stream()
+                    .reduce(new SumOfSquares(this),
+                            (ss, e) -> ss.apply(e.getKey(), e.getValue()).orElse(new SumOfSquares(this)),
+                            SumOfSquares::apply
+                    );
 
             return sumOfSquares.getLineOfBestFit(points.size());
         }
@@ -129,11 +157,11 @@ public class LinearRegression {
 
         public Optional<SumOfSquares> apply(Integer key, BigDecimal value) {
             Optional<BigDecimal> fit = sp.getSlope().flatMap(_slope -> sp.getIntercept().map(_intercept -> _slope.multiply(BigDecimal.valueOf(key)).add(_intercept)));
-            return fit.map(_fit -> new SumOfSquares(sp, SecondPass.bar(rss, _fit, value), SecondPass.bar(ssr, _fit, sp.getYbar())));
+            return fit.map(_fit -> new SumOfSquares(sp, SecondPass.bar(rss, _fit, value, _fit, value), SecondPass.bar(ssr, _fit, sp.getYbar(), _fit, sp.getYbar())));
         }
 
         public SumOfSquares apply(SumOfSquares ss) {
-            return new SumOfSquares(sp, ssr.add(ss.ssr), rss.add(ss.rss));
+            throw new UnsupportedOperationException();
         }
 
         public Optional<LineOfBestFit> getLineOfBestFit(int n) {

@@ -1,4 +1,6 @@
-package com.github.dfauth.ta.functions.ref; /******************************************************************************
+package com.github.dfauth.ta.functions.ref;
+
+/******************************************************************************
  *  Compilation:  javac LinearRegression.java
  *  Execution:    java  LinearRegression
  *  Dependencies: none
@@ -8,6 +10,15 @@ package com.github.dfauth.ta.functions.ref; /***********************************
  *
  ******************************************************************************/
 
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 
 /**
  *  The {@code LinearRegression} class performs a simple linear regression
@@ -23,11 +34,48 @@ package com.github.dfauth.ta.functions.ref; /***********************************
  *  @author Robert Sedgewick
  *  @author Kevin Wayne
  */
+
+@Data
+@AllArgsConstructor
 public class LinearRegression {
 
-    private double intercept = 0d, slope = 0d;
+    private double slope = 0d;
+    private double intercept = 0d;
     private double r2 = 0d;
-    private double svar0 = 0d, svar1 = 0d;
+    private double svar0 = 0d;
+    private double svar1 = 0d;
+
+    public static <T> Optional<LinearRegression> calculate(List<T> y, Function<T,Double> f) {
+        double[] array = IntStream.range(0,y.size())
+                .mapToObj(i -> Map.entry(i,y.get(i)))
+                .reduce(
+                        new double[y.size()],
+                        (acc,e) -> {
+                            acc[e.getKey()] = f.apply(e.getValue());
+                            return acc;
+                        },
+                        (acc1,acc2) -> {
+                            throw new UnsupportedOperationException("Oops");
+                        }
+                );
+        return calculate(array);
+    }
+
+    public static Optional<LinearRegression> calculate(double[] y) {
+        double[] array = IntStream.range(0,y.length)
+                .mapToObj(Integer::valueOf)
+                .reduce(
+                        new double[y.length],
+                        (arr,i) -> {
+                            arr[i] = i;
+                            return arr;
+                        },
+                        (a1,a2) -> {
+                            throw new UnsupportedOperationException("Oops");
+                        }
+                );
+        return calculate(array, y);
+    }
 
     /**
      * Performs a linear regression on the data points {@code (y[i], x[i])}.
@@ -36,14 +84,18 @@ public class LinearRegression {
      * @param  y the corresponding values of the response variable
      * @throws IllegalArgumentException if the lengths of the two arrays are not equal
      */
-    public LinearRegression(double[] x, double[] y) {
+    public static Optional<LinearRegression> calculate(double[] x, double[] y) {
         if (x.length != y.length) {
             throw new IllegalArgumentException("array lengths are not equal");
         }
+        if(x.length < 2) {
+            return Optional.empty();
+        }
+
         int n = x.length;
 
         // first pass
-        double sumx = 0.0, sumy = 0.0, sumx2 = 0.0;
+        double sumx = 0.0, sumx2 = 0.0, sumy = 0.0;
         for (int i = 0; i < n; i++) {
             sumx  += x[i];
             sumx2 += x[i]*x[i];
@@ -59,8 +111,8 @@ public class LinearRegression {
             yybar += (y[i] - ybar) * (y[i] - ybar);
             xybar += (x[i] - xbar) * (y[i] - ybar);
         }
-        slope  = xybar / xxbar;
-        intercept = ybar - slope * xbar;
+        double slope  = xybar / xxbar;
+        double intercept = ybar - slope * xbar;
 
         // more statistical analysis
         double rss = 0.0;      // residual sum of squares
@@ -72,38 +124,12 @@ public class LinearRegression {
         }
 
         int degreesOfFreedom = n-2;
-        r2    = ssr / yybar;
+        double r2    = ssr / yybar;
         double svar  = rss / degreesOfFreedom;
-        svar1 = svar / xxbar;
-        svar0 = svar/n + xbar*xbar*svar1;
-    }
+        double svar1 = svar / xxbar;
+        double svar0 = svar/n + xbar*xbar*svar1;
 
-    /**
-     * Returns the <em>y</em>-intercept &alpha; of the best of the best-fit line <em>y</em> = &alpha; + &beta; <em>x</em>.
-     *
-     * @return the <em>y</em>-intercept &alpha; of the best-fit line <em>y = &alpha; + &beta; x</em>
-     */
-    public double intercept() {
-        return intercept;
-    }
-
-    /**
-     * Returns the slope &beta; of the best of the best-fit line <em>y</em> = &alpha; + &beta; <em>x</em>.
-     *
-     * @return the slope &beta; of the best-fit line <em>y</em> = &alpha; + &beta; <em>x</em>
-     */
-    public double slope() {
-        return slope;
-    }
-
-    /**
-     * Returns the coefficient of determination <em>R</em><sup>2</sup>.
-     *
-     * @return the coefficient of determination <em>R</em><sup>2</sup>,
-     *         which is a real number between 0 and 1
-     */
-    public double R2() {
-        return r2;
+        return Optional.of(new LinearRegression(slope, intercept, r2, svar0, svar1));
     }
 
     /**
@@ -145,8 +171,8 @@ public class LinearRegression {
      */
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%.2f n + %.2f", slope(), intercept()));
-        s.append("  (R^2 = " + String.format("%.3f", R2()) + ")");
+        s.append(String.format("%.2f n + %.2f", slope, intercept));
+        s.append("  (R^2 = " + String.format("%.3f", r2) + ")");
         return s.toString();
     }
 
