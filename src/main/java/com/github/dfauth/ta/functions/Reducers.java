@@ -1,15 +1,48 @@
 package com.github.dfauth.ta.functions;
 
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.*;
+import java.util.stream.Collector;
 
 public interface Reducers<T,U> {
 
     U initial();
     BiFunction<U,T,U> accumulator();
-    BinaryOperator<U> combiner();
+    default BinaryOperator<U> combiner() {
+        return (u1,u2) -> {
+            throw new UnsupportedOperationException();
+        };
+    }
+
+    static <T,R> Collector<T, AtomicReference<R>,R> toCollector(Reducers<T,R> reducer) {
+        return new Collector<>() {
+            @Override
+            public Supplier<AtomicReference<R>> supplier() {
+                return () -> new AtomicReference<>(reducer.initial());
+            }
+
+            @Override
+            public BiConsumer<AtomicReference<R>, T> accumulator() {
+                return (r,t) -> r.set(reducer.accumulator().apply(r.get(),t));
+            }
+
+            @Override
+            public BinaryOperator<AtomicReference<R>> combiner() {
+                return (r1,r2) -> new AtomicReference<>(reducer.combiner().apply(r1.get(), r2.get()));
+            }
+
+            @Override
+            public Function<AtomicReference<R>, R> finisher() {
+                return AtomicReference::get;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return Set.of(Characteristics.UNORDERED);
+            }
+        };
+    }
 
     static <T> Reducers<T, List<T>> toList() {
         return new Reducers<>() {
