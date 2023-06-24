@@ -66,6 +66,10 @@ public class State<T,U,E> implements SelfMapEntry<T,State<T,U,E>> {
             return this;
         }
 
+        public final Builder<T, U, E> withTransition(Consumer<Transition.Builder<T, U, E>> transition) {
+            return withTransitions(Stream.of(transition).collect(Collectors.toList()));
+        }
+
         @SafeVarargs()
         public final Builder<T, U, E> withTransitions(Consumer<Transition.Builder<T, U, E>>... transitions) {
             return withTransitions(Stream.of(transitions).collect(Collectors.toList()));

@@ -1,62 +1,32 @@
 package com.github.dfauth.ta.functions;
 
+import com.github.dfauth.ta.functional.Reducer;
+import com.github.dfauth.ta.functional.Tuple2;
+
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
-import java.util.stream.Collector;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-public interface Reducers<T,U> {
+import static com.github.dfauth.ta.functional.FunctionUtils.noOp;
+import static com.github.dfauth.ta.util.TryCatch.tryCatch;
+import static java.util.function.Function.identity;
+import static java.util.function.Predicate.not;
 
-    U initial();
-    BiFunction<U,T,U> accumulator();
-    default BinaryOperator<U> combiner() {
-        return (u1,u2) -> {
-            throw new UnsupportedOperationException();
-        };
-    }
+public class Reducers {
 
-    static <T,R> Collector<T, AtomicReference<R>,R> toCollector(Reducers<T,R> reducer) {
-        return new Collector<>() {
-            @Override
-            public Supplier<AtomicReference<R>> supplier() {
-                return () -> new AtomicReference<>(reducer.initial());
-            }
-
-            @Override
-            public BiConsumer<AtomicReference<R>, T> accumulator() {
-                return (r,t) -> r.set(reducer.accumulator().apply(r.get(),t));
-            }
-
-            @Override
-            public BinaryOperator<AtomicReference<R>> combiner() {
-                return (r1,r2) -> new AtomicReference<>(reducer.combiner().apply(r1.get(), r2.get()));
-            }
-
-            @Override
-            public Function<AtomicReference<R>, R> finisher() {
-                return AtomicReference::get;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return Set.of(Characteristics.UNORDERED);
-            }
-        };
-    }
-
-    static <T> Reducers<T, List<T>> toList() {
-        return new Reducers<>() {
+    public static <T> Reducer<T, List<T>> list() {
+        return new Reducer<>() {
             @Override
             public List<T> initial() {
                 return new ArrayList<>();
             }
 
             @Override
-            public BiFunction<List<T>, T, List<T>> accumulator() {
-                return (l, t) -> {
-                    l.add(t);
-                    return l;
-                };
+            public BiConsumer<List<T>, T> accumulatingConsumer() {
+                return List::add;
             }
 
             @Override
@@ -71,18 +41,17 @@ public interface Reducers<T,U> {
     }
 
 
-    static <T,K,V> Reducers<T, Map<K,V>> group(Function<T,K> keyMapper, Function<T,V> valueMapper, BinaryOperator<V> valueReducer) {
-        return new Reducers<>() {
+    static <T,K,V> Reducer<T, Map<K,V>> group(Function<T,K> keyMapper, Function<T,V> valueMapper, BinaryOperator<V> valueReducer) {
+        return new Reducer<>() {
             @Override
             public Map<K, V> initial() {
                 return new HashMap<>();
             }
 
             @Override
-            public BiFunction<Map<K, V>, T, Map<K, V>> accumulator() {
+            public BiConsumer<Map<K, V>, T> accumulatingConsumer() {
                 return (m, t) -> {
                     m.compute(keyMapper.apply(t), (k,v) -> Optional.ofNullable(v).map(_v -> valueReducer.apply(_v,valueMapper.apply(t))).orElse(valueMapper.apply(t)));
-                    return m;
                 };
             }
 
@@ -100,7 +69,62 @@ public interface Reducers<T,U> {
     }
 
 
-    static <T> BinaryOperator<T> latest() {
+    public static <T> BinaryOperator<T> latest() {
         return (t1,t2) -> t2;
+    }
+
+    public static <T> Reducer.ReducerCollector<CompletableFuture<T>, Tuple2<CompletableFuture<List<T>>,List<CompletableFuture<T>>>,CompletableFuture<List<T>>> future() {
+        CompletableFuture<List<T>> fut = new CompletableFuture<>();
+        List<CompletableFuture<T>> list = new ArrayList<>();
+        return new Reducer.ReducerCollector<CompletableFuture<T>, Tuple2<CompletableFuture<List<T>>,List<CompletableFuture<T>>>,CompletableFuture<List<T>>>(
+                new Reducer<CompletableFuture<T>, Tuple2<CompletableFuture<List<T>>, List<CompletableFuture<T>>>>() {
+
+                    @Override
+                    public Tuple2<CompletableFuture<List<T>>, List<CompletableFuture<T>>> initial() {
+                        return new Tuple2<>(fut, list);
+                    }
+
+                    @Override
+                    public BiConsumer<Tuple2<CompletableFuture<List<T>>, List<CompletableFuture<T>>>, CompletableFuture<T>> accumulatingConsumer() {
+                        return (t2, f) -> {
+                            t2._2().add(f);
+                            f.thenAccept(t -> t2._2()
+                                    .stream()
+                                    .filter(not(CompletableFuture::isDone))
+                                    .findFirst()
+                                    .ifPresentOrElse(
+                                            noOp(),
+                                            () -> t2._1().complete(t2._2().stream().map(_f -> tryCatch(_f::get)).collect(Collectors.toList()))
+                                    ));
+                        };
+                    }
+                },
+                Tuple2::_1
+        ) {
+        };
+    }
+
+    public static <K,V> Reducer.ReducerCollector<Map.Entry<K,V>, Map<K,V>,Map<K,V>> groupBy() {
+        return groupBy(identity(), identity(), latest());
+    }
+
+    public static <K,V,T,R> Reducer.ReducerCollector<Map.Entry<K,V>,Map<T,R>, Map<T,R>> groupBy(Function<K,T> keyMapper, Function<V,R> valueMapper, BinaryOperator<R> valueReducer) {
+        return new Reducer.ReducerCollector<>(
+                new Reducer<Map.Entry<K, V>, Map<T, R>>() {
+                    @Override
+                    public Map<T, R> initial() {
+                        return new HashMap<>();
+                    }
+
+                    @Override
+                    public BiConsumer<Map<T, R>, Map.Entry<K, V>> accumulatingConsumer() {
+                        return (m, e) -> m.compute(
+                                keyMapper.apply(e.getKey()),
+                                (k,v) -> Optional.ofNullable(v).map(_v -> valueReducer.apply(_v,valueMapper.apply(e.getValue()))).orElseGet(() -> valueMapper.apply(e.getValue()))
+                        );
+                    }
+                },
+                identity()
+        );
     }
 }

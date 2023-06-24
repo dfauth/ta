@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.function.Predicate.not;
@@ -32,4 +33,7 @@ public class FunctionUtils {
         };
     }
 
+    public static <T> Consumer<T> noOp() {
+        return t -> {};
+    }
 }
