@@ -2,6 +2,7 @@ package com.github.dfauth.ta.functional;
 
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.github.dfauth.ta.functional.Reducer.with;
 import static com.github.dfauth.ta.functions.Reducers.*;
 import static com.github.dfauth.ta.util.TryCatch.tryCatch;
 import static com.github.dfauth.ta.util.TryCatch.tryCatchRunnable;
@@ -24,7 +24,7 @@ public class ReducersTest {
     @Test
     public void testIt() {
         {
-            List<Integer> result = range(0,10).collect(with(list()));
+            List<Integer> result = range(0,10).collect(list());
             assertEquals(List.of(0,1,2,3,4,5,6,7,8,9), result);
         }
 
@@ -60,6 +60,10 @@ public class ReducersTest {
 
     public static Stream<Integer> range(int startInclusive, int endExclusive) {
         return  IntStream.range(startInclusive, endExclusive).boxed();
+    }
+
+    public static Stream<BigDecimal> bdRange(int startInclusive, int endExclusive) {
+        return  range(startInclusive, endExclusive).map(BigDecimal::valueOf);
     }
 
     public static <T> CompletableFuture<T> delay(T t) {

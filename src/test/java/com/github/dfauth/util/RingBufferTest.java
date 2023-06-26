@@ -8,9 +8,12 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.github.dfauth.ta.functions.RateOfChange.roc;
+import static com.github.dfauth.ta.functional.ReducersTest.bdRange;
+import static com.github.dfauth.ta.functional.StatefulFunction.roc;
+import static com.github.dfauth.ta.functional.StatefulFunction.sma;
 import static org.junit.Assert.*;
 
 @Slf4j
@@ -74,34 +77,24 @@ public class RingBufferTest {
 
     @Test
     public void testRoC() {
-        Function<BigDecimal, Optional<BigDecimal>> x = roc(4);
-        assertEquals(Optional.empty(), x.apply(BigDecimal.valueOf(1).setScale(3)));
-        assertEquals(Optional.empty(), x.apply(BigDecimal.valueOf(2).setScale(3)));
-        assertEquals(Optional.empty(), x.apply(BigDecimal.valueOf(3).setScale(3)));
-        assertEquals(Optional.of(BigDecimal.valueOf(2.5).setScale(3)), x.apply(BigDecimal.valueOf(4).setScale(3)));
-        assertEquals(Optional.of(BigDecimal.valueOf(3.5).setScale(3)), x.apply(BigDecimal.valueOf(5).setScale(3)));
+        assertEquals(
+                List.of(bd(1),bd(1),bd(1),bd(1)),
+                bdRange(0,5).map(roc()).flatMap(Optional::stream).collect(Collectors.toList())
+        );
     }
 
-//    @Test
-//    public void testList() {
-//
-//        Reducer<Integer, BigDecimal> difference = c -> {
-//            AtomicReference<BigDecimal> previous = new AtomicReference<>(null);
-//            BigDecimal TWO = BigDecimal.valueOf(2);
-//            List<BigDecimal> diffs = c.stream().map(BigDecimal::valueOf)
-//                    .map(bd -> {
-//                        BigDecimal _prev = previous.getAndSet(bd);
-//                        return Optional.ofNullable(_prev).map(_p -> _p.subtract(bd).divide(TWO, RoundingMode.HALF_UP));
-//                    })
-//                    .flatMap(Optional::stream)
-//                    .collect(Collectors.toList());
-//            return Optional.of(diffs).filter(not(List::isEmpty)).map(l -> l.get(l.size()-1));
-//        };
-//
-//        Function<BigDecimal, Optional<BigDecimal>> g = Reducer.windowfy(4, Reducer.roc());
-//        List<BigDecimal> result = IntStream.range(0, 4).mapToObj(BigDecimal::valueOf).map(g).flatMap(Optional::stream).collect(Collectors.toList());
-//        assertEquals(List.of(bd(1),bd(1),bd(1)), result);
-//    }
+    @Test
+    public void testSma() {
+        assertEquals(
+                List.of(bd(1)),
+                bdRange(0,5).map(roc()).flatMap(Optional::stream).map(sma(4)).flatMap(Optional::stream).collect(Collectors.toList())
+        );
+        Function<BigDecimal, BigDecimal> doubler = bd -> bd.multiply(BigDecimal.valueOf(2));
+        assertEquals(
+                List.of(bd(2),bd(2),bd(2),bd(2),bd(2),bd(2)),
+                bdRange(0,10).map(doubler).map(roc()).flatMap(Optional::stream).map(sma(4)).flatMap(Optional::stream).collect(Collectors.toList())
+        );
+    }
 
     private BigDecimal bd(int i) {
         return BigDecimal.valueOf(i);
