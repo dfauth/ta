@@ -1,5 +1,6 @@
 package com.github.dfauth.util;
 
+import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.util.ArrayRingBuffer;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -86,12 +87,12 @@ public class RingBufferTest {
     @Test
     public void testSma() {
         assertEquals(
-                List.of(bd(1)),
+                Lists.of(1).map(BigDecimal::valueOf),
                 bdRange(0,5).map(roc()).flatMap(Optional::stream).map(sma(4)).flatMap(Optional::stream).collect(Collectors.toList())
         );
         Function<BigDecimal, BigDecimal> doubler = bd -> bd.multiply(BigDecimal.valueOf(2));
         assertEquals(
-                List.of(bd(2),bd(2),bd(2),bd(2),bd(2),bd(2)),
+                Lists.of(2,2,2,2,2,2).map(BigDecimal::valueOf),
                 bdRange(0,10).map(doubler).map(roc()).flatMap(Optional::stream).map(sma(4)).flatMap(Optional::stream).collect(Collectors.toList())
         );
     }

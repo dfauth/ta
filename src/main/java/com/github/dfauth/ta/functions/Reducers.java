@@ -106,18 +106,18 @@ public class Reducers {
     }
 
     public static <K,V> Reducer<Map.Entry<K,V>, Map<K,V>,Map<K,V>> groupBy() {
-        return groupBy(identity(), identity(), latest());
+        return groupBy(new HashMap<>(), identity(), identity(), latest());
     }
 
-    public static <K,V,T,R> SimpleReducer<Map.Entry<K,V>,Map<T,R>> groupBy(Function<K,T> keyMapper, Function<V,R> valueMapper, BinaryOperator<R> valueReducer) {
+    public static <K,V,T,R,S extends Map<T,R>> SimpleReducer<Map.Entry<K,V>,S> groupBy(S initial, Function<K,T> keyMapper, Function<V,R> valueMapper, BinaryOperator<R> valueReducer) {
         return new SimpleReducer<>() {
             @Override
-            public Map<T, R> initial() {
-                return new HashMap<>();
+            public S initial() {
+                return initial;
             }
 
             @Override
-            public BiConsumer<Map<T, R>, Map.Entry<K, V>> accumulator() {
+            public BiConsumer<S, Map.Entry<K, V>> accumulator() {
                 return (m, e) -> m.compute(
                         keyMapper.apply(e.getKey()),
                         (k, v) -> Optional.ofNullable(v).map(_v -> valueReducer.apply(_v, valueMapper.apply(e.getValue()))).orElseGet(() -> valueMapper.apply(e.getValue()))
