@@ -3,11 +3,28 @@ package com.github.dfauth.ta.util;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.github.dfauth.ta.util.Promise.promise;
+
 @Slf4j
 public class TryCatch {
+
+    public static Executor runInCallingThread = Runnable::run;
+
+    public static Promise<Void> tryCatchAsync(ExceptionalRunnable runnable) {
+        return tryCatchAsync(() -> {
+            runnable._run();
+            return null;
+        });
+    }
+
+    public static <T> T tryCatchAsync(Callable<T> callable) {
+        return tryCatch(command -> ForkJoinPool.commonPool().execute(command), callable);
+    }
 
     public static void tryCatchRunnable(ExceptionalRunnable callable) {
         tryCatch(callable);
@@ -18,39 +35,44 @@ public class TryCatch {
     }
 
     public static <T> T tryCatch(Callable<T> callable) {
-        return tryCatch(callable, propagate());
+        return tryCatch(runInCallingThread, callable);
     }
 
-    public static <T> T tryCatch(Callable<T> callable, Function<Exception,T> exceptionHandler) {
-        return tryCatch(callable, exceptionHandler, noOp());
+    public static <T> T tryCatch(Executor executor, Callable<T> callable) {
+        return tryCatch(executor, callable, propagate());
     }
 
-    public static <T> T tryCatch(Callable<T> callable, Function<Exception,T> exceptionHandler, Runnable finallyRunnable) {
-        try {
-            return callable.call();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return exceptionHandler.apply(e);
-        } finally {
-            finallyRunnable.run();
-        }
+    public static <T> T tryCatch(Callable<T> callable, Function<Throwable,T> exceptionHandler) {
+        return tryCatch(runInCallingThread, callable, exceptionHandler);
+    }
+
+    public static <T> T tryCatch(Executor executor, Callable<T> callable, Function<Throwable,T> exceptionHandler) {
+        return tryCatch(executor, callable, exceptionHandler, noOp());
+    }
+
+    public static <T> T tryCatch(Callable<T> callable, Function<Throwable,T> exceptionHandler, Runnable finallyRunnable) {
+        return tryCatch(runInCallingThread, callable, exceptionHandler, finallyRunnable);
+    }
+
+    public static <T> T tryCatch(Executor executor, Callable<T> callable, Function<Throwable,T> exceptionHandler, Runnable finallyRunnable) {
+        return promise(executor, callable).recover(exceptionHandler).andFinally(finallyRunnable).get();
     }
 
     public static <T> T tryFinally(Supplier<T> supplier, Runnable runnable) {
-        try {
-            return supplier.get();
-        } finally {
-            runnable.run();
-        }
+        return promise(runInCallingThread, supplier::get).andFinally(runnable).get();
     }
 
-    public static <T> Function<Exception, T> propagate() {
+    public static <T> Function<Throwable, T> propagate() {
         return e -> {
-            throw new RuntimeException(e);
+            if(e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException(e);
+            }
         };
     }
 
-    private static Runnable noOp() {
+    public static Runnable noOp() {
         return () -> {};
     }
 

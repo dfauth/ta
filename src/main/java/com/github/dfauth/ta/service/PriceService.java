@@ -45,7 +45,7 @@ public class PriceService {
         List<Tuple2<String, BigDecimal>> result = activeLatestPricesAsStream(windowSize)
                 .map(l -> tuple2(l.get(0).get_code(), mapList(l, extractor)))
                 .map(t -> t.mapValue(f))
-                .flatMap(t -> t.map(_t -> _t._2().map(v -> tuple2(_t._1(), v))).stream())
+                .flatMap(t -> t.map(_k -> _v -> _v.<Tuple2<String,BigDecimal>>map(v -> tuple2(_k, v))).stream())
                 .collect(Collectors.toList());
         result.sort((a,b) -> comparator.compare(a._2(), b._2()));
         return result;

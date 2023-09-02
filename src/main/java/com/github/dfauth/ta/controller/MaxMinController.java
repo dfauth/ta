@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.controller;
 
+import com.github.dfauth.ta.functional.DaysSince;
 import com.github.dfauth.ta.functions.HighLow;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.windowfy;
 import static com.github.dfauth.ta.functions.Reducers.latest;
@@ -40,6 +42,16 @@ public class MaxMinController {
     Optional<BigDecimal> min(@PathVariable String _code, @PathVariable int period) {
         log.info("min/{}/{}",_code,period);
         return closeOperation(_code, period, HighLow::min);
+    }
+
+    // days since
+    @GetMapping("/daysSinceLastHigh/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<Integer> daysSinceLastHigh(@PathVariable String _code, @PathVariable int period) {
+        log.info("daysSinceLastHigh/{}/{}",_code,period);
+        return DaysSince.lastHigh(prices(_code, period).stream()
+                .map(Price::get_close)
+                .collect(Collectors.toList()));
     }
 
     private Optional<BigDecimal> closeOperation(String _code, int period, Function<List<BigDecimal>, Optional<BigDecimal>> f1) {

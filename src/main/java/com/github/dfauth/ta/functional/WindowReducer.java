@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public abstract class WindowReducer<T, R> implements WindowFunction<T, R>, Reducer<T, RingBuffer<T>, Optional<R>> {
 
@@ -17,7 +18,7 @@ public abstract class WindowReducer<T, R> implements WindowFunction<T, R>, Reduc
         return new WindowReducer<>(capacity) {
             @Override
             public Function<RingBuffer<T>, Optional<R>> finisher() {
-                return rb -> f.apply(rb.toCollection());
+                return rb -> f.apply(rb.stream().collect(Collectors.toList()));
             }
 
             @Override
@@ -27,7 +28,7 @@ public abstract class WindowReducer<T, R> implements WindowFunction<T, R>, Reduc
 
             @Override
             public Optional<R> apply(Collection<T> ts) {
-                return f.apply(initial().toCollection());
+                return f.apply(initial().stream().collect(Collectors.toList()));
             }
         };
     }

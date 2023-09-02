@@ -13,8 +13,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.ReducersTest.bdRange;
-import static com.github.dfauth.ta.functional.StatefulFunction.roc;
-import static com.github.dfauth.ta.functional.StatefulFunction.sma;
+import static com.github.dfauth.ta.functional.StatefulFunctions.roc;
+import static com.github.dfauth.ta.functional.StatefulFunctions.sma;
 import static org.junit.Assert.*;
 
 @Slf4j
@@ -48,32 +48,32 @@ public class RingBufferTest {
         assertFalse(buffer.isFull());
         assertEquals(4, buffer.capacity());
         assertEquals(0, buffer.size());
-        assertEquals(List.of(), buffer.toCollection());
+        assertEquals(List.of(), buffer.stream().collect(Collectors.toList()));
         buffer.add(1);
         assertFalse(buffer.isFull());
         assertEquals(4, buffer.capacity());
         assertEquals(1, buffer.size());
-        assertEquals(List.of(1), buffer.toCollection());
+        assertEquals(List.of(1), buffer.stream().collect(Collectors.toList()));
         buffer.add(2);
         assertFalse(buffer.isFull());
         assertEquals(4, buffer.capacity());
         assertEquals(2, buffer.size());
-        assertEquals(List.of(1,2), buffer.toCollection());
+        assertEquals(List.of(1,2), buffer.stream().collect(Collectors.toList()));
         buffer.add(3);
         assertFalse(buffer.isFull());
         assertEquals(4, buffer.capacity());
         assertEquals(3, buffer.size());
-        assertEquals(List.of(1,2,3), buffer.toCollection());
+        assertEquals(List.of(1,2,3), buffer.stream().collect(Collectors.toList()));
         buffer.add(4);
         assertTrue(buffer.isFull());
         assertEquals(4, buffer.capacity());
         assertEquals(4, buffer.size());
-        assertEquals(List.of(1,2,3,4), buffer.toCollection());
+        assertEquals(List.of(1,2,3,4), buffer.stream().collect(Collectors.toList()));
         buffer.add(5);
         assertTrue(buffer.isFull());
         assertEquals(4, buffer.capacity());
         assertEquals(4, buffer.size());
-        assertEquals(List.of(2,3,4,5), buffer.toCollection());
+        assertEquals(List.of(2,3,4,5), buffer.stream().collect(Collectors.toList()));
     }
 
     @Test

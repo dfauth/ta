@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class ArrayRingBuffer<T> implements RingBuffer<T> {
@@ -19,8 +20,17 @@ public class ArrayRingBuffer<T> implements RingBuffer<T> {
         return new ArrayRingBuffer<T>(period).map(f);
     }
 
+    public ArrayRingBuffer(T[] initial) {
+        this(initial.length, initial);
+    }
+    
     public ArrayRingBuffer(int capacity) {
-        this.buffer = IntStream.range(0,capacity).mapToObj(i -> new AtomicReference(null)).collect(Collectors.toList()).toArray(AtomicReference[]::new);
+        this(capacity, null);
+    }
+    
+    public ArrayRingBuffer(int capacity, T[] initial) {
+        Function<Integer,T> next = i -> Optional.ofNullable(initial).filter(arr -> arr.length > i).map(arr -> arr[i]).orElse(null);
+        this.buffer = IntStream.range(0,capacity).mapToObj(i -> new AtomicReference(next.apply(i))).collect(Collectors.toList()).toArray(AtomicReference[]::new);
     }
 
     public Optional<T> add(T t) {
@@ -82,8 +92,12 @@ public class ArrayRingBuffer<T> implements RingBuffer<T> {
         };
     }
 
-    public Collection<T> toCollection() {
-        return StreamSupport.stream(Spliterators.spliterator(iterator(), this.buffer.length, Spliterator.NONNULL), false).collect(Collectors.toList());
+    @Override
+    public Stream<T> stream() {
+        return StreamSupport.stream(Spliterators.spliterator(
+                iterator(),
+                this.size(),
+                Spliterator.NONNULL), false);
     }
 
 }
