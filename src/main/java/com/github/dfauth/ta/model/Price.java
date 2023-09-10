@@ -1,5 +1,12 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,6 +19,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
+
+import static java.lang.Math.abs;
 
 @Slf4j
 @Entity
@@ -19,12 +29,21 @@ import java.time.format.DateTimeFormatter;
 @IdClass(PriceCompositeKey.class)
 public class Price implements Candlestick {
 
-    @Id private String _code;
-    @Id private Timestamp _date;
+    @Id
+    @JsonIgnore
+    private String _code;
+    @Id
+    @JsonIgnore
+    private Timestamp _date;
+    @JsonIgnore
     private BigDecimal _open;
+    @JsonIgnore
     private BigDecimal _high;
+    @JsonIgnore
     private BigDecimal _low;
+    @JsonIgnore
     private BigDecimal _close;
+    @JsonIgnore
     private Integer _volume;
 
     public Price() {
@@ -69,6 +88,7 @@ public class Price implements Candlestick {
         );
     }
 
+    @JsonIgnore
     public PriceCompositeKey getKey() {
         return new PriceCompositeKey(_code, _date);
     }
@@ -79,6 +99,9 @@ public class Price implements Candlestick {
     }
 
     @Override
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    @JsonSerialize(using=LocalDateSerializer.class)
+    @JsonDeserialize(using=LocalDateDeserializer.class)
     public LocalDate getDate() {
         return get_date().toLocalDateTime().toLocalDate();
     }

@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -12,6 +14,17 @@ public interface Candlestick {
     BigDecimal getLow();
     BigDecimal getClose();
     int getVolume();
+    default BigDecimal getTrueRange(BigDecimal previousClose) {
+        return getRange()
+                .max(getHigh().subtract(previousClose).abs()
+                        .max(getLow().subtract(previousClose).abs()
+                        )
+                );
+    }
+
+    default BigDecimal getRange() {
+        return getHigh().subtract(getLow());
+    }
 
     default boolean isRising() {
         return getClose().compareTo(getOpen()) > 0;

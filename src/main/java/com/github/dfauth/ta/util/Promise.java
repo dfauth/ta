@@ -7,7 +7,7 @@ import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static com.github.dfauth.ta.util.TryCatch.*;
+import static com.github.dfauth.ta.util.ExceptionalRunnable.*;
 
 @Slf4j
 public class Promise<T> {
@@ -18,6 +18,14 @@ public class Promise<T> {
 
     public static <T,R> BiFunction<T,Throwable,R> handleWith(Function<T,R> f, Function<Throwable, R> exceptionHandler) {
         return (t, e) -> Optional.ofNullable(e).map(exceptionHandler).orElseGet(() -> f.apply(t));
+    }
+
+    public static <T> Promise<T> tryWith(Callable<T> callable) {
+        return promise(runInCallingThread, callable);
+    }
+
+    public static Promise<Void> tryWith(ExceptionalRunnable runnable) {
+        return promise(runInCallingThread, runnable);
     }
 
     public static <T> Promise<T> promise(Callable<T> callable) {
@@ -49,6 +57,7 @@ public class Promise<T> {
                     f.complete(exceptionHandler.apply(e));
                 } catch (Exception ex) {
                     f.completeExceptionally(ex);
+                    throw ex;
                 }
             } finally {
                 finallyRunnable.run();
@@ -61,7 +70,10 @@ public class Promise<T> {
     }
 
     public Promise<T> andFinally(Runnable finallyRunnable) {
-        finallyRunnable.run();
+        f.handle((t,e) -> {
+            finallyRunnable.run();
+            return t;
+        });
         return this;
     }
 

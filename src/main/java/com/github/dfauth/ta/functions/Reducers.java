@@ -4,6 +4,7 @@ import com.github.dfauth.ta.functional.Reducer;
 import com.github.dfauth.ta.functional.SimpleReducer;
 import com.github.dfauth.ta.functional.Tuple2;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -12,7 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.noOp;
-import static com.github.dfauth.ta.util.TryCatch.tryCatch;
+import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 

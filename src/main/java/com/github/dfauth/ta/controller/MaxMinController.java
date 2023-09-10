@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functional.DaysSince;
+import com.github.dfauth.ta.functional.LastHigh;
 import com.github.dfauth.ta.functions.HighLow;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
@@ -50,6 +51,25 @@ public class MaxMinController {
     Optional<Integer> daysSinceLastHigh(@PathVariable String _code, @PathVariable int period) {
         log.info("daysSinceLastHigh/{}/{}",_code,period);
         return DaysSince.lastHigh(prices(_code, period).stream()
+                .map(Price::get_close)
+                .collect(Collectors.toList()));
+    }
+
+    // days since
+    @GetMapping("/recentHigh/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<DaysSince.RecentHigh> recentLastHigh(@PathVariable String _code, @PathVariable int period) {
+        log.info("recentHigh/{}/{}",_code,period);
+        return DaysSince.recentHigh(prices(_code, period).stream()
+                .collect(Collectors.toList()));
+    }
+
+    // pct below previous high
+    @GetMapping("/pctBelowPreviousHigh/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<BigDecimal> pctBelowPreviousHigh(@PathVariable String _code, @PathVariable int period) {
+        log.info("pctBelowPreviousHigh/{}/{}",_code,period);
+        return LastHigh.pctBelow(prices(_code, period).stream()
                 .map(Price::get_close)
                 .collect(Collectors.toList()));
     }

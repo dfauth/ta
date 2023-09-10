@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.functional;
 
+import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
@@ -55,5 +57,25 @@ public interface Reducer<T,S,R> extends Collector<T,S,R> {
             }
         };
     }
+
+    static <T> Reducer<T,AtomicReference<T>,Optional<T>> last() {
+        return new Reducer<>() {
+            @Override
+            public AtomicReference<T> initial() {
+                return new AtomicReference<>();
+            }
+
+            @Override
+            public Function<AtomicReference<T>, Optional<T>> finisher() {
+                return ar -> Optional.ofNullable(ar.get());
+            }
+
+            @Override
+            public BiConsumer<AtomicReference<T>, T> accumulator() {
+                return AtomicReference::set;
+            }
+        };
+    }
+
 
 }

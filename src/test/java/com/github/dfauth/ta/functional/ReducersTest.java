@@ -15,8 +15,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functions.Reducers.*;
-import static com.github.dfauth.ta.util.TryCatch.tryCatch;
-import static com.github.dfauth.ta.util.TryCatch.tryCatchRunnable;
+import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
+import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatchRunnable;
 import static junit.framework.TestCase.assertEquals;
 
 public class ReducersTest {
