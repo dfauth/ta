@@ -55,7 +55,7 @@ public class ATR {
                 BigDecimal tr = p.getTrueRange(previousClose);
                 int n = t3._2();
                 BigDecimal previousAtr = t3._3();
-                BigDecimal atr = previousAtr.add(tr).divide(BigDecimal.valueOf(n), RoundingMode.HALF_UP);
+                BigDecimal atr = previousAtr.multiply(BigDecimal.valueOf(period-1)).add(tr).divide(bdPeriod, RoundingMode.HALF_UP);
                 return tuple2(Optional.of(new AverageTrueRange(atr, period, previousClose)).filter(_atr -> n >= period), tuple3(p, n+1, atr));
             }
         };
