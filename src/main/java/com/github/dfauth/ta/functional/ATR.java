@@ -47,8 +47,9 @@ public class ATR {
             } else if(period == t3._2()) {
                 BigDecimal previousClose = t3._1().get_close();
                 BigDecimal tr = p.getTrueRange(previousClose);
+                int n = t3._2();
                 BigDecimal atr = t3._3().add(tr).divide(bdPeriod, RoundingMode.HALF_UP);
-                return tuple2(Optional.empty(), tuple3(p, 1, atr));
+                return tuple2(Optional.empty(), tuple3(p, n+1, atr));
             } else {
                 BigDecimal previousClose = t3._1().get_close();
                 BigDecimal tr = p.getTrueRange(previousClose);
