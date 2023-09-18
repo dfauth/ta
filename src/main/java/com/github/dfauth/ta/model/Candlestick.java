@@ -5,34 +5,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public interface Candlestick {
+public interface Candlestick extends PriceAction {
 
     String getCode();
     LocalDate getDate();
-    BigDecimal getOpen();
-    BigDecimal getHigh();
-    BigDecimal getLow();
-    BigDecimal getClose();
-    int getVolume();
-    default BigDecimal getTrueRange(BigDecimal previousClose) {
-        return getRange()
-                .max(getHigh().subtract(previousClose).abs()
-                        .max(getLow().subtract(previousClose).abs()
-                        )
-                );
-    }
-
-    default BigDecimal getRange() {
-        return getHigh().subtract(getLow());
-    }
-
-    default boolean isRising() {
-        return getClose().compareTo(getOpen()) > 0;
-    }
-
-    default boolean isFalling() {
-        return getClose().compareTo(getOpen()) < 0;
-    }
 
     default boolean isBefore(Candlestick candlestick) {
         return getDate().isBefore(candlestick.getDate());

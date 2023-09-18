@@ -3,10 +3,9 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functions.Accumulator;
 import com.github.dfauth.ta.functions.MovingAverages;
 import com.github.dfauth.ta.functions.RateOfChange;
-import com.github.dfauth.ta.model.Price;
-import com.github.dfauth.ta.model.Rating;
-import com.github.dfauth.ta.model.Valuation;
+import com.github.dfauth.ta.model.*;
 import com.github.dfauth.ta.repo.PriceRepository;
+import com.github.dfauth.ta.repo.TradeRepository;
 import com.github.dfauth.ta.repo.ValuationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +14,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -40,6 +37,11 @@ public class Controller {
 
     @Autowired
     private ValuationRepository valuationRepo;
+
+    @Autowired
+    private TradeRepository tradeRepo;
+
+    private DateTimeFormatter dtf = DateTimeFormatter.ISO_DATE_TIME;
 
     // Save
     @PostMapping("/sync/{_code}")
@@ -71,6 +73,25 @@ public class Controller {
         }).collect(Collectors.toList());
         valuationRepo.saveAll(valuations);
         return valuations.size();
+    }
+
+    @PostMapping("/sync/trades")
+    @ResponseStatus(HttpStatus.CREATED)
+    Integer trades(@RequestBody Object[][] args) {
+        log.error("args: ",args);
+
+        List<Trade> trades = Stream.of(args).map(arr -> new Trade(
+            arr[18].toString(),
+            new Timestamp(LocalDate.parse((String)arr[0],dtf).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()),
+            (String)arr[1],
+            (Integer)arr[2],
+            toBigDecimal(arr[3]),
+            toBigDecimal(arr[4]),
+            Side.fromString(arr[5]),
+            arr[14].toString())
+        ).collect(Collectors.toList());
+        tradeRepo.saveAll(trades);
+        return trades.size();
     }
 
     private static BigDecimal toBigDecimal(Object o) {

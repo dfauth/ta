@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.functional;
 
+import com.github.dfauth.ta.model.Price;
+import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.util.ArrayRingBuffer;
 import com.github.dfauth.ta.util.RingBuffer;
 
@@ -10,6 +12,7 @@ import java.util.function.Function;
 
 import static com.github.dfauth.ta.functional.StatefulFunction.asFunction;
 import static com.github.dfauth.ta.functional.StatefulFunction.toStatefulFunction;
+import static com.github.dfauth.ta.model.PriceAction.divide;
 import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.HALF_UP;
 
@@ -31,12 +34,27 @@ public class StatefulFunctions {
         };
     }
 
+    static BiFunction<Price, RingBuffer<PriceAction>, Optional<PriceAction>> _smaCloseVol(int period) {
+        return (t,state) -> {
+            RingBuffer<PriceAction> newState = Optional.ofNullable(state).orElse(new ArrayRingBuffer<>(period));
+            newState.add(t);
+            Optional<PriceAction> r = Optional.ofNullable(state)
+                    .filter(RingBuffer::isFull)
+                    .flatMap(_s -> _s.stream().reduce(PriceAction::add).map(pa -> pa.map(divide(period))));
+            return r;
+        };
+    }
+
     public static Function<BigDecimal, Optional<BigDecimal>> roc() {
         return asFunction(_roc());
     }
 
     public static Function<BigDecimal, Optional<BigDecimal>> sma(int period) {
         return asFunction(toStatefulFunction(_sma(period)));
+    }
+
+    public static Function<Price, Optional<PriceAction>> smaCloseVol(int period) {
+        return asFunction(toStatefulFunction(_smaCloseVol(period)));
     }
 
     public static Function<BigDecimal, Optional<BigDecimal>> periodWkLo(int period) {
