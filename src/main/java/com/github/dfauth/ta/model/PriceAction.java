@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.function.UnaryOperator;
@@ -11,6 +13,7 @@ public interface PriceAction {
     BigDecimal getLow();
     BigDecimal getClose();
     int getVolume();
+    @JsonIgnore
     default BigDecimal getTrueRange(BigDecimal previousClose) {
         return getRange()
                 .max(getHigh().subtract(previousClose).abs()
@@ -19,14 +22,17 @@ public interface PriceAction {
                 );
     }
 
+    @JsonIgnore
     default BigDecimal getRange() {
         return getHigh().subtract(getLow());
     }
 
+    @JsonIgnore
     default boolean isRising() {
         return getClose().compareTo(getOpen()) > 0;
     }
 
+    @JsonIgnore
     default boolean isFalling() {
         return getClose().compareTo(getOpen()) < 0;
     }

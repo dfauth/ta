@@ -1,9 +1,9 @@
 package com.github.dfauth.ta.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Optional;
 
 public interface Candlestick extends PriceAction {
 
@@ -37,5 +37,12 @@ public interface Candlestick extends PriceAction {
 
     default boolean closedLower(Candlestick previous) {
         return previous.isBefore(this) && getClose().compareTo(previous.getClose()) < 0;
+    }
+
+    default Optional<BigDecimal> pctDrawDown(Candlestick subsequent) {
+        return Optional.ofNullable(subsequent)
+                .filter(s -> s.isAfter(this))
+                .filter(s -> s.closedLower(this))
+                .map(s -> BigDecimal.ONE.subtract(s.getClose().divide(getClose(), RoundingMode.HALF_UP)));
     }
 }

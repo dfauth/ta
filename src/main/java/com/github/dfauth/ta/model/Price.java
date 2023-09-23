@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,10 +18,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
-import java.util.function.UnaryOperator;
-
-import static java.lang.Math.abs;
 
 @Slf4j
 @Entity
@@ -99,6 +94,11 @@ public class Price implements Candlestick {
         return get_code();
     }
 
+    public void setCode(String code) {
+        set_code(code);
+    }
+
+
     @Override
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @JsonSerialize(using=LocalDateSerializer.class)
@@ -107,9 +107,18 @@ public class Price implements Candlestick {
         return get_date().toLocalDateTime().toLocalDate();
     }
 
+    public void setDate(LocalDate date) {
+        set_date(new Timestamp(date.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()));
+    }
+
+
     @Override
     public BigDecimal getOpen() {
         return get_open();
+    }
+
+    public void setOpen(BigDecimal open) {
+        set_open(open);
     }
 
     @Override
@@ -117,9 +126,17 @@ public class Price implements Candlestick {
         return get_high();
     }
 
+    public void setLow(BigDecimal low) {
+        set_low(low);
+    }
+
     @Override
     public BigDecimal getLow() {
         return get_low();
+    }
+
+    public void setHigh(BigDecimal high) {
+        set_high(high);
     }
 
     @Override
@@ -127,8 +144,16 @@ public class Price implements Candlestick {
         return get_close();
     }
 
+    public void setClose(BigDecimal close) {
+        set_close(close);
+    }
+
     @Override
     public int getVolume() {
         return get_volume();
     }
+    public void setVolume(int vol) {
+        set_volume(vol);
+    }
+
 }
