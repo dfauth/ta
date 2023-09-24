@@ -23,4 +23,8 @@ public class HistoricalOffset<T> {
         Iterator<T> it = listOfT.iterator();
         return IntStream.range(0, listOfT.size()).mapToObj(i -> new HistoricalOffset<>(listOfT.size()-i, it.next()));
     }
+
+    public int duration(HistoricalOffset<T> historicalOffset) {
+        return getOffset() - historicalOffset.getOffset();
+    }
 }

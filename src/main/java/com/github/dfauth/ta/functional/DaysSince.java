@@ -13,61 +13,55 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 
-import static com.github.dfauth.ta.functional.Tuple2.tuple2;
+import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
 
 public class DaysSince {
 
     public static Optional<Integer> lastHigh(List<BigDecimal> input) {
-        Iterator<BigDecimal> it = input.iterator();
-        AtomicReference<Tuple2<Integer, BigDecimal>> max = new AtomicReference<>(null);
-        IntStream.range(0,input.size())
-                .mapToObj(i -> tuple2(input.size()-1-i, it.next()))
-                .filter(t2 -> Optional.ofNullable(max.get()).map(_m -> _m._2().compareTo(t2._2()) < 0).orElse(true))
+        AtomicReference<HistoricalOffset<BigDecimal>> max = new AtomicReference<>(null);
+        zipWithHistoricalOffset(input)
+                .filter(ho -> Optional.ofNullable(max.get()).map(_m -> _m.getPayload().compareTo(ho.getPayload()) < 0).orElse(true))
                 .forEach(max::set);
-        return Optional.ofNullable(max.get()).map(Tuple2::_1);
+        return Optional.ofNullable(max.get()).map(HistoricalOffset::getOffset);
     }
 
     public static Optional<RecentHigh> recentHigh(List<Price> input) {
-        Iterator<Price> it = input.iterator();
-        AtomicReference<Tuple2<Integer, Price>> max = new AtomicReference<>(null);
-        IntStream.range(0,input.size())
-                .mapToObj(i -> tuple2(input.size()-1-i, it.next()))
-                .filter(t2 -> Optional.ofNullable(max.get()).map(_m -> _m._2().get_close().compareTo(t2._2().get_close()) < 0).orElse(true))
+        AtomicReference<HistoricalOffset<Price>> max = new AtomicReference<>(null);
+        zipWithHistoricalOffset(input)
+                .filter(ho -> Optional.ofNullable(max.get()).map(_m -> _m.getPayload().getClose().compareTo(ho.getPayload().getClose()) < 0).orElse(true))
                 .forEach(max::set);
-        return Optional.ofNullable(max.get()).flatMap(t2 -> Lists.last(input).map(latest -> new RecentHigh(t2, tuple2(0,latest))));
+        return Optional.ofNullable(max.get()).flatMap(ho -> Lists.last(input).map(latest -> new RecentHigh(ho, new HistoricalOffset<>(0,latest))));
     }
 
     @Data
     @AllArgsConstructor
     public static class RecentHigh {
         @JsonIgnore
-        private Tuple2<Integer, Price> high;
+        private HistoricalOffset<Price> high;
         @JsonIgnore
-        private Tuple2<Integer, Price> last;
+        private HistoricalOffset<Price> last;
 
         public int getDaysSince() {
-            return last._1() - high._1();
+            return last.duration(high);
         }
 
         public BigDecimal getPrice() {
-            return high._2().get_close();
+            return high.getPayload().get_close();
         }
 
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         @JsonSerialize(using= LocalDateSerializer.class)
         @JsonDeserialize(using= LocalDateDeserializer.class)
         public LocalDate getDate() {
-            return high._2().getDate();
+            return high.getPayload().getDate();
         }
 
         public BigDecimal getPctBelow() {
-            return last._2().get_close().subtract(getPrice()).divide(getPrice(), RoundingMode.HALF_UP);
+            return last.getPayload().get_close().subtract(getPrice()).divide(getPrice(), RoundingMode.HALF_UP);
         }
     }
 }
