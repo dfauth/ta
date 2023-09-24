@@ -3,6 +3,7 @@ package com.github.dfauth.ta.functions;
 import com.github.dfauth.ta.functional.Reducer;
 import com.github.dfauth.ta.functional.SimpleReducer;
 import com.github.dfauth.ta.functional.Tuple2;
+import com.github.dfauth.ta.util.Accumulator;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -10,9 +11,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.noOp;
+import static com.github.dfauth.ta.util.Accumulator.averagingAccumulator;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
@@ -123,6 +126,25 @@ public class Reducers {
                         keyMapper.apply(e.getKey()),
                         (k, v) -> Optional.ofNullable(v).map(_v -> valueReducer.apply(_v, valueMapper.apply(e.getValue()))).orElseGet(() -> valueMapper.apply(e.getValue()))
                 );
+            }
+        };
+    }
+
+    public static Collector<? super BigDecimal, Accumulator<BigDecimal,BigDecimal>, BigDecimal> sma() {
+        return new Reducer<>() {
+            @Override
+            public Accumulator<BigDecimal,BigDecimal> initial() {
+                return averagingAccumulator();
+            }
+
+            @Override
+            public Function<Accumulator<BigDecimal,BigDecimal>, BigDecimal> finisher() {
+                return Accumulator::get;
+            }
+
+            @Override
+            public BiConsumer<Accumulator<BigDecimal,BigDecimal>, BigDecimal> accumulator() {
+                return Accumulator::apply;
             }
         };
     }

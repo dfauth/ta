@@ -1,6 +1,5 @@
 package com.github.dfauth.repo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dfauth.ta.Application;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
@@ -12,19 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
-import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static com.github.dfauth.ta.functions.RSI.HUNDRED;
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 import static java.math.BigDecimal.ONE;
 
 @Slf4j
@@ -41,7 +33,7 @@ public class RepoTest {
     ValuationRepository valuationRepository;
 
     @Autowired
-    PriceRepository priceRepository;
+    public PriceRepository priceRepository;
 
     @Test
     public void testValuation() {
@@ -61,22 +53,6 @@ public class RepoTest {
         active.stream().forEach(p -> {
             log.error("code: {}, date: {}, close: {}, volume: {}", p.get_code(), p.get_date(), p.get_close(), p.get_volume());
         });
-    }
-
-    @Test
-//    @Ignore
-    public void getPrices() throws IOException, InterruptedException {
-
-        ObjectMapper mapper = new ObjectMapper();
-        List<Price> prices = priceRepository.findByCode("ASX:EMR",252);
-        String result = prices.stream().map(p -> tryCatch(() -> mapper.writeValueAsString(p))).collect(Collectors.joining(",", "[", "]"));
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipOutputStream zip = new ZipOutputStream(baos);
-        zip.putNextEntry(new ZipEntry("prices"));
-        zip.write(result.getBytes());
-        zip.close();
-        String result1 = Base64.getEncoder().encodeToString(baos.toByteArray());
-        log.info("result: "+result1);
     }
 
     private static BigDecimal potential(BigDecimal num, BigDecimal dem) {
