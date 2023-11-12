@@ -1,5 +1,8 @@
 package com.github.dfauth.ta.util;
 
+import com.github.dfauth.ta.model.PV;
+import com.github.dfauth.ta.model.Price;
+
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,6 +28,10 @@ public class Accumulator<T,R> implements Function<T,R>, Supplier<R> {
 
     public static Accumulator<Integer,BigDecimal> intAveragingAccumulator() {
         return new Accumulator<>(ZERO, BigDecimalOps::divide, (bd,i) -> bd.add(valueOf(i)));
+    }
+
+    public static Accumulator<Price, PV> pvAveragingAccumulator() {
+        return new Accumulator<>(new PV(), PV::divide, PV::add);
     }
 
     public static Function<BigDecimal,BigDecimal> avg() {

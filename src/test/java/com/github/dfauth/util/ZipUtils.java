@@ -2,11 +2,15 @@ package com.github.dfauth.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dfauth.repo.RepoTest;
+import com.github.dfauth.ta.Application;
 import com.github.dfauth.ta.model.Price;
+import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -21,14 +25,24 @@ import java.util.zip.ZipOutputStream;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 
 @Slf4j
+@RunWith(SpringRunner.class)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        classes = Application.class)
+//@AutoConfigureMockMvc
+//@TestPropertySource(
+//        locations = "classpath:application-integrationtest.properties")
 public class ZipUtils {
 
+    @Autowired
+    private PriceRepository priceRepository;
+
     @Test
-    @Ignore
+//    @Ignore
     public void getPrices() throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
-        List<Price> prices = new RepoTest().priceRepository.findByCode("ASX:EMR",252);
+        List<Price> prices = priceRepository.findByCode("ASX:PPL",252);
         String result = prices.stream().map(p -> tryCatch(() -> mapper.writeValueAsString(p))).collect(Collectors.joining(",", "[", "]"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zip = new ZipOutputStream(baos);

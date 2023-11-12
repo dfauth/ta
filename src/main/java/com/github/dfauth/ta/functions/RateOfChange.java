@@ -1,13 +1,16 @@
 package com.github.dfauth.ta.functions;
 
+import com.github.dfauth.ta.functional.WindowFunction;
 import com.github.dfauth.ta.functional.WindowReducer;
+import com.github.dfauth.ta.util.ArrayRingBuffer;
+import com.github.dfauth.ta.util.RingBuffer;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.util.ArrayRingBuffer.windowfy;
 import static java.math.RoundingMode.HALF_UP;
 
 public class RateOfChange {
@@ -25,11 +28,24 @@ public class RateOfChange {
     }
 
     public static Function<BigDecimal, Optional<BigDecimal>> roc(int period) {
-        return windowfy(period, WindowReducer.windowReducer(period, c -> c.stream().reduce(BigDecimal::subtract)));
+        return windowfy(new BigDecimal[period], WindowReducer.windowReducer(new BigDecimal[period], c -> c.stream().reduce(BigDecimal::subtract)));
     }
 
     public static Function<BigDecimal, Optional<BigDecimal>> sma(int period) {
         Function<BigDecimal, BigDecimal> divideByPeriod = _tot -> _tot.divide(BigDecimal.valueOf(period), HALF_UP);
-        return windowfy(period, WindowReducer.windowReducer(period, c -> c.stream().reduce(BigDecimal::add).map(divideByPeriod)));
+        return windowfy(new BigDecimal[period], WindowReducer.windowReducer(new BigDecimal[period], c -> c.stream().reduce(BigDecimal::add).map(divideByPeriod)));
     }
+
+    public static <T,R> Function<T,Optional<R>> windowfy(T[] buffer, WindowReducer<T,R> f) {
+        return map(new ArrayRingBuffer<T>(buffer), f);
+    }
+
+    public static <T,R> Function<T, Optional<R>> map(RingBuffer<T> buffer, WindowFunction<T, R> f) {
+        return t -> {
+            buffer.write(t);
+            return f.apply(buffer.stream().collect(Collectors.toList()));
+        };
+    }
+
+
 }

@@ -130,20 +130,24 @@ public class Reducers {
         };
     }
 
-    public static Collector<? super BigDecimal, Accumulator<BigDecimal,BigDecimal>, BigDecimal> sma() {
+    public static Collector<BigDecimal, Accumulator<BigDecimal,BigDecimal>, BigDecimal> sma() {
+        return sma(averagingAccumulator());
+    }
+
+    public static <T,R> Reducer<T, Accumulator<T,R>, R> sma(Accumulator<T,R> accumulator) {
         return new Reducer<>() {
             @Override
-            public Accumulator<BigDecimal,BigDecimal> initial() {
-                return averagingAccumulator();
+            public Accumulator<T,R> initial() {
+                return accumulator;
             }
 
             @Override
-            public Function<Accumulator<BigDecimal,BigDecimal>, BigDecimal> finisher() {
+            public Function<Accumulator<T,R>, R> finisher() {
                 return Accumulator::get;
             }
 
             @Override
-            public BiConsumer<Accumulator<BigDecimal,BigDecimal>, BigDecimal> accumulator() {
+            public BiConsumer<Accumulator<T,R>, T> accumulator() {
                 return Accumulator::apply;
             }
         };

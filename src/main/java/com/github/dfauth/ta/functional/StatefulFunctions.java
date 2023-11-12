@@ -25,8 +25,8 @@ public class StatefulFunctions {
     static BiFunction<BigDecimal, RingBuffer<BigDecimal>, Optional<BigDecimal>> _sma(int period) {
         Function<BigDecimal,BigDecimal> divideByPeriod = bd -> bd.divide(BigDecimal.valueOf(period), HALF_UP);
         return (t,state) -> {
-            RingBuffer<BigDecimal> newState = Optional.ofNullable(state).orElse(new ArrayRingBuffer<>(period));
-            newState.add(t);
+            RingBuffer<BigDecimal> newState = Optional.ofNullable(state).orElse(ArrayRingBuffer.create(period));
+            newState.write(t);
             Optional<BigDecimal> r = Optional.ofNullable(state)
                     .filter(RingBuffer::isFull)
                     .flatMap(_s -> _s.stream().reduce(BigDecimal::add).map(divideByPeriod));
@@ -36,8 +36,8 @@ public class StatefulFunctions {
 
     static BiFunction<Price, RingBuffer<PriceAction>, Optional<PriceAction>> _smaCloseVol(int period) {
         return (t,state) -> {
-            RingBuffer<PriceAction> newState = Optional.ofNullable(state).orElse(new ArrayRingBuffer<>(period));
-            newState.add(t);
+            RingBuffer<PriceAction> newState = Optional.ofNullable(state).orElse(new ArrayRingBuffer<>(new PriceAction[period]));
+            newState.write(t);
             Optional<PriceAction> r = Optional.ofNullable(state)
                     .filter(RingBuffer::isFull)
                     .flatMap(_s -> _s.stream().reduce(PriceAction::add).map(pa -> pa.map(divide(period))));
@@ -63,7 +63,7 @@ public class StatefulFunctions {
 
     static BiFunction<BigDecimal, RingBuffer<BigDecimal>, Optional<BigDecimal>> _periodWkLo(int period) {
         return (t, rb) -> {
-            rb.add(t);
+            rb.write(t);
             return rb.stream().reduce(BigDecimal::min).map(_min -> t.divide(_min, HALF_UP).subtract(ONE));
         };
     }

@@ -4,37 +4,43 @@ import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.util.ArrayRingBuffer;
 import com.github.dfauth.ta.util.RingBuffer;
 
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class StochasticReducer implements Reducer<Price, RingBuffer<Price>, FastStochastic> {
+public class StochasticReducer implements Reducer<Price, RingBuffer<SlowStochastic>, FastStochastic> {
 
-    private int period;
-    private RingBuffer<SlowStochastic> buffer;
+    private final FastStochasticReducer nested;
+    private final int slow;
+    private final LinkedList<SlowStochastic> output = new LinkedList<>();
 
     public StochasticReducer(int fast, int slow) {
-        this.period = slow;
-        this.buffer = new ArrayRingBuffer<>(fast);
+        this.slow = slow;
+        nested = new FastStochasticReducer(fast, null);
     }
 
     @Override
-    public RingBuffer<Price> initial() {
-        return new ArrayRingBuffer<>(period);
+    public RingBuffer<SlowStochastic> initial() {
+        return new ArrayRingBuffer<>(new SlowStochastic[slow]);
     }
 
     @Override
-    public Function<RingBuffer<Price>, FastStochastic> finisher() {
-        return b -> new FastStochastic(buffer.stream().collect(Collectors.toList()));
+    public Function<RingBuffer<SlowStochastic>, FastStochastic> finisher() {
+        return b -> new FastStochastic(b.stream().collect(Collectors.toList()));
     }
 
     @Override
-    public BiConsumer<RingBuffer<Price>, Price> accumulator() {
+    public BiConsumer<RingBuffer<SlowStochastic>, Price> accumulator() {
         return (b,p) -> {
-            b.add(p);
-            if(b.isFull()) {
-                buffer.add(b.stream().reduce(new SlowStochastic(), SlowStochastic::merge, SlowStochastic::merge));
-            }
+            
         };
+    }
+
+    private class FastStochasticReducer extends WindowingReducer<Price, Collection<SlowStochastic>, FastStochastic> {
+        public FastStochasticReducer(int period, Reducer<Price, Collection<SlowStochastic>, FastStochastic> reducer) {
+            super(new Price[period], reducer);
+        }
     }
 }

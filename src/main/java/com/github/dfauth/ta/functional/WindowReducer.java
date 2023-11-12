@@ -11,11 +11,10 @@ import java.util.stream.Collectors;
 
 public abstract class WindowReducer<T, R> implements WindowFunction<T, R>, Reducer<T, RingBuffer<T>, Optional<R>> {
 
-    private final int capacity;
+    private final T[] buffer;
+    public static <T,R> WindowReducer<T,R> windowReducer(T[] buffer, Function<Collection<T>, Optional<R>> f) {
 
-    public static <T,R> WindowReducer<T,R> windowReducer(int capacity, Function<Collection<T>, Optional<R>> f) {
-
-        return new WindowReducer<>(capacity) {
+        return new WindowReducer<>(buffer) {
             @Override
             public Function<RingBuffer<T>, Optional<R>> finisher() {
                 return rb -> f.apply(rb.stream().collect(Collectors.toList()));
@@ -23,7 +22,7 @@ public abstract class WindowReducer<T, R> implements WindowFunction<T, R>, Reduc
 
             @Override
             public BiConsumer<RingBuffer<T>, T> accumulator() {
-                return RingBuffer::add;
+                return RingBuffer::write;
             }
 
             @Override
@@ -33,12 +32,12 @@ public abstract class WindowReducer<T, R> implements WindowFunction<T, R>, Reduc
         };
     }
 
-    protected WindowReducer(int capacity) {
-        this.capacity = capacity;
+    protected WindowReducer(T[] buffer) {
+        this.buffer = buffer;
     }
 
     @Override
     public RingBuffer<T> initial() {
-        return new ArrayRingBuffer<>(capacity);
+        return new ArrayRingBuffer<>(buffer);
     }
 }

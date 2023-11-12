@@ -6,15 +6,15 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 @Data
-public class ValuationCompositeKey implements Serializable {
+public class CodeDateCompositeKey implements Serializable {
 
     private String code;
     private Timestamp _date;
 
-    public ValuationCompositeKey() {
+    public CodeDateCompositeKey() {
     }
 
-    public ValuationCompositeKey(String code, Timestamp _date) {
+    public CodeDateCompositeKey(String code, Timestamp _date) {
         this.code = code;
         this._date = _date;
     }

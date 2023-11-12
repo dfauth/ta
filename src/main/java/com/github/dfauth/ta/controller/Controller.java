@@ -60,7 +60,7 @@ public class Controller {
     Integer valuations(@PathVariable Integer _date, @RequestBody Object[][] args) {
         log.error("args: ",args);
         LocalDateTime timestamp = LocalDateTime.of(LocalDate.of(_date / 100, _date % 100, 1), LocalTime.of(0,0));
-        List<Valuation> valuations = Stream.of(args).filter(arr -> toCode(arr[0]).length() > 0).map(arr -> {
+        List<Valuation> valuations = Stream.of(args).filter(arr -> !toCode(arr[0]).isEmpty()).map(arr -> {
             return new Valuation(
                     toCode(arr[0]),
                     new Timestamp(timestamp.toInstant(ZoneOffset.UTC).toEpochMilli()),
@@ -78,9 +78,9 @@ public class Controller {
     @PostMapping("/sync/trades")
     @ResponseStatus(HttpStatus.CREATED)
     Integer trades(@RequestBody Object[][] args) {
-        log.error("args: ",args);
+        log.info("args: ",args);
 
-        List<Trade> trades = Stream.of(args).map(arr -> new Trade(
+        List<Trade> trades = Stream.of(args).map(arr -> new Trade(0,
             arr[18].toString(),
             new Timestamp(LocalDate.parse((String)arr[0],dtf).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()),
             (String)arr[1],
@@ -91,6 +91,29 @@ public class Controller {
             arr[14].toString())
         ).collect(Collectors.toList());
         tradeRepo.saveAll(trades);
+        return trades.size();
+    }
+
+    @PostMapping("/sync/trades/update")
+    @ResponseStatus(HttpStatus.CREATED)
+    Integer tradeUpdate(@RequestBody Object[][] args) {
+        log.info("args: ",args);
+
+        List<Trade> trades = Stream.of(args).map(arr -> new Trade(0,
+                arr[18].toString(),
+                new Timestamp(LocalDate.parse((String) arr[0], dtf).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()),
+                (String) arr[1],
+                (Integer) arr[2],
+                toBigDecimal(arr[3]),
+                toBigDecimal(arr[4]),
+                Side.fromString(arr[5]),
+                arr[14].toString())
+        ).map(t -> Optional.ofNullable(tradeRepo.findBy_date_code_size(t))
+                .map(t1 -> {
+                    t1.setConfirmation_no(t.getConfirmation_no());
+                    return t1;
+                })).flatMap(Optional::stream)
+                .map(t -> tradeRepo.save(t)).collect(Collectors.toList());
         return trades.size();
     }
 

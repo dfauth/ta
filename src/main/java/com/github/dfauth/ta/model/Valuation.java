@@ -12,7 +12,7 @@ import java.sql.Timestamp;
 @Slf4j
 @Entity
 @Data
-@IdClass(ValuationCompositeKey.class)
+@IdClass(CodeDateCompositeKey.class)
 public class Valuation {
 
     @Id private String code;
@@ -36,7 +36,7 @@ public class Valuation {
         this.target = target;
     }
 
-    public ValuationCompositeKey getKey() {
-        return new ValuationCompositeKey(code, _date);
+    public CodeDateCompositeKey getKey() {
+        return new CodeDateCompositeKey(code, _date);
     }
 }

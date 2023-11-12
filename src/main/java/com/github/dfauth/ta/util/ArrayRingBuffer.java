@@ -1,56 +1,46 @@
 package com.github.dfauth.ta.util;
 
-import com.github.dfauth.ta.functional.WindowReducer;
-
-import java.util.*;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class ArrayRingBuffer<T> implements RingBuffer<T> {
 
-    private final AtomicReference<T>[] buffer;
-    private final AtomicInteger current = new AtomicInteger(0);
-
-    public static <T,R> Function<T,Optional<R>> windowfy(int period, WindowReducer<T,R> f) {
-        return new ArrayRingBuffer<T>(period).map(f);
+    public static RingBuffer<BigDecimal> create(int capacity) {
+        return new ArrayRingBuffer<>(new BigDecimal[capacity]);
     }
 
-    public ArrayRingBuffer(T[] initial) {
-        this(initial.length, initial);
-    }
-    
-    public ArrayRingBuffer(int capacity) {
-        this(capacity, null);
-    }
-    
-    public ArrayRingBuffer(int capacity, T[] initial) {
-        Function<Integer,T> next = i -> Optional.ofNullable(initial).filter(arr -> arr.length > i).map(arr -> arr[i]).orElse(null);
-        this.buffer = IntStream.range(0,capacity).mapToObj(i -> new AtomicReference(next.apply(i))).collect(Collectors.toList()).toArray(AtomicReference[]::new);
+    private final T[] buffer;
+    private final AtomicInteger writeCounter = new AtomicInteger(0);
+    private final AtomicInteger readCounter = new AtomicInteger(0);
+
+    public ArrayRingBuffer(T... buffer) {
+        this.buffer = buffer;
     }
 
-    public Optional<T> add(T t) {
-        return Optional.ofNullable(this.buffer[offset(current.getAndIncrement())].getAndSet(t));
+    public int write(T t) {
+        this.buffer[offset(writeCounter.getAndIncrement())] = t;
+        return capacity() - size();
     }
 
-    public int offset() {
-        return offset(current.get());
+    public T read() {
+        if(readCounter.get() >= writeCounter.get()) {
+            throw new IllegalStateException("Nothing to read");
+        }
+        return this.buffer[offset(readCounter.getAndIncrement())];
     }
 
     private int offset(int i) {
         return i % capacity();
     }
 
-    public T get(int i) {
-        return buffer[i].get();
-    }
-
     public boolean isFull() {
-        return current.get() >= capacity();
+        return writeCounter.get() >= capacity();
     }
 
     public int capacity() {
@@ -58,36 +48,24 @@ public class ArrayRingBuffer<T> implements RingBuffer<T> {
     }
 
     public int size() {
-        return Math.min(current.get(), capacity());
+        return Math.min(writeCounter.get(), capacity());
     }
 
     public Iterator<T> iterator() {
-        int c = current.get();
-        return c <= capacity() ? new Iterator<>() {
 
-            AtomicInteger i = new AtomicInteger(0);
-
+        T[] tmp = Arrays.copyOf(buffer, buffer.length);
+        AtomicInteger i = new AtomicInteger(0);
+        return new Iterator<T>() {
             @Override
             public boolean hasNext() {
-                return i.get() < size();
+                return i.get()<size();
             }
 
             @Override
             public T next() {
-                return get(offset(i.getAndIncrement()));
-            }
-        } : new Iterator<T>() {
-
-            AtomicInteger i = new AtomicInteger(current.get());
-
-            @Override
-            public boolean hasNext() {
-                return i.get() < c + capacity();
-            }
-
-            @Override
-            public T next() {
-                return get(offset(i.getAndIncrement()));
+                return isFull() ?
+                        tmp[offset(writeCounter.get()+i.getAndIncrement())] :
+                        tmp[offset(0+i.getAndIncrement())];
             }
         };
     }

@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -17,7 +18,8 @@ import java.sql.Timestamp;
 @EqualsAndHashCode
 public class Trade {
 
-    @Id private String id;
+    @Id @GeneratedValue private long id;
+    private String confirmation_no;
     private Timestamp _date;
     private String code;
     private Integer size;
