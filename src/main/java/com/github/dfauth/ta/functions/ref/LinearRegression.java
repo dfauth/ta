@@ -15,7 +15,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -46,34 +45,12 @@ public class LinearRegression {
     private double svar1 = 0d;
 
     public static <T> Optional<LinearRegression> calculate(List<T> y, Function<T,Double> f) {
-        double[] array = IntStream.range(0,y.size())
-                .mapToObj(i -> Map.entry(i,y.get(i)))
-                .reduce(
-                        new double[y.size()],
-                        (acc,e) -> {
-                            acc[e.getKey()] = f.apply(e.getValue());
-                            return acc;
-                        },
-                        (acc1,acc2) -> {
-                            throw new UnsupportedOperationException("Oops");
-                        }
-                );
+        double[] array = y.stream().map(f).mapToDouble(Double::doubleValue).toArray();
         return calculate(array);
     }
 
     public static Optional<LinearRegression> calculate(double[] y) {
-        double[] array = IntStream.range(0,y.length)
-                .mapToObj(Integer::valueOf)
-                .reduce(
-                        new double[y.length],
-                        (arr,i) -> {
-                            arr[i] = i;
-                            return arr;
-                        },
-                        (a1,a2) -> {
-                            throw new UnsupportedOperationException("Oops");
-                        }
-                );
+        double[] array = IntStream.range(0,y.length).mapToObj(Double::new).mapToDouble(Double::doubleValue).toArray();
         return calculate(array, y);
     }
 

@@ -1,90 +1,68 @@
 package com.github.dfauth.ta.functions;
 
+import com.github.dfauth.ta.functional.HistoricalOffset;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import static com.github.dfauth.ta.functional.FunctionUtils.nullZero;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.HALF_UP;
-import static java.util.function.Predicate.not;
+import static com.github.dfauth.ta.functional.HistoricalOffset.Direction.FORWARD;
+import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
 
 public class LinearRegression {
 
-    public static double[][] twoDArray(List<Double> l) {
-
-        return IntStream.range(0,l.size())
-                .mapToObj(i -> Map.entry(i, l.get(i)))
-                .reduce(
-                    new double[2][l.size()],
-                        (arr, e) -> {
-                            arr[0][e.getKey()] = e.getKey();
-                            arr[1][e.getKey()] = e.getValue();
-                            return arr;
-                        },
-                        (arr1, arr2) -> {
-                            throw new UnsupportedOperationException("Oops");
-                        }
-        );
-    }
-
-    public static Optional<LineOfBestFit> lobf(List<BigDecimal> y) {
-        if (y.size() == 0) {
-            Optional.empty();
+    public static LineOfBestFit lobf(List<BigDecimal> y) {
+        if (y.isEmpty()) {
+            throw new IllegalArgumentException("No values provided");
         }
 
-        // first pass
-        List<Map.Entry<Integer, BigDecimal>> points = IntStream.range(0,y.size()).mapToObj(i -> Map.entry(i, y.get(i))).collect(Collectors.toList());
-        FirstPass firstPass = points
-                .stream()
-                .reduce(new FirstPass(),
-                        (fp, e) -> fp.apply(e.getKey(), e.getValue()),
-                        FirstPass::apply
-                );
+        List<Map.Entry<Double, Double>> points = zipWithHistoricalOffset(y, FORWARD).map(HistoricalOffset::toMapEntry).map(e -> Map.entry(e.getKey().doubleValue(),e.getValue().doubleValue())).collect(Collectors.toList());
 
-        return firstPass.secondPass(points);
+        FirstPass firstPass = points.stream().reduce(new FirstPass(),
+                (fp, e) -> fp.apply(e.getKey(), e.getValue()),
+                FirstPass::apply
+        );
+
+        return firstPass
+                .secondPass(points)
+                .thirdPass(points);
     }
 
     @Data
     @AllArgsConstructor
     public static class FirstPass {
 
-        private final int sumx;
-        private final BigDecimal sumy;
-        private final int sumx2;
+        private final double sumx;
+        private final double sumy;
+        private final double sumx2;
 
         public FirstPass() {
-            this(0,ZERO,0);
+            this(0,0,0);
         }
 
-        public FirstPass apply(Integer x, BigDecimal y) {
-            return new FirstPass(sumx+x, sumy.add(y), sumx2+(x*x));
+        public FirstPass apply(double x, double y) {
+            return new FirstPass(sumx+x, sumy+y, sumx2+(x*x));
         }
 
         public FirstPass apply(FirstPass fp) {
             throw new UnsupportedOperationException();
         }
 
-        public Optional<LineOfBestFit> secondPass(List<Map.Entry<Integer, BigDecimal>> points) {
-            BigDecimal n = BigDecimal.valueOf(points.size());
-            BigDecimal xbar = BigDecimal.valueOf(sumx).divide(n, HALF_UP);
-            BigDecimal ybar = sumy.divide(n, HALF_UP);
+        public SecondPass secondPass(List<Map.Entry<Double, Double>> points) {
+            double n = points.size();
+            double xbar = sumx/n;
+            double ybar = sumy/n;
 
             // second pass: compute summary statistics
-            SecondPass secondPass = points
+            return points
                     .stream()
                     .reduce(new SecondPass(xbar, ybar),
                             (sp, e) -> sp.apply(e.getKey(), e.getValue()),
                             SecondPass::apply
                     );
-
-            return secondPass.thirdPass(points);
         }
     }
 
@@ -92,124 +70,114 @@ public class LinearRegression {
     @AllArgsConstructor
     public static class SecondPass {
 
-        private final BigDecimal xbar;
-        private final BigDecimal ybar;
-        private final BigDecimal xxbar;
-        private final BigDecimal yybar;
-        private final BigDecimal xybar;
+        private final double xbar;
+        private final double ybar;
+        private final double xxbar;
+        private final double yybar;
+        private final double xybar;
 
-        public SecondPass(BigDecimal xbar, BigDecimal ybar) {
-            this(xbar, ybar, ZERO, ZERO, ZERO);
+        public SecondPass(double xbar, double ybar) {
+            this(xbar, ybar, 0, 0, 0);
         }
 
-        public SecondPass apply(Integer x, BigDecimal y) {
-            BigDecimal _x = BigDecimal.valueOf(x);
+        public SecondPass apply(double x, double y) {
             return new SecondPass(xbar,
                     ybar,
-                    bar(xxbar, _x, xbar, _x, xbar),
+                    bar(xxbar, x, xbar, x, xbar),
                     bar(yybar, y, ybar, y, ybar),
-                    bar(xybar, _x, xbar, y, ybar)
+                    bar(xybar, x, xbar, y, ybar)
             );
         }
 
-        private static BigDecimal bar(BigDecimal r, BigDecimal x1, BigDecimal x2, BigDecimal y1, BigDecimal y2) {
-//            r + (x1 - y1) * (x2 - y2);
-            return x1.subtract(x2).multiply(y1.subtract(y2)).add(r);
+        private static double bar(double r, double x1, double x2, double y1, double y2) {
+            return r + (x1 - x2) * (y1 - y2);
         }
 
         public SecondPass apply(SecondPass sp) {
             throw new UnsupportedOperationException();
         }
 
-        public Optional<LineOfBestFit> thirdPass(List<Map.Entry<Integer, BigDecimal>> points) {
+        public LineOfBestFit thirdPass(List<Map.Entry<Double, Double>> points) {
 
             // more statistical analysis
             SumOfSquares sumOfSquares = points
                     .stream()
                     .reduce(new SumOfSquares(this),
-                            (ss, e) -> ss.apply(e.getKey(), e.getValue()).orElse(new SumOfSquares(this)),
+                            (ss, e) -> ss.apply(e.getKey(), e.getValue()),
                             SumOfSquares::apply
                     );
 
             return sumOfSquares.getLineOfBestFit(points.size());
         }
 
-        public Optional<BigDecimal> getSlope() {
-            return Optional.of(xxbar).filter(not(ZERO::equals)).map(_xxbar -> xybar.divide(_xxbar, HALF_UP));
+        public double getSlope() {
+            return xybar/xxbar;
         }
 
-        public Optional<BigDecimal> getIntercept() {
-            return getSlope().map(_slope -> ybar.subtract(_slope.multiply(xbar)));
+        public double getIntercept() {
+            return ybar - getSlope()*xbar;
         }
     }
 
-    @Data
     @AllArgsConstructor
     public static class SumOfSquares {
 
         private final SecondPass sp;
-        private final BigDecimal ssr;
-        private final BigDecimal rss;
+        private final double ssr;
+        private final double rss;
 
         public SumOfSquares(SecondPass secondPass) {
-            this(secondPass, ZERO,ZERO);
+            this(secondPass, 0,0);
         }
 
-        public Optional<SumOfSquares> apply(Integer key, BigDecimal value) {
-            Optional<BigDecimal> fit = sp.getSlope().flatMap(_slope -> sp.getIntercept().map(_intercept -> _slope.multiply(BigDecimal.valueOf(key)).add(_intercept)));
-            return fit.map(_fit -> new SumOfSquares(sp, SecondPass.bar(rss, _fit, value, _fit, value), SecondPass.bar(ssr, _fit, sp.getYbar(), _fit, sp.getYbar())));
+        public SumOfSquares apply(double key, double value) {
+            double fit = sp.getSlope() * key + sp.getIntercept();
+            double _rss = (fit - value) * (fit - value);
+            double _ssr = (fit - sp.getYbar()) * (fit - sp.getYbar());
+            return new SumOfSquares(sp, this.ssr + _ssr, this.rss + _rss);
         }
 
         public SumOfSquares apply(SumOfSquares ss) {
             throw new UnsupportedOperationException();
         }
 
-        public Optional<LineOfBestFit> getLineOfBestFit(int n) {
-            BigDecimal degreesOfFreedom = BigDecimal.valueOf(n - 2);
-            Optional<BigDecimal> r2 = nullZero(_nz -> ssr.divide(_nz, HALF_UP)).apply(sp.getYybar());
-            Optional<BigDecimal> svar  = nullZero(_df -> rss.divide(_df, HALF_UP)).apply(degreesOfFreedom);
+        public LineOfBestFit getLineOfBestFit(int n) {
+            int degreesOfFreedom = n - 2;
+            double r2    = ssr / sp.getYybar();
+            double svar  = rss / degreesOfFreedom;
+            double svar1 = svar / sp.getXxbar();
+            double svar0 = svar/n + sp.getXbar()*sp.getXbar()*svar1;
 
-            return svar.flatMap(_svar -> {
-                Optional<BigDecimal> svar1 = nullZero(_xxbar -> _svar.divide(_xxbar, HALF_UP)).apply(sp.getXxbar());
-                return svar1.flatMap(_svar1 -> {
-                    BigDecimal svar0 = _svar.divide(BigDecimal.valueOf(n),HALF_UP).add(sp.getXbar().multiply(sp.getXbar()).multiply(_svar1));
-                    return r2.flatMap(_r2 -> sp.getSlope()
-                            .flatMap(_slope -> sp.getIntercept()
-                                    .map(_intercept -> new LineOfBestFit(_slope,
-                                                    _intercept,
-                                                    _r2,
-                                                    _svar,
-                                                    svar0,
-                                                    _svar1
-                                            )
-                                    )
-                            )
-                    );
-                });
-            });
+            return new LineOfBestFit(sp.getSlope(),
+                    sp.getIntercept(),
+                    r2,
+                    svar,
+                    svar0,
+                    svar1
+            );
         }
     }
 
     @Data
     @AllArgsConstructor
     public static class LineOfBestFit {
-        private final BigDecimal slope;
-        private final BigDecimal intercept;
-        private final BigDecimal r2;
-        private final BigDecimal svar;
-        private final BigDecimal svar0;
-        private final BigDecimal svar1;
+        private final double slope;
+        private final double intercept;
+        private final double r2;
+        private final double svar;
+        private final double svar0;
+        private final double svar1;
 
         public BigDecimal getSlopeStdErr() {
-            return BigDecimal.valueOf(Math.sqrt(svar1.doubleValue()));
+            return BigDecimal.valueOf(Math.sqrt(svar1));
         }
 
         public BigDecimal getInterceptStdErr() {
-            return BigDecimal.valueOf(Math.sqrt(svar0.doubleValue()));
+            return BigDecimal.valueOf(Math.sqrt(svar0));
         }
 
         public BigDecimal predict(int i) {
-            return slope.multiply(BigDecimal.valueOf(i)).add(intercept);
+            return BigDecimal.valueOf(slope*i+intercept);
         }
     }
 }

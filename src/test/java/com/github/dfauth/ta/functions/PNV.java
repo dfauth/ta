@@ -284,7 +284,7 @@ public class PNV {
             List<Price> tmp = new ArrayList<>();
             while((line = br.readLine()) != null) {
                 String[] fields = line.split(",");
-                tmp.add(Price.parseStrings(code, fields));
+                tmp.add(Price.parseStrings(code, new String[]{fields[0],fields[1],fields[2],fields[3],fields[4],fields[6]}));
             }
 //            Collections.reverse(tmp);
             return tmp;
@@ -309,11 +309,11 @@ public class PNV {
 
     @Test
     public void testLobf() {
-        Optional<LinearRegression.LineOfBestFit> lobf = LinearRegression.lobf(Arrays.asList(PRICES));
-        assertNotNull(lobf.get());
+        LinearRegression.LineOfBestFit lobf = LinearRegression.lobf(Arrays.asList(PRICES));
+        assertNotNull(lobf);
 
         Optional<com.github.dfauth.ta.functions.ref.LinearRegression> ref = com.github.dfauth.ta.functions.ref.LinearRegression.calculate(Arrays.asList(PRICES), BigDecimal::doubleValue);
-        assertEquals(BigDecimal.valueOf(ref.get().getSlope()), lobf.get().getSlope());
+        assertEquals(BigDecimal.valueOf(ref.get().getSlope()), lobf.getSlope());
 //        assertEquals(ref.intercept(), lobf.get().getIntercept().doubleValue(), ref.intercept()*0.01);
 //        assertEquals(ref.R2(), lobf.get().getR2().doubleValue(), ref.R2()*0.01);
 //        assertEquals(ref.slopeStdErr(), lobf.get().getSlopeStdErr().doubleValue(), ref.slopeStdErr()*0.01);

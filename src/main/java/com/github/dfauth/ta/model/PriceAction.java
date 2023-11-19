@@ -41,33 +41,41 @@ public interface PriceAction {
         return new PriceAction() {
             @Override
             public BigDecimal getOpen() {
-                return f.apply(getOpen());
+                return f.apply(PriceAction.this.getOpen());
             }
 
             @Override
             public BigDecimal getHigh() {
-                return f.apply(getHigh());
+                return f.apply(PriceAction.this.getHigh());
             }
 
             @Override
             public BigDecimal getLow() {
-                return f.apply(getLow());
+                return f.apply(PriceAction.this.getLow());
             }
 
             @Override
             public BigDecimal getClose() {
-                return f.apply(getClose());
+                return f.apply(PriceAction.this.getClose());
             }
 
             @Override
             public int getVolume() {
-                return f.apply(BigDecimal.valueOf(getVolume())).intValue();
+                return f.apply(BigDecimal.valueOf(PriceAction.this.getVolume())).intValue();
             }
         };
     }
 
-    static UnaryOperator<BigDecimal> divide(int period) {
+    default PriceAction divide(int n) {
+        return map(divisionOperator(n));
+    }
+
+    static UnaryOperator<BigDecimal> divisionOperator(int period) {
         return bd -> bd.divide(BigDecimal.valueOf(period), RoundingMode.HALF_UP);
+    }
+
+    default PriceAction add(PriceAction pa) {
+        return add(this,pa);
     }
 
     static PriceAction add(PriceAction pa1, PriceAction pa2) {

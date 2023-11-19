@@ -12,7 +12,7 @@ import java.util.function.Function;
 
 import static com.github.dfauth.ta.functional.StatefulFunction.asFunction;
 import static com.github.dfauth.ta.functional.StatefulFunction.toStatefulFunction;
-import static com.github.dfauth.ta.model.PriceAction.divide;
+import static com.github.dfauth.ta.model.PriceAction.divisionOperator;
 import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.HALF_UP;
 
@@ -40,7 +40,7 @@ public class StatefulFunctions {
             newState.write(t);
             Optional<PriceAction> r = Optional.ofNullable(state)
                     .filter(RingBuffer::isFull)
-                    .flatMap(_s -> _s.stream().reduce(PriceAction::add).map(pa -> pa.map(divide(period))));
+                    .flatMap(_s -> _s.stream().reduce((pa1,pa2) -> pa1.add(pa2)).map(pa -> pa.map(divisionOperator(period))));
             return r;
         };
     }

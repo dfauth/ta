@@ -13,14 +13,14 @@ public interface IndexRepository extends CrudRepository<Indx, IndxKey> {
 
     List<Indx> findByCode(String code);
 
-    @Query(value = "SELECT MAX(_DATE) FROM INDEX", nativeQuery = true)
+    @Query(value = "SELECT MAX(_DATE) FROM INDX", nativeQuery = true)
     Timestamp findMaxDate();
 
     default Optional<Indx> findCurrentByCode(String code) {
         return findByCodeAndDate(Optional.of(code.split(":")).filter(array -> array.length> 1).map(array -> array[1]).orElse(code), findMaxDate());
     }
 
-    @Query(value = "SELECT * FROM INDEX fs WHERE fs.code = ?1 and fs._DATE = ?2", nativeQuery = true)
+    @Query(value = "SELECT * FROM INDX fs WHERE fs.code = ?1 and fs._DATE = ?2", nativeQuery = true)
     Optional<Indx> findByCodeAndDate(String code, Timestamp maxDate);
 
 }
