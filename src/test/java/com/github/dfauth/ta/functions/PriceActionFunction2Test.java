@@ -1,14 +1,11 @@
 package com.github.dfauth.ta.functions;
 
-import com.github.dfauth.ta.functional.PriceActionFunction;
-import com.github.dfauth.ta.functional.PriceActionFunctions;
+import com.github.dfauth.ta.functional.IdentityPriceActionFunctions;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
-import com.github.dfauth.ta.util.ArrayRingBuffer;
-import com.github.dfauth.ta.util.RingBuffer;
+import com.github.dfauth.ta.util.CalculatingRingBuffer;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -19,19 +16,17 @@ import static java.time.Instant.now;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@Slf4j
 public class PriceActionFunction2Test {
-
-    private static final Logger logger = LoggerFactory.getLogger(PriceActionFunction2Test.class);
 
     @Test
     public void testIt() {
-        PriceActionFunction<PriceAction, PriceAction, PriceAction> f = PriceActionFunctions.match(new HashMap<>(),"sma(23)").orElseThrow();
-        assertNotNull(f);
-        RingBuffer<PriceAction> ringBuffer = new ArrayRingBuffer<>(new PriceAction[23]);
+        CalculatingRingBuffer<PriceAction, PriceAction, PriceAction> ringBuffer = IdentityPriceActionFunctions.match(new HashMap<>(), "sma(23)").orElseThrow();
+        assertNotNull(ringBuffer);
         for(int i=0; i<23;i++) {
             ringBuffer.write(newPrice(i));
         }
-        Optional<PriceAction> sma = ringBuffer.calculate(f);
+        Optional<PriceAction> sma = ringBuffer.calculate();
         assertNotNull(sma.get());
         assertEquals(11, sma.get().getClose().intValue());
         assertEquals(11, sma.get().getVolume());

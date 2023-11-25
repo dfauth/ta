@@ -1,6 +1,6 @@
 package com.github.dfauth.ta.util;
 
-import com.github.dfauth.ta.functional.PriceActionFunction;
+import com.github.dfauth.ta.functional.SimpleCollector;
 
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -17,7 +17,7 @@ public interface RingBuffer<T> {
 
     boolean isFull();
 
-    default <A,R> Optional<R> calculate(PriceActionFunction<T,A,R> f2) {
+    default <A,R> Optional<R> calculate(SimpleCollector<T,A,R> f2) {
         return Optional.of(this)
                 .filter(RingBuffer::isFull)
                 .map(rb -> rb.stream().collect(f2));

@@ -78,6 +78,10 @@ public interface PriceAction {
         return add(this,pa);
     }
 
+    default PriceAction subtract(PriceAction pa) {
+        return subtract(this,pa);
+    }
+
     static PriceAction add(PriceAction pa1, PriceAction pa2) {
         return new PriceAction() {
             @Override
@@ -103,6 +107,35 @@ public interface PriceAction {
             @Override
             public int getVolume() {
                 return pa1.getVolume() + pa2.getVolume();
+            }
+        };
+    }
+
+    static PriceAction subtract(PriceAction pa1, PriceAction pa2) {
+        return new PriceAction() {
+            @Override
+            public BigDecimal getOpen() {
+                return pa1.getOpen().subtract(pa2.getOpen());
+            }
+
+            @Override
+            public BigDecimal getHigh() {
+                return pa1.getHigh().subtract(pa2.getHigh());
+            }
+
+            @Override
+            public BigDecimal getLow() {
+                return pa1.getLow().subtract(pa2.getLow());
+            }
+
+            @Override
+            public BigDecimal getClose() {
+                return pa1.getClose().subtract(pa2.getClose());
+            }
+
+            @Override
+            public int getVolume() {
+                return pa1.getVolume() - pa2.getVolume();
             }
         };
     }

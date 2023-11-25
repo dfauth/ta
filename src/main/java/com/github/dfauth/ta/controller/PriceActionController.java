@@ -1,6 +1,5 @@
 package com.github.dfauth.ta.controller;
 
-import com.github.dfauth.ta.functional.PriceActionFunctions;
 import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.repo.PriceRepository;
 import com.github.dfauth.ta.util.CalculatingRingBuffer;
@@ -15,10 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.github.dfauth.ta.functional.IdentityPriceActionFunctions.match;
 
 @RestController
 @Slf4j
@@ -31,15 +31,16 @@ public class PriceActionController {
     @ResponseStatus(HttpStatus.OK)
     public Map<String,Object> priceAction(@PathVariable String code, @PathVariable String periods) {
         log.info("price action for {} over periods {}",code,periods);
-        Map<Integer, List<RingBuffer<PriceAction>>> buffers = new HashMap<>();
-        List<CalculatingRingBuffer<PriceAction, PriceAction, PriceAction>> x = Stream.of(periods.split(","))
+        Map<Integer, RingBuffer<PriceAction>> buffers = new HashMap<>();
+        Map<String, CalculatingRingBuffer<PriceAction, ?, ?>> x = Stream.of(periods.split(","))
                 .map(String::trim)
-                .flatMap(c -> PriceActionFunctions.match(buffers, c).stream())
-                .collect(Collectors.toList());
-        x.stream().map(RingBuffer::capacity).max(Comparator.naturalOrder())
+                .flatMap(c -> match(buffers, c)//.orElseGet(() -> match(Arrays.<WithMatcher<PriceActionFunction<PriceAction,List<PriceAction>,?>>>stream(ListPriceActionFunctions.values()), buffers, c).orElseThrow())
+                        .stream().map(crb -> Map.entry(c, crb)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        x.values().stream().map(RingBuffer::capacity).max(Comparator.naturalOrder())
                 .ifPresent(maxPeriod -> repository.findByCode(code,maxPeriod).stream().forEach(p -> {
-                    x.stream().forEach(b -> b.write(p));
+                    x.values().stream().forEach(b -> b.write(p));
                 }));
-        return x.stream().collect(Collectors.toMap(CalculatingRingBuffer::name, CalculatingRingBuffer::calculate));
+        return x.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().calculate()));
     }
 }
