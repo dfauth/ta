@@ -34,7 +34,7 @@ public class PriceActionController {
         Map<Integer, RingBuffer<PriceAction>> buffers = new HashMap<>();
         Map<String, CalculatingRingBuffer<PriceAction, ?, ?>> x = Stream.of(periods.split(","))
                 .map(String::trim)
-                .flatMap(c -> match(buffers, c)//.orElseGet(() -> match(Arrays.<WithMatcher<PriceActionFunction<PriceAction,List<PriceAction>,?>>>stream(ListPriceActionFunctions.values()), buffers, c).orElseThrow())
+                .flatMap(c -> match(buffers, c)//.orElseGet(() -> match(Arrays.<WithMatcher<PriceActionFunction<List<PriceAction>,Map<String,Object>>>>stream(ListPriceActionFunctions.values()), buffers, c).orElseThrow())
                         .stream().map(crb -> Map.entry(c, crb)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         x.values().stream().map(RingBuffer::capacity).max(Comparator.naturalOrder())

@@ -27,6 +27,7 @@ import static com.github.dfauth.ta.functions.RSI.calculateRSI;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 import static com.github.dfauth.ta.model.Price.parseDate;
 import static com.github.dfauth.ta.model.Price.parsePrice;
+import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 
 @RestController
 @Slf4j
@@ -186,13 +187,16 @@ public class Controller {
     @GetMapping("/prices/{_code}/roc/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> roc(@PathVariable String _code, @PathVariable int period) {
-        return prices(_code, period+2).stream()
+        return tryCatch(() -> prices(_code, period+2).stream()
                 .map(Price::get_close)
                 .map(RateOfChange.roc())
                 .flatMap(Optional::stream)
                 .map(MovingAverages.sma(period))
                 .flatMap(Optional::stream)
-                .reduce(latest());
+                .reduce(latest()), e -> {
+            log.error("exception when processing roc request for code {} period {} message: {}",_code,period,e.getMessage(),e);
+            throw new RuntimeException(e);
+        });
     }
 
     // rsi
