@@ -33,7 +33,7 @@ public class VWAP {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(prices.stream().map(p -> new VolumeWeightedPrice(p)).reduce(new VolumeWeightedPrice(), VolumeWeightedPrice::add, VolumeWeightedPrice::add));
+        return Optional.ofNullable(prices.stream().map(VolumeWeightedPrice::new).reduce(new VolumeWeightedPrice(), VolumeWeightedPrice::add, VolumeWeightedPrice::add));
     }
 
     @Data

@@ -38,4 +38,8 @@ public class BigDecimalOps {
     public static BigDecimal scale(BigDecimal bd, int scale) {
         return bd.setScale(scale, RoundingMode.HALF_UP);
     }
+
+    public static BigDecimal multiply(BigDecimal bd, Integer i) {
+        return bd.multiply(BigDecimal.valueOf(i));
+    }
 }

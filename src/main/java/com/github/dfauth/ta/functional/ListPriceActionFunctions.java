@@ -5,15 +5,15 @@ import com.github.dfauth.ta.model.PriceAction;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import static com.github.dfauth.ta.functional.Lists.mapList;
 import static com.github.dfauth.ta.functional.PriceActionFunction.generateList;
 import static com.github.dfauth.ta.functions.LinearRegression.lobf;
 
 public class ListPriceActionFunctions<T> implements WithMatcher<PriceActionFunction<List<PriceAction>,T>> {
 
     public static ListPriceActionFunctions<LinearRegression.LineOfBestFit> LOBF() {
-        return new ListPriceActionFunctions<>("LOBF", i -> generateList(pa -> lobf(pa.stream().map(PriceAction::getClose).collect(Collectors.toList()))));
+        return new ListPriceActionFunctions<>("LOBF", i -> generateList(pa -> lobf(mapList(pa, PriceAction::getClose)).orElseThrow()));
     }
 
     public static ListPriceActionFunctions<?>[] values() {

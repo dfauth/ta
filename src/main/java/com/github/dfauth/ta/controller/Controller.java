@@ -60,11 +60,11 @@ public class Controller {
     @ResponseStatus(HttpStatus.CREATED)
     Integer valuations(@PathVariable Integer _date, @RequestBody Object[][] args) {
         log.error("args: ",args);
-        LocalDateTime timestamp = LocalDateTime.of(LocalDate.of(_date / 100, _date % 100, 1), LocalTime.of(0,0));
+        Timestamp timestamp = new Timestamp(LocalDateTime.of(LocalDate.of(_date / 100, _date % 100, 1), LocalTime.of(0, 0)).toInstant(ZoneOffset.UTC).toEpochMilli());
         List<Valuation> valuations = Stream.of(args).filter(arr -> !toCode(arr[0]).isEmpty()).map(arr -> {
             return new Valuation(
                     toCode(arr[0]),
-                    new Timestamp(timestamp.toInstant(ZoneOffset.UTC).toEpochMilli()),
+                    timestamp,
                     Rating.fromString((String)arr[4]),
                     (Integer) arr[5],
                     (Integer) arr[6],

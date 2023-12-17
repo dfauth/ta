@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.windowfy;
+import static com.github.dfauth.ta.functional.Lists.mapList;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 import static java.math.RoundingMode.HALF_UP;
 
@@ -33,12 +34,22 @@ public class LinearRegressionController {
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> lobf(@PathVariable String _code, @PathVariable int period) {
         log.info("lobf/slope/{}/{}",_code,period);
-        Function<List<BigDecimal>, Optional<LinearRegression>> f = l -> LinearRegression.calculate(l, BigDecimal::doubleValue);
-        Function<List<BigDecimal>, Optional<BigDecimal>> g = f.andThen(Optional::stream).andThen(s -> s.map(LinearRegression::getSlope).map(BigDecimal::valueOf).findFirst());
-//        return closeOperation(_code, period, g);
         List<Price> prices = prices(_code, period);
-        Optional<LinearRegression> result = f.apply(prices.stream().map(Price::get_close).collect(Collectors.toList()));
+        Optional<LinearRegression> result = linearRegression(prices);
         return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).get_close(), HALF_UP));
+    }
+
+    @GetMapping("/linearRegression/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<com.github.dfauth.ta.functions.LinearRegression.LineOfBestFit> linearRegression(@PathVariable String _code, @PathVariable int period) {
+        log.info("linearRegression/slope/{}/{}",_code,period);
+        List<Price> prices = prices(_code, period);
+        return com.github.dfauth.ta.functions.LinearRegression.lobf(mapList(prices, Price::getClose));
+    }
+
+    public static Optional<LinearRegression> linearRegression(List<Price> prices) {
+        Function<List<BigDecimal>, Optional<LinearRegression>> f = l -> LinearRegression.calculate(l, BigDecimal::doubleValue);
+        return f.apply(prices.stream().map(Price::get_close).collect(Collectors.toList()));
     }
 
     private Optional<BigDecimal> closeOperation(String _code, int period, Function<List<BigDecimal>, Optional<BigDecimal>> f1) {

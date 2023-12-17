@@ -19,7 +19,7 @@ public class ArrayRingBuffer<T> implements RingBuffer<T> {
     private final AtomicInteger writeCounter = new AtomicInteger(0);
     private final AtomicInteger readCounter = new AtomicInteger(0);
 
-    public ArrayRingBuffer(T... buffer) {
+    public ArrayRingBuffer(T[] buffer) {
         this.buffer = buffer;
     }
 

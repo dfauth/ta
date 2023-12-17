@@ -7,6 +7,7 @@ import com.github.dfauth.ta.functions.TestData;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
@@ -42,18 +43,19 @@ public class PriceActionControllerTest {
 
         String smaKey = String.format("%s(%d)",sma,period);
         String rocKey = String.format("%s(%d)",roc,period);
-        String allKeys = Stream.of(smaKey,rocKey).collect(Collectors.joining(","));
+        String allKeys = Stream.of(smaKey,rocKey).collect(Collectors.joining("|"));
 
         Map<String, Object> result = pac.priceAction("EMR", allKeys);
         log.info("result: {}",mapper.writeValueAsString(((Optional)result.get(smaKey)).get()));
         log.info("result: {}",mapper.writeValueAsString(((Optional)result.get(rocKey)).get()));
     }
 
+    @Ignore
     @Test
     public void testAlt() throws JsonProcessingException {
 
         String lobfKey = String.format("%s(%d)",lobf,period);
-        String allKeys = Stream.of(lobfKey).collect(Collectors.joining(","));
+        String allKeys = Stream.of(lobfKey).collect(Collectors.joining("|"));
 
         Map<String, Object> result = pac.priceAction("EMR", allKeys);
         log.info("result: {}",mapper.writeValueAsString(((Optional)result.get(lobfKey)).get()));

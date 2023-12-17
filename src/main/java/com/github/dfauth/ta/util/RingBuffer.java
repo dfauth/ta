@@ -1,8 +1,7 @@
 package com.github.dfauth.ta.util;
 
-import com.github.dfauth.ta.functional.SimpleCollector;
-
 import java.util.Optional;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 public interface RingBuffer<T> {
@@ -17,7 +16,7 @@ public interface RingBuffer<T> {
 
     boolean isFull();
 
-    default <A,R> Optional<R> calculate(SimpleCollector<T,A,R> f2) {
+    default <A,R> Optional<R> collect(Collector<T,A,R> f2) {
         return Optional.of(this)
                 .filter(RingBuffer::isFull)
                 .map(rb -> rb.stream().collect(f2));

@@ -33,6 +33,12 @@ public class Lists<T> extends ArrayList<T> {
         return tmp;
     }
 
+    public static <T> List<T> add(List<T> l1, List<T> l2) {
+        List<T> tmp = new ArrayList<>(l1);
+        tmp.addAll(l2);
+        return tmp;
+    }
+
     public <R> Lists<R> map(Function<T,R> f) {
         return new Lists<>(stream().map(f).collect(Collectors.toList()));
     }

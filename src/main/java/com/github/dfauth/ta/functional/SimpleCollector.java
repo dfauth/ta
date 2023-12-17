@@ -8,6 +8,25 @@ import java.util.stream.Collector;
 
 public abstract class SimpleCollector<T,A,R> implements Collector<T,AtomicReference<A>,R> {
 
+    public static <T,A,R> SimpleCollector<T,A,R> reduce(A initial, BiFunction<A, T, A> accumlator, Function<A,R> finisher) {
+        return new SimpleCollector<>() {
+            @Override
+            public A initial() {
+                return initial;
+            }
+
+            @Override
+            public BiFunction<A, T, A> accumulate() {
+                return accumlator;
+            }
+
+            @Override
+            public Function<AtomicReference<A>, R> finisher() {
+                return a -> finisher.apply(a.get());
+            }
+        };
+    }
+
     public Supplier<AtomicReference<A>> supplier() {
         return () -> new AtomicReference<>(initial());
     }

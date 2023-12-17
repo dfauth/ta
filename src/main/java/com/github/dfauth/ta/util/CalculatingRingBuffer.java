@@ -42,7 +42,7 @@ public class CalculatingRingBuffer<T,A,R> implements RingBuffer<T> {
     }
 
     public Optional<R> calculate() {
-        return ringBuffer.calculate(f);
+        return ringBuffer.collect(f);
     }
 
     public static <T,A,R> CalculatingRingBuffer<T,A,R> create(RingBuffer<T> ringBuffer, SimpleCollector<T,A,R> paf) {

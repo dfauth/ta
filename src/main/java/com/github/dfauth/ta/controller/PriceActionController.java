@@ -32,7 +32,7 @@ public class PriceActionController {
     public Map<String,Object> priceAction(@PathVariable String code, @PathVariable String periods) {
         log.info("price action for {} over periods {}",code,periods);
         Map<Integer, RingBuffer<PriceAction>> buffers = new HashMap<>();
-        Map<String, CalculatingRingBuffer<PriceAction, ?, ?>> x = Stream.of(periods.split(","))
+        Map<String, CalculatingRingBuffer<PriceAction, ?, ?>> x = Stream.of(periods.split("\\|"))
                 .map(String::trim)
                 .flatMap(c -> match(buffers, c)//.orElseGet(() -> match(Arrays.<WithMatcher<PriceActionFunction<List<PriceAction>,Map<String,Object>>>>stream(ListPriceActionFunctions.values()), buffers, c).orElseThrow())
                         .stream().map(crb -> Map.entry(c, crb)))

@@ -5,10 +5,23 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static com.github.dfauth.ta.model.CandlestickComparator.*;
+
 public interface Candlestick extends PriceAction {
 
     String getCode();
     LocalDate getDate();
+
+    default <T> T comparePrevious(Candlestick previous, CandlestickComparator<T> comparator) {
+        if(previous.isBefore(this)) {
+            return previous.compareNext(this, comparator);
+        }
+        throw new IllegalArgumentException(previous+" is not a preceding candlestick to "+this);
+    }
+
+    default <T> T compareNext(Candlestick next, CandlestickComparator<T> comparator) {
+        return comparator.compare(this, next);
+    }
 
     default boolean isBefore(Candlestick candlestick) {
         return getDate().isBefore(candlestick.getDate());
@@ -19,24 +32,23 @@ public interface Candlestick extends PriceAction {
     }
 
     default boolean isEngulfing(Candlestick previous) {
-        return (isRising() && gapDown(previous) && closedHigher(previous)) ||
-                (isFalling() && gapUp(previous) && closedLower(previous)) ;
+        return comparePrevious(previous, ENGULFING_COMPARATOR);
     }
 
     default boolean gapDown(Candlestick previous) {
-        return previous.isBefore(this) && getOpen().compareTo(previous.getClose()) < 0;
+        return comparePrevious(previous, GAP_DOWN);
     }
 
     default boolean gapUp(Candlestick previous) {
-        return previous.isBefore(this) && getOpen().compareTo(previous.getClose()) > 0;
+        return comparePrevious(previous, GAP_UP);
     }
 
     default boolean closedHigher(Candlestick previous) {
-        return previous.isBefore(this) && getClose().compareTo(previous.getClose()) > 0;
+        return comparePrevious(previous, CLOSED_HIGHER);
     }
 
     default boolean closedLower(Candlestick previous) {
-        return previous.isBefore(this) && getClose().compareTo(previous.getClose()) < 0;
+        return comparePrevious(previous, CLOSED_LOWER);
     }
 
     default Optional<BigDecimal> pctDrawDown(Candlestick subsequent) {

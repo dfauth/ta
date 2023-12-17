@@ -7,6 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.HistoricalOffset.Direction.FORWARD;
@@ -14,9 +15,9 @@ import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistorical
 
 public class LinearRegression {
 
-    public static LineOfBestFit lobf(List<BigDecimal> y) {
+    public static Optional<LineOfBestFit> lobf(List<BigDecimal> y) {
         if (y.isEmpty()) {
-            throw new IllegalArgumentException("No values provided");
+            return Optional.empty();
         }
 
         List<Map.Entry<Double, Double>> points = zipWithHistoricalOffset(y, FORWARD).map(HistoricalOffset::toMapEntry).map(e -> Map.entry(e.getKey().doubleValue(),e.getValue().doubleValue())).collect(Collectors.toList());
@@ -26,9 +27,9 @@ public class LinearRegression {
                 FirstPass::apply
         );
 
-        return firstPass
+        return Optional.of(firstPass
                 .secondPass(points)
-                .thirdPass(points);
+                .thirdPass(points));
     }
 
     @Data
