@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 @Data
 @AllArgsConstructor
 @EqualsAndHashCode
-public class State<T,U,E> implements SelfMapEntry<T,State<T,U,E>> {
+public class State<T,U,E> implements Keyed<T,State<T,U,E>> {
 
     private final T payload;
     private Map<E,Transition<T,U,E>> transitions;
@@ -81,7 +81,7 @@ public class State<T,U,E> implements SelfMapEntry<T,State<T,U,E>> {
                 builder.inState(this.payload);
                 c.accept(builder);
                 Transition<T, U, E> t = builder.build();
-                transitions.put(t.getKey(),t.getValue());
+                transitions.put(t.getKey(),t);
             });
             return this;
         }

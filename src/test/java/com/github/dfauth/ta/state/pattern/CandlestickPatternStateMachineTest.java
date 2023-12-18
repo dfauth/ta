@@ -9,7 +9,7 @@ import static com.github.dfauth.ta.state.pattern.CandlestickPatternState.INITIAL
 public class CandlestickPatternStateMachineTest {
 
     private final StateMachine<CandlestickPatternState,Void, Candlestick> stateMachine = StateMachine.<CandlestickPatternState,Void, Candlestick>builder()
-            .withInitialState(b -> b.withPayload(INITIAL)
+            .initial(b -> b.withPayload(INITIAL)
             )
             .build();
 

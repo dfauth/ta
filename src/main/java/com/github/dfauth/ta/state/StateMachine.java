@@ -42,11 +42,11 @@ public class StateMachine<T,U,E> {
         private Map<T,State<T,U,E>> stateMap = new HashMap<>();
         private Executor executor = ForkJoinPool.commonPool();
 
-        public Builder<T, U, E> withInitialState(Consumer<State.Builder<T,U,E>> consumer) {
+        public Builder<T, U, E> initial(Consumer<State.Builder<T,U,E>> consumer) {
             State.Builder<T, U, E> initialBuilder = State.builder(this);
             consumer.accept(initialBuilder);
             initial = initialBuilder.build();
-            stateMap.put(initial.getKey(), initial.getValue());
+            stateMap.put(initial.getKey(), initial);
             return this;
         }
 

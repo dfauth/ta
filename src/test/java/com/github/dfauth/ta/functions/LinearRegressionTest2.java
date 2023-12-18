@@ -17,27 +17,27 @@ public class LinearRegressionTest2 {
 
         Optional<com.github.dfauth.ta.functions.ref.LinearRegression> ref = com.github.dfauth.ta.functions.ref.LinearRegression.calculate(TestData.EMR, p -> p.getClose().doubleValue());
 
-        LinearRegression.LineOfBestFit result = LinearRegression.lobf(TestData.EMR.stream().map(Price::getClose).collect(Collectors.toList()));
+        Optional<LinearRegression.LineOfBestFit> result = LinearRegression.lobf(TestData.EMR.stream().map(Price::getClose).collect(Collectors.toList()));
 
         assertEqualsTolerance(
                 ref.map(com.github.dfauth.ta.functions.ref.LinearRegression::getSlope).orElseThrow(),
-                result.getSlope(),
+                result.get().getSlope(),
                 tolerance);
         assertEqualsTolerance(
                 ref.map(com.github.dfauth.ta.functions.ref.LinearRegression::getIntercept).orElseThrow(),
-                result.getIntercept(),
+                result.get().getIntercept(),
                 tolerance);
         assertEqualsTolerance(
                 ref.map(com.github.dfauth.ta.functions.ref.LinearRegression::getR2).orElseThrow(),
-                result.getR2(),
+                result.get().getR2(),
                 tolerance);
         assertEqualsTolerance(
                 ref.map(com.github.dfauth.ta.functions.ref.LinearRegression::getSvar0).orElseThrow(),
-                result.getSvar0(),
+                result.get().getSvar0(),
                 tolerance);
         assertEqualsTolerance(
                 ref.map(com.github.dfauth.ta.functions.ref.LinearRegression::getSvar1).orElseThrow(),
-                result.getSvar1(),
+                result.get().getSvar1(),
                 tolerance);
     }
 

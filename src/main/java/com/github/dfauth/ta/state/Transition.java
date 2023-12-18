@@ -1,12 +1,11 @@
 package com.github.dfauth.ta.state;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static java.util.function.Predicate.not;
 
-public interface Transition<T,U,E>  extends BiFunction<U,E, Optional<State<T,U,E>>>, SelfMapEntry<E,Transition<T,U,E>> {
+public interface Transition<T,U,E> extends Keyed<E,Transition<T,U,E>> {
 
     static <T,U,E> Builder<T,U,E> builder(State.Builder<T,U,E> parent) {
         return new Builder<>(parent);

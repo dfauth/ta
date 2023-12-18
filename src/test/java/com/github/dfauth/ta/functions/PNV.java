@@ -309,11 +309,11 @@ public class PNV {
 
     @Test
     public void testLobf() {
-        LinearRegression.LineOfBestFit lobf = LinearRegression.lobf(Arrays.asList(PRICES));
+        Optional<LinearRegression.LineOfBestFit> lobf = LinearRegression.lobf(Arrays.asList(PRICES));
         assertNotNull(lobf);
 
         Optional<com.github.dfauth.ta.functions.ref.LinearRegression> ref = com.github.dfauth.ta.functions.ref.LinearRegression.calculate(Arrays.asList(PRICES), BigDecimal::doubleValue);
-        assertEquals(BigDecimal.valueOf(ref.get().getSlope()), lobf.getSlope());
+        assertEquals(BigDecimal.valueOf(ref.get().getSlope()), lobf.get().getSlope());
 //        assertEquals(ref.intercept(), lobf.get().getIntercept().doubleValue(), ref.intercept()*0.01);
 //        assertEquals(ref.R2(), lobf.get().getR2().doubleValue(), ref.R2()*0.01);
 //        assertEquals(ref.slopeStdErr(), lobf.get().getSlopeStdErr().doubleValue(), ref.slopeStdErr()*0.01);

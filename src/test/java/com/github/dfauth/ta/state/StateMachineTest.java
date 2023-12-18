@@ -14,7 +14,7 @@ public class StateMachineTest {
 
     private final StateMachine<TestState,StateMachineTest,TestEvent> stateMachine = StateMachine.<TestState,StateMachineTest,TestEvent>builder()
             .withExecutor(this::fakeExecute)
-            .withInitialState(b -> b.withPayload(TestState.INITIAL)
+            .initial(b -> b.withPayload(TestState.INITIAL)
                     .onExit(this::recordTransition)
                     .withTransitions(b1 -> b1
                             .onEvent(TestEventImpl.A)
