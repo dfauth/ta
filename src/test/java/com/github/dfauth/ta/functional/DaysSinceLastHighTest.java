@@ -3,10 +3,9 @@ package com.github.dfauth.ta.functional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.ser.ZonedDateTimeWithZoneIdSerializer;
 import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -17,8 +16,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.github.dfauth.ta.functional.Tuple2.tuple2;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class DaysSinceLastHighTest {

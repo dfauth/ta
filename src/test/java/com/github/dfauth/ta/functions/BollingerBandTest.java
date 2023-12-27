@@ -6,7 +6,7 @@ import com.github.dfauth.ta.functional.BollingerBand;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.model.PriceAction;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 

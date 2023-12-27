@@ -1,12 +1,12 @@
 package com.github.dfauth.ta.functional;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.function.Function;
 
 import static com.github.dfauth.ta.functions.Reducers.groupBy;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MapsTest {
 

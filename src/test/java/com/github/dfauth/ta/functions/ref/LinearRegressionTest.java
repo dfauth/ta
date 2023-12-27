@@ -1,15 +1,16 @@
 package com.github.dfauth.ta.functions.ref;
 
-import com.github.dfauth.ta.functions.PNV;
-import org.junit.Test;
+import com.github.dfauth.ta.functions.TestData;
+import com.github.dfauth.ta.model.Price;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.github.dfauth.ta.functional.Lists.mapList;
 import static com.github.dfauth.ta.functions.ref.LinearRegression.calculate;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LinearRegressionTest {
 
@@ -24,12 +25,12 @@ public class LinearRegressionTest {
     }
 
     @Test
-    public void testPNV() {
-        Optional<LinearRegression> result = calculate(Arrays.asList(PNV.PRICES), BigDecimal::doubleValue);
-        assertEquals(0.002668782802162329d, result.map(LinearRegression::getSlope).orElseThrow(), 0.01d);
-        assertEquals(1.4714169646778341d, result.map(LinearRegression::getIntercept).orElseThrow(), 0.01d);
-        assertEquals(0.24353416623915145d, result.map(LinearRegression::getR2).orElseThrow(), 0.01d);
-        assertEquals(0.043152222027654306d, result.map(LinearRegression::interceptStdErr).orElseThrow(), 0.01d);
-        assertEquals(0.000297d, result.map(LinearRegression::slopeStdErr).orElseThrow(), 0.00001d);
+    public void testMP1() {
+        Optional<LinearRegression> result = calculate(mapList(TestData.MP1, Price::getClose), BigDecimal::doubleValue);
+        assertEquals(0.0187195918003124d, result.map(LinearRegression::getSlope).orElseThrow(), 0.01d);
+        assertEquals(4.849619800489363d, result.map(LinearRegression::getIntercept).orElseThrow(), 0.01d);
+        assertEquals(0.3663877437030541d, result.map(LinearRegression::getR2).orElseThrow(), 0.01d);
+        assertEquals(0.2258462657200783d, result.map(LinearRegression::interceptStdErr).orElseThrow(), 0.01d);
+        assertEquals(0.0015569249774101891d, result.map(LinearRegression::slopeStdErr).orElseThrow(), 0.00001d);
     }
 }

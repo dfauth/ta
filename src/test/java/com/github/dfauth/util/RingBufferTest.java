@@ -3,7 +3,7 @@ package com.github.dfauth.util;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.util.ArrayRingBuffer;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,8 +14,7 @@ import java.util.stream.Collectors;
 import static com.github.dfauth.ta.functional.ReducersTest.bdRange;
 import static com.github.dfauth.ta.functional.StatefulFunctions.roc;
 import static com.github.dfauth.ta.functional.StatefulFunctions.sma;
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class RingBufferTest {

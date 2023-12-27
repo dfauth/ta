@@ -1,6 +1,6 @@
 package com.github.dfauth.ta.functions;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -9,7 +9,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functions.RateOfChange.roc;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ROCTest {
 

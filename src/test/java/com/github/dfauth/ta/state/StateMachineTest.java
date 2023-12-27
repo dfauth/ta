@@ -1,13 +1,13 @@
 package com.github.dfauth.ta.state;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class StateMachineTest {
@@ -45,23 +45,23 @@ public class StateMachineTest {
 
     @Test
     public void testIt() {
-        assertTrue(stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.INITIAL && ctx == StateMachineTest.this, this));
+        assertTrue(() -> stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.INITIAL && ctx == StateMachineTest.this, this));
         stateMachine.onEvent(this, TestEventImpl.B);
         assertEquals(0,guardCalled);
         assertEquals(0, transitionEvents.size());
-        assertTrue(stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.INITIAL && ctx == StateMachineTest.this, this));
+        assertTrue(() -> stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.INITIAL && ctx == StateMachineTest.this, this));
         stateMachine.onEvent(this, TestEventImpl.A);
         assertEquals(1,guardCalled);
         assertEquals(2, transitionEvents.size());
-        assertTrue(stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.FINAL && ctx == StateMachineTest.this, this));
+        assertTrue(() -> stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.FINAL && ctx == StateMachineTest.this, this));
         stateMachine.onEvent(this, TestEventImpl.B);
         assertEquals(1,guardCalled);
         assertEquals(2, transitionEvents.size());
-        assertTrue(stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.FINAL && ctx == StateMachineTest.this, this));
+        assertTrue(() -> stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.FINAL && ctx == StateMachineTest.this, this));
         stateMachine.onEvent(this, TestEventImpl.A);
         assertEquals(1,guardCalled);
         assertEquals(2, transitionEvents.size());
-        assertTrue(stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.FINAL && ctx == StateMachineTest.this, this));
+        assertTrue(() -> stateMachine.getCurrentState().callback((payload, ctx) -> payload == TestState.FINAL && ctx == StateMachineTest.this, this));
     }
 
 

@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Optional;
 
 @Data
 @AllArgsConstructor
@@ -17,12 +18,12 @@ public class FastStochastic implements Stochastic {
     @JsonIgnore private Collection<SlowStochastic> buffer;
 
     @Override
-    public BigDecimal getFast() {
-        return buffer.stream().map(SlowStochastic::getK).collect(Reducers.sma());
+    public Optional<BigDecimal> getFast() {
+        return Optional.ofNullable(buffer.stream().map(SlowStochastic::getK).collect(Reducers.sma()));
     }
 
     @Override
-    public BigDecimal getSlow() {
-        return buffer.stream().map(SlowStochastic::getK).reduce(Reducers.latest()).orElseThrow();
+    public Optional<BigDecimal> getSlow() {
+        return buffer.stream().map(SlowStochastic::getK).reduce(Reducers.latest());
     }
 }

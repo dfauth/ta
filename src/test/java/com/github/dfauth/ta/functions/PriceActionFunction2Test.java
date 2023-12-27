@@ -5,7 +5,7 @@ import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.util.CalculatingRingBuffer;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -13,8 +13,8 @@ import java.util.HashMap;
 import java.util.Optional;
 
 import static java.time.Instant.now;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Slf4j
 public class PriceActionFunction2Test {

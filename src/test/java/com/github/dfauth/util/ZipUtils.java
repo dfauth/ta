@@ -6,11 +6,11 @@ import com.github.dfauth.ta.Application;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -25,7 +25,7 @@ import java.util.zip.ZipOutputStream;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 
 @Slf4j
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         classes = Application.class)

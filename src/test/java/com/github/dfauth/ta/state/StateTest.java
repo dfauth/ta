@@ -1,17 +1,17 @@
 package com.github.dfauth.ta.state;
 
-import com.github.dfauth.ta.functions.PNV;
+import com.github.dfauth.ta.functions.TestData;
 import com.github.dfauth.ta.model.Price;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.unsupported;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StateTest {
 
-    public static List<Price> prices = PNV.toPrices("PNV", PNV.PRICE_STRING);
+    public static List<Price> prices = TestData.EMR;
 
     @Test
     public void testIt() {

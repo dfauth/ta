@@ -7,7 +7,7 @@ import com.github.dfauth.ta.model.PV;
 import com.github.dfauth.ta.model.Price;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.Iterator;
@@ -25,7 +25,7 @@ import static com.github.dfauth.ta.functions.TestData.EMR;
 import static com.github.dfauth.ta.util.Accumulator.pvAveragingAccumulator;
 import static com.github.dfauth.ta.util.BigDecimalOps.pctChange;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class SMATest {

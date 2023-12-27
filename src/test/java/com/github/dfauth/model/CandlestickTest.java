@@ -3,14 +3,12 @@ package com.github.dfauth.model;
 import com.github.dfauth.ta.model.Candlestick;
 import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.github.dfauth.ta.functions.TestUtils.bdOf;
 import static com.github.dfauth.ta.functions.TestUtils.dateOf;
 import static com.github.dfauth.ta.model.CandlestickComparator.REDUCED_VOLUME;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class CandlestickTest {

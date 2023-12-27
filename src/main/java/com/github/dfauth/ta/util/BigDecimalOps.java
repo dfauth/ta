@@ -15,12 +15,24 @@ public class BigDecimalOps {
         return bd1.compareTo(bd2)>=0;
     }
 
+    public static boolean isLessThan(BigDecimal bd1, BigDecimal bd2) {
+        return bd1.compareTo(bd2)<0;
+    }
+
+    public static boolean isLessThanOrEqualTo(BigDecimal bd1, BigDecimal bd2) {
+        return bd1.compareTo(bd2)<=0;
+    }
+
     public static BigDecimal divide(Integer t, Integer i) {
-        return valueOf(t).divide(valueOf(i), RoundingMode.HALF_UP);
+        return divide(valueOf(t), i);
     }
 
     public static BigDecimal divide(BigDecimal bd, Integer i) {
-        return bd.divide(valueOf(i), RoundingMode.HALF_UP);
+        return divide(bd, valueOf(i));
+    }
+
+    public static BigDecimal divide(BigDecimal bd1, BigDecimal bd2) {
+        return bd1.divide(bd2, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal pctChange(int i1, int i2) {

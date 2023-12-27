@@ -6,9 +6,8 @@ import com.github.dfauth.ta.controller.PriceActionController;
 import com.github.dfauth.ta.functions.TestData;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -30,7 +29,7 @@ public class PriceActionControllerTest {
     private String roc = "roc";
     private String lobf = "lobf";
 
-    @Before
+    @BeforeEach
     public void setUp() throws NoSuchFieldException, IllegalAccessException {
         Field f = pac.getClass().getDeclaredField("repository");
         f.setAccessible(true);
@@ -50,8 +49,7 @@ public class PriceActionControllerTest {
         log.info("result: {}",mapper.writeValueAsString(((Optional)result.get(rocKey)).get()));
     }
 
-    @Ignore
-    @Test
+    // @Test
     public void testAlt() throws JsonProcessingException {
 
         String lobfKey = String.format("%s(%d)",lobf,period);

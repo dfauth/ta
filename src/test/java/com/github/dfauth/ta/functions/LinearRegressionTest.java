@@ -1,14 +1,15 @@
 package com.github.dfauth.ta.functions;
 
-import org.junit.Test;
+import com.github.dfauth.ta.model.Price;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static junit.framework.TestCase.assertEquals;
+import static com.github.dfauth.ta.functional.Lists.mapList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LinearRegressionTest {
 
@@ -25,13 +26,13 @@ public class LinearRegressionTest {
     }
 
     @Test
-    public void testPNV() {
-        Optional<LinearRegression.LineOfBestFit> result = LinearRegression.lobf(Arrays.asList(PNV.PRICES));
-        assertEqualsTolerance(0.002668782802162329d, result.get().getSlope(), tolerance);
-        assertEqualsTolerance(1.4714169646778341d, result.get().getIntercept(), tolerance);
-        assertEqualsTolerance(0.24353416623915145d, result.get().getR2(), tolerance);
-        assertEqualsTolerance(0.043152222027654306d, result.get().getInterceptStdErr().doubleValue(), tolerance);
-        assertEqualsTolerance(0.000297d, result.get().getSlopeStdErr().doubleValue(), tolerance);
+    public void testMP1() {
+        Optional<LinearRegression.LineOfBestFit> result = LinearRegression.lobf(mapList(TestData.MP1, Price::getClose));
+        assertEqualsTolerance(0.0187195918003124d, result.get().getSlope(), tolerance);
+        assertEqualsTolerance(4.849619800489363d, result.get().getIntercept(), tolerance);
+        assertEqualsTolerance(0.3663877437030541d, result.get().getR2(), tolerance);
+        assertEqualsTolerance(0.2258462657200783d, result.get().getInterceptStdErr().doubleValue(), tolerance);
+        assertEqualsTolerance(0.0015569249774101891d, result.get().getSlopeStdErr().doubleValue(), tolerance);
     }
 
     private void assertEqualsTolerance(double ref, double result, double tolerance) {

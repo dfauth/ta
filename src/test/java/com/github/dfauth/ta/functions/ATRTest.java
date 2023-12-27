@@ -3,7 +3,7 @@ package com.github.dfauth.ta.functions;
 import com.github.dfauth.ta.functional.ATR;
 import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,7 @@ import java.util.Optional;
 
 import static java.math.BigDecimal.ZERO;
 import static java.time.LocalTime.now;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class ATRTest {

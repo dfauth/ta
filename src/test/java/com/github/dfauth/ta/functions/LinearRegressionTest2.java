@@ -1,12 +1,12 @@
 package com.github.dfauth.ta.functions;
 
 import com.github.dfauth.ta.model.Price;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LinearRegressionTest2 {
 

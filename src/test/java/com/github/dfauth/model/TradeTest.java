@@ -1,7 +1,7 @@
 package com.github.dfauth.model;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;

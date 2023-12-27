@@ -13,7 +13,8 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.1.2.RELEASE</version>
+        <version>2.7.17</version>
+        <relativePath></relativePath>
     </parent>
 
     <properties>
@@ -30,8 +31,8 @@
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.6.2</version>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -44,6 +45,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.32</version>
         </dependency>
         <dependency>
             <groupId>org.hsqldb</groupId>
@@ -55,6 +57,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+            <exclusions>
+<!--                <exclusion>-->
+<!--                    <groupId>org.junit.vintage</groupId>-->
+<!--                    <artifactId>junit-vintage-engine</artifactId>-->
+<!--                </exclusion>-->
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -69,7 +77,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.0</version>
+                <version>2.22.2</version>
+                <dependencies>
+<!--                    <dependency>-->
+<!--                        <groupId>org.junit.platform</groupId>-->
+<!--                        <artifactId>junit-platform-surefire-provider</artifactId>-->
+<!--                        <version>1.2.0-M1</version>-->
+<!--                    </dependency>-->
+<!--                    <dependency>-->
+<!--                        <groupId>org.junit.jupiter</groupId>-->
+<!--                        <artifactId>junit-jupiter-engine</artifactId>-->
+<!--                        <version>5.2.0-M1</version>-->
+<!--                    </dependency>-->
+                </dependencies>
             </plugin>
 
         </plugins>

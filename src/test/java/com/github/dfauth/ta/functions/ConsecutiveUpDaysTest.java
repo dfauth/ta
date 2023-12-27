@@ -3,7 +3,7 @@ package com.github.dfauth.ta.functions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.chrono.ChronoLocalDate;
@@ -13,7 +13,7 @@ import java.util.Optional;
 import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functions.TestData.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class ConsecutiveUpDaysTest {

@@ -12,15 +12,28 @@ public interface Candlestick extends PriceAction {
     String getCode();
     LocalDate getDate();
 
+    default boolean isOfType(CandlestickType candlestickType) {
+        return candlestickType.test(this);
+    }
+
+    default boolean isRising() {
+        return isOfType(CandlestickType.isRising());
+    }
+
+    default boolean isFalling() {
+        return isOfType(CandlestickType.isFalling());
+    }
+
+    default boolean isDojo() {
+        return isOfType(CandlestickType.isDojo());
+    }
+
     default <T> T comparePrevious(Candlestick previous, CandlestickComparator<T> comparator) {
-        if(previous.isBefore(this)) {
-            return previous.compareNext(this, comparator);
-        }
-        throw new IllegalArgumentException(previous+" is not a preceding candlestick to "+this);
+        return comparator.apply(previous, this);
     }
 
     default <T> T compareNext(Candlestick next, CandlestickComparator<T> comparator) {
-        return comparator.compare(this, next);
+        return comparator.apply(this, next);
     }
 
     default boolean isBefore(Candlestick candlestick) {

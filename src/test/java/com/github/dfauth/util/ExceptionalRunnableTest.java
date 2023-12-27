@@ -2,20 +2,17 @@ package com.github.dfauth.util;
 
 import com.github.dfauth.ta.util.Promise;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
-import static com.github.dfauth.ta.util.Promise.promise;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatchRunnable;
+import static com.github.dfauth.ta.util.Promise.promise;
 import static com.github.dfauth.ta.util.Promise.tryWith;
 import static java.lang.Math.random;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class ExceptionalRunnableTest {

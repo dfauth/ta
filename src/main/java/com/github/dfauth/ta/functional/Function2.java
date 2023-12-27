@@ -1,9 +1,6 @@
 package com.github.dfauth.ta.functional;
 
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 public class Function2 {
 
@@ -14,8 +11,16 @@ public class Function2 {
         };
     }
 
+    public static <T> Function<T,T> peek(Supplier<T> s) {
+        return ignored -> s.get();
+    }
+
     public static <T,R> Function<T,R> supply(Supplier<R> supplier) {
         return t -> supplier.get();
+    }
+
+    public static <T,R> Function<T,Function<R,Boolean>> curry(BiPredicate<T,R> p2) {
+        return curry((BiFunction<T, R, Boolean>) p2::test);
     }
 
     public static <T,R,S> Function<T,Function<R,S>> curry(BiFunction<T,R,S> f2) {
@@ -26,5 +31,9 @@ public class Function2 {
     }
     public static <T,R,S> Function<R,Function<T,S>> rightCurry(BiFunction<T,R,S> f2) {
         return r -> t -> f2.apply(t,r);
+    }
+
+    public static <T> Predicate<T> adapt(Function<T, Boolean> f) {
+        return f::apply;
     }
 }

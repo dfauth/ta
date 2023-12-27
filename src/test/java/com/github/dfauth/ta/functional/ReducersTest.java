@@ -1,6 +1,6 @@
 package com.github.dfauth.ta.functional;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import static com.github.dfauth.ta.functions.Reducers.*;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatchRunnable;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReducersTest {
 
