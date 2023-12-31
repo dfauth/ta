@@ -4,8 +4,6 @@ import com.github.dfauth.ta.functional.ATR;
 import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -14,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.math.BigDecimal.ZERO;
-import static java.time.LocalTime.now;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
@@ -58,9 +55,9 @@ public class ATRTest {
         tmp.add(price(24.69,25.20,24.87));
         tmp.add(price(25.55,24.37,0));
 
-        Optional<ATR.AverageTrueRange> atr = ATR.trueRange(tmp, 14);
+        Optional<ATR.AverageTrueRange> atr = ATR.atr(tmp, 8);
         log.info("atr: {}",atr.get().getAtr());
-        assertEquals(BigDecimal.valueOf(1.19),atr.get().getAtr());
+        assertEquals(1.1854005575180054d,atr.get().getAtr().doubleValue(), 0.0000001d);
     }
 
     private Price price(double hi, double lo, double close) {

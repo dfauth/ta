@@ -1,7 +1,6 @@
 package com.github.dfauth.ta.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.dfauth.ta.functions.Reducers;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
 import lombok.AllArgsConstructor;
@@ -19,8 +18,8 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
+import static com.github.dfauth.ta.functional.Collectors.ringBufferCollector;
 import static com.github.dfauth.ta.functional.Lists.last;
-import static com.github.dfauth.ta.functional.StatefulFunctions.smaCloseVol;
 import static java.math.BigDecimal.ONE;
 
 @RestController
@@ -32,9 +31,11 @@ public class SMAController extends BaseController {
     Optional<PriceVolSMA> sma(@PathVariable String _code, @PathVariable int period) {
         log.info("atr/{}/{}",_code,period);
         List<Price> prices = prices(_code, period);
-        Optional<Price> latest = last(prices);
-        Optional<PriceAction> latestPriceAction = last(prices.stream().map(smaCloseVol(period)).flatMap(Optional::stream).collect(Reducers.list()));
-        return latest.flatMap(p -> latestPriceAction.map(pa -> new PriceVolSMA(p, pa)));
+        PriceAction result = prices.stream().collect(ringBufferCollector(new PriceAction[period], PriceAction.SMA));
+        return last(prices).map(l -> new PriceVolSMA(l,result));
+//        Optional<Price> latest = last(prices);
+//        Optional<PriceAction> latestPriceAction = last(prices.stream().map(smaCloseVol(period)).flatMap(Optional::stream).collect(Reducers.list()));
+//        return latest.flatMap(p -> latestPriceAction.map(pa -> new PriceVolSMA(p, pa)));
     }
 
     @Data

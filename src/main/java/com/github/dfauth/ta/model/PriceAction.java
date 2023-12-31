@@ -4,7 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
+
+import static com.github.dfauth.ta.functional.Collectors.oops;
 
 public interface PriceAction {
 
@@ -14,12 +19,8 @@ public interface PriceAction {
     BigDecimal getClose();
     int getVolume();
     @JsonIgnore
-    default BigDecimal getTrueRange(BigDecimal previousClose) {
-        return getRange()
-                .max(getHigh().subtract(previousClose).abs()
-                        .max(getLow().subtract(previousClose).abs()
-                        )
-                );
+    default BigDecimal getTrueRange(PriceAction previous) {
+        return trueRange.apply(previous, this);
     }
 
     @JsonIgnore
@@ -139,4 +140,41 @@ public interface PriceAction {
             }
         };
     }
+
+    BiFunction<PriceAction,PriceAction,BigDecimal> trueRange = (previous, current) -> current.getRange()
+            .max(current.getHigh().subtract(previous.getClose()).abs()
+                    .max(current.getLow().subtract(previous.getClose()).abs()
+                    )
+            );
+
+    PriceAction ZERO = new PriceAction() {
+        @Override
+        public BigDecimal getOpen() {
+            return BigDecimal.ZERO;
+        }
+
+        @Override
+        public BigDecimal getHigh() {
+            return BigDecimal.ZERO;
+        }
+
+        @Override
+        public BigDecimal getLow() {
+            return BigDecimal.ZERO;
+        }
+
+        @Override
+        public BigDecimal getClose() {
+            return BigDecimal.ZERO;
+        }
+
+        @Override
+        public int getVolume() {
+            return 0;
+        }
+    };
+
+    Function<List<PriceAction>, PriceAction> SMA = priceActions -> priceActions.stream().reduce(ZERO,(acc,pa) -> acc.add(pa),oops());
+
+
 }

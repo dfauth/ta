@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -49,6 +50,15 @@ public class Lists<T> extends ArrayList<T> {
     public static <T,R,U> Stream<U> zip(Iterable<T> tIterable, Iterable<R> rIterable, BiFunction<T,R,U> f2) {
         Iterator<R> itr = rIterable.iterator();
         return StreamSupport.stream(tIterable.spliterator(), false).filter(t -> itr.hasNext()).map(t -> f2.apply(t,itr.next()));
+    }
+
+    public static <T> Tuple2<List<T>, List<T>> splitAt(List<T> ts, int position) {
+        return splitAt(ts, _ignore -> position);
+    }
+
+    public static <T> Tuple2<List<T>, List<T>> splitAt(List<T> ts, UnaryOperator<Integer> splitter) {
+        int position = splitter.apply(ts.size());
+        return Tuple2.tuple2(ts.subList(0,position),ts.subList(position,ts.size()));
     }
 
     public <R> Lists<R> map(Function<T,R> f) {
