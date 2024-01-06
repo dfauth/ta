@@ -2,8 +2,11 @@ package com.github.dfauth.ta.util;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
 
 import static java.math.BigDecimal.valueOf;
+import static java.util.function.Function.identity;
 
 public class BigDecimalOps {
 
@@ -53,5 +56,13 @@ public class BigDecimalOps {
 
     public static BigDecimal multiply(BigDecimal bd, Integer i) {
         return bd.multiply(BigDecimal.valueOf(i));
+    }
+
+    public static BigDecimal compare(BigDecimal bd1, BigDecimal bd2, BinaryOperator<BigDecimal> f2) {
+        return compare(bd1,bd2,identity(), f2);
+    }
+    public static <T> T compare(T t1, T t2, Function<T,BigDecimal> extractor, BinaryOperator<BigDecimal> f2) {
+        BigDecimal bd1 = extractor.apply(t1);
+        return f2.apply(bd1,extractor.apply(t2)) == bd1 ? t1 : t2;
     }
 }

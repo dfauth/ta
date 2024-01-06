@@ -15,26 +15,37 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
+import static com.github.dfauth.ta.functional.Collectors.comparing;
 import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
+import static com.github.dfauth.ta.functional.Lists.last;
+import static com.github.dfauth.ta.functional.Lists.splitAt;
+import static com.github.dfauth.ta.util.BigDecimalOps.compare;
+import static java.util.stream.Collectors.toList;
 
 public class DaysSince {
 
     public static Optional<Integer> lastHigh(List<BigDecimal> input) {
-        AtomicReference<HistoricalOffset<BigDecimal>> max = new AtomicReference<>(null);
-        zipWithHistoricalOffset(input)
-                .filter(ho -> Optional.ofNullable(max.get()).map(_m -> _m.getPayload().compareTo(ho.getPayload()) < 0).orElse(true))
-                .forEach(max::set);
-        return Optional.ofNullable(max.get()).map(HistoricalOffset::getOffset);
+        return lastHigh(input, input.size());
+    }
+    public static Optional<Integer> lastHigh(List<BigDecimal> input, int period) {
+        List<BigDecimal> last = splitAt(input, input.size() - period)._2();
+        List<HistoricalOffset<BigDecimal>> zipped = zipWithHistoricalOffset(last).collect(toList());
+        Optional<HistoricalOffset<BigDecimal>> l = last(zipped);
+        Optional<HistoricalOffset<BigDecimal>> result = last(zipped.stream().collect(comparing((m, t) -> compare(m, t, HistoricalOffset::getPayload, BigDecimal::max))));
+        return l.flatMap(ho -> result.map(ho::duration));
     }
 
     public static Optional<RecentHigh> recentHigh(List<Price> input) {
-        AtomicReference<HistoricalOffset<Price>> max = new AtomicReference<>(null);
-        zipWithHistoricalOffset(input)
-                .filter(ho -> Optional.ofNullable(max.get()).map(_m -> _m.getPayload().getClose().compareTo(ho.getPayload().getClose()) < 0).orElse(true))
-                .forEach(max::set);
-        return Optional.ofNullable(max.get()).flatMap(ho -> Lists.last(input).map(latest -> new RecentHigh(ho, new HistoricalOffset<>(0,latest))));
+        return recentHigh(input, input.size());
+    }
+
+    public static Optional<RecentHigh> recentHigh(List<Price> input, int period) {
+        List<Price> last = splitAt(input, input.size() - period)._2();
+        List<HistoricalOffset<Price>> zipped = zipWithHistoricalOffset(last).collect(toList());
+        Optional<HistoricalOffset<Price>> l = last(zipped);
+        Optional<HistoricalOffset<Price>> result = last(zipped.stream().collect(comparing((m, t) -> compare(m, t, ho -> ho.getPayload().getClose(), BigDecimal::max))));
+        return result.flatMap(r -> l.map(_l -> new RecentHigh(r,_l)));
     }
 
     @Data

@@ -3,55 +3,46 @@ package com.github.dfauth.ta.functional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dfauth.ta.functions.TestData;
 import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
+import static com.github.dfauth.ta.functional.Lists.mapList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class DaysSinceLastHighTest {
 
-    private static final int[] TEST_DATA = new int[]{
-            1,2,3,1,2,3,1,2,3,4,3,2,1,2,4,9,1
-    };
     private static ZonedDateTime now = ZonedDateTime.of(2023,9,1,0,0,0,0, ZoneId.of("UTC"));
 
     @Test
     public void testIt() {
-        assertEquals(Optional.of(1), DaysSince.lastHigh(createTestData(TEST_DATA).stream().map(Price::get_close).collect(Collectors.toList())));
+        assertEquals(Optional.of(-26), DaysSince.lastHigh(mapList(TestData.MP1,Price::getClose)));
     }
 
     @Test
     public void testRecentHigh() throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        DaysSince.RecentHigh recentHigh = DaysSince.recentHigh(createTestData(TEST_DATA).stream().collect(Collectors.toList())).get();
-        assertEquals(
-                "{\"high\":[1,{\"open\":11.9,\"volume\":1000,\"high\":11.9,\"close\":11.9,\"code\":\"CODE\",\"low\":11.9,\"date\":\"2023-09-17\",\"rising\":false,\"falling\":false,\"range\":0.0}],\"last\":[0,{\"open\":11.1,\"volume\":1000,\"high\":11.1,\"close\":11.1,\"code\":\"CODE\",\"low\":11.1,\"date\":\"2023-09-18\",\"rising\":false,\"falling\":false,\"range\":0.0}],\"date\":\"2023-09-17\",\"price\":11.9,\"daysSince\":-1,\"pctBelow\":-0.1}",
-                mapper.writeValueAsString(recentHigh)
-        );
+        DaysSince.RecentHigh recentHigh = DaysSince.recentHigh(TestData.MP1).get();
+        Map<String,Object> ref = Map.of("date","2023-08-24","daysSince",-26,"pctBelow",-0.053,"price",12.430);
+        assertTrue(jsonEquivalence(ref, recentHigh));
     }
 
-    private static List<Price> createTestData(int[] input) {
-        return IntStream.of(input).mapToObj(i -> price(11,i)).collect(Collectors.toList());
+    private boolean jsonEquivalence(Map<String, Object> ref, Object jsonObject) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return ref.equals(mapper.readValue(mapper.writeValueAsString(jsonObject), HashMap.class));
+        } catch (JsonProcessingException e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
     }
 
-    private static Price price(int i, int i1) {
-        BigDecimal d = BigDecimal.valueOf(i + (double)i1/10);
-        return new Price("CODE", nextDate(), d,d,d,d,1000);
-    }
-
-    private static Timestamp nextDate() {
-        now = Optional.ofNullable(now).map(_now -> now.plusDays(1)).orElseGet(ZonedDateTime::now);
-        return new Timestamp(now.toEpochSecond()*1000);
-    }
 }

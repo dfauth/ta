@@ -23,7 +23,8 @@ public class HistoricalOffset<T> {
     private final T payload;
 
     public enum Direction implements Function<Integer, UnaryOperator<Integer>> {
-        FORWARD(l -> i -> i), BACKWARD(l -> i -> l-i);
+        FORWARD(l -> i -> i),
+        BACKWARD(l -> i -> l-i-1);
 
         private final Function<Integer, UnaryOperator<Integer>> f;
 

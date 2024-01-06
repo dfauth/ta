@@ -5,10 +5,7 @@ import com.github.dfauth.ta.util.RingBuffer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.stream.Collector;
@@ -36,6 +33,40 @@ public class Collectors {
                     ));
         };
     }
+    public static <T> Collector<T, Stack<T>,List<T>> comparing(BinaryOperator<T> f2) {
+
+        return new Collector<>() {
+            @Override
+            public Supplier<Stack<T>> supplier() {
+                return Stack::new;
+            }
+
+            @Override
+            public BiConsumer<Stack<T>, T> accumulator() {
+                return (stack,t) -> stack.push(Optional.of(stack)
+                        .filter(not(Stack::empty))
+                        .map(Stack::peek)
+                        .map(_t -> f2.apply(_t,t))
+                        .orElse(t));
+            }
+
+            @Override
+            public BinaryOperator<Stack<T>> combiner() {
+                return oops();
+            }
+
+            @Override
+            public Function<Stack<T>, List<T>> finisher() {
+                return ArrayList::new;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return Set.of();
+            }
+        };
+    }
+
     public static <T,R> Collector<T, Stack<Tuple2<T, Optional<R>>>,List<R>> adjacent(BiFunction<T,T,R> f2) {
         return new Collector<>() {
             @Override
