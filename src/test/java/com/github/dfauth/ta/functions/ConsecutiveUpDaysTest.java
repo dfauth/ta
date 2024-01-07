@@ -1,55 +1,55 @@
 package com.github.dfauth.ta.functions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
-import java.time.chrono.ChronoLocalDate;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.Supplier;
 
-import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
-import static com.github.dfauth.ta.functional.Lists.last;
+import static com.github.dfauth.ta.functional.Lists.mapList;
+import static com.github.dfauth.ta.functions.ConsecutiveUpDays.consecutiveUpDays;
 import static com.github.dfauth.ta.functions.TestData.*;
+import static com.github.dfauth.ta.util.BigDecimalOps.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class ConsecutiveUpDaysTest {
 
-    private ObjectMapper mapper = new ObjectMapper();
+    @Test
+    public void testSanity() {
+        {
+            Supplier<BigDecimal> generator = generator(100);
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> generator.get()).getClose());
+            assertEquals(251, consecutiveUpDays(CGC1).get());
+        }
+        {
+            Supplier<BigDecimal> generator = generator(100);
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> subtract(HUNDRED, generator.get())).getClose());
+            assertEquals(0, consecutiveUpDays(CGC1).get());
+        }
+        {
+            Supplier<BigDecimal> generator = generator(100);
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> generator.get()).getClose());
+            CGC1.set(251-3, ZERO3);
+            assertEquals(3, consecutiveUpDays(CGC1).get());
+        }
+        {
+            Supplier<BigDecimal> generator = generator(100);
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> generator.get()).getClose());
+            CGC1.set(251-69, ZERO3);
+            assertEquals(69, consecutiveUpDays(CGC1).get());
+        }
+    }
 
     @Test
     public void testIt() throws JsonProcessingException {
-//        {
-//            int consecutiveUpDays = consecutiveUpDays(CGC);
-//            log.info(" consecutive up days: {}",mapper.writeValueAsString(consecutiveUpDays));
-//        }
-        {
-            List<ConsecutiveUpDays.PriceInterval> consecutiveUpDays = zipWithHistoricalOffset(CGC).filter(hop -> hop.getPayload().getDate().isAfter(ChronoLocalDate.from(LocalDate.of(2023,9,14)))).collect(new ConsecutiveUpDays());
-            log.info(" consecutive up days: {}",mapper.writeValueAsString(consecutiveUpDays));
-            assertEquals(9, last(consecutiveUpDays).filter(ConsecutiveUpDays.PriceInterval::isCurrent).map(ConsecutiveUpDays.PriceInterval::getConsecutiveUpDays).orElse(0).intValue());
-        }
-        {
-            Optional<ConsecutiveUpDays.PriceInterval> consecutiveUpDays = last(zipWithHistoricalOffset(EMR).collect(new ConsecutiveUpDays()));
-            log.info(" consecutive up days: {}",mapper.writeValueAsString(consecutiveUpDays.get()));
-            assertEquals(3, consecutiveUpDays.filter(ConsecutiveUpDays.PriceInterval::isCurrent).map(ConsecutiveUpDays.PriceInterval::getConsecutiveUpDays).orElse(0).intValue());
-        }
-        {
-            Optional<ConsecutiveUpDays.PriceInterval> consecutiveUpDays = last(zipWithHistoricalOffset(MP1).collect(new ConsecutiveUpDays()));
-            log.info(" consecutive up days: {}",mapper.writeValueAsString(consecutiveUpDays.get()));
-            assertEquals(2, consecutiveUpDays.filter(ConsecutiveUpDays.PriceInterval::isCurrent).map(ConsecutiveUpDays.PriceInterval::getConsecutiveUpDays).orElse(0).intValue());
-        }
-        {
-            Optional<ConsecutiveUpDays.PriceInterval> consecutiveUpDays = last(zipWithHistoricalOffset(AX1).collect(new ConsecutiveUpDays()));
-            log.info(" consecutive up days: {}",mapper.writeValueAsString(consecutiveUpDays.get()));
-            assertEquals(0, consecutiveUpDays.filter(ConsecutiveUpDays.PriceInterval::isCurrent).map(ConsecutiveUpDays.PriceInterval::getConsecutiveUpDays).orElse(0).intValue());
-        }
-        {
-            Optional<ConsecutiveUpDays.PriceInterval> consecutiveUpDays = last(zipWithHistoricalOffset(PPL).collect(new ConsecutiveUpDays()));
-            log.info(" consecutive up days: {}",mapper.writeValueAsString(consecutiveUpDays.get()));
-            assertEquals(102, consecutiveUpDays.filter(ConsecutiveUpDays.PriceInterval::isCurrent).map(ConsecutiveUpDays.PriceInterval::getConsecutiveUpDays).orElse(0).intValue());
-        }
+        assertEquals(241, consecutiveUpDays(mapList(CGC, Price::getClose)).get()); // 9
+        assertEquals(245, consecutiveUpDays(mapList(EMR, Price::getClose)).get()); // 3
+        assertEquals(128, consecutiveUpDays(mapList(MP1, Price::getClose)).get()); // 2
+        assertEquals(244, consecutiveUpDays(mapList(AX1, Price::getClose)).get()); // 0
+        assertEquals(102, consecutiveUpDays(mapList(PPL, Price::getClose)).get()); // 102
     }
 }

@@ -17,6 +17,7 @@ public class BigDecimalOps {
     public static final BigDecimal HUNDRED = BigDecimal.valueOf(100.000);
     public static final BigDecimal ZERO3 = valueOf(ZERO);
     public static final BigDecimal ONE3 = valueOf(ONE);
+    public static final BigDecimal ONE_CENT = valueOf(0.01d);
 
     public static boolean isGreaterThan(BigDecimal bd1, BigDecimal bd2) {
         return bd1.compareTo(bd2)>0;

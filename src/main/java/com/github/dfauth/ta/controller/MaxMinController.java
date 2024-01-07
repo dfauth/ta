@@ -2,14 +2,16 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functional.DaysSince;
 import com.github.dfauth.ta.functional.LastHigh;
-import com.github.dfauth.ta.functions.ConsecutiveUpDays;
 import com.github.dfauth.ta.functions.HighLow;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -18,8 +20,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.windowfy;
-import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
-import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 
 @RestController
@@ -72,17 +72,6 @@ public class MaxMinController {
         return LastHigh.pctBelow(prices(_code, period).stream()
                 .map(Price::get_close)
                 .collect(Collectors.toList()));
-    }
-
-    // consecutive up days
-    @GetMapping("/consecutiveUpDays/{_code}/{period}")
-    @ResponseStatus(HttpStatus.OK)
-    @CrossOrigin(origins = "http://localhost:3000", methods = RequestMethod.GET)
-    Optional<ConsecutiveUpDays.PriceInterval> consecutiveUpDays(@PathVariable String _code, @PathVariable int period) {
-        log.info("consecutiveUpDays/{}/{}",_code,period);
-        return last(zipWithHistoricalOffset(prices(_code, period))
-                .collect(new ConsecutiveUpDays()))
-                .filter(ConsecutiveUpDays.PriceInterval::isCurrent);
     }
 
     private Optional<BigDecimal> closeOperation(String _code, int period, Function<List<BigDecimal>, Optional<BigDecimal>> f1) {
