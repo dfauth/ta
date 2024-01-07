@@ -121,7 +121,7 @@ public class ConsecutiveUpDays implements Reducer<HistoricalOffset<Price>, Conse
         @JsonIgnore private final HistoricalOffset<Price> end;
 
         public boolean isCurrent() {
-            return end.getOffset() <= 1;
+            return end.getOffset() <= 0;
         }
 
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")

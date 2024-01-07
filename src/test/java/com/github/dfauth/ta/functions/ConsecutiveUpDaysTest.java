@@ -49,7 +49,7 @@ public class ConsecutiveUpDaysTest {
         {
             Optional<ConsecutiveUpDays.PriceInterval> consecutiveUpDays = last(zipWithHistoricalOffset(PPL).collect(new ConsecutiveUpDays()));
             log.info(" consecutive up days: {}",mapper.writeValueAsString(consecutiveUpDays.get()));
-            assertEquals(0, consecutiveUpDays.filter(ConsecutiveUpDays.PriceInterval::isCurrent).map(ConsecutiveUpDays.PriceInterval::getConsecutiveUpDays).orElse(0).intValue());
+            assertEquals(102, consecutiveUpDays.filter(ConsecutiveUpDays.PriceInterval::isCurrent).map(ConsecutiveUpDays.PriceInterval::getConsecutiveUpDays).orElse(0).intValue());
         }
     }
 }
