@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.Collectors.adjacent;
-import static com.github.dfauth.ta.functional.Collectors.collector;
+import static com.github.dfauth.ta.functional.ImmutableCollector.collector;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.util.BigDecimalOps.*;
 import static java.math.BigDecimal.ONE;

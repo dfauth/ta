@@ -18,7 +18,7 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.dfauth.ta.functional.Collectors.ringBufferCollector;
+import static com.github.dfauth.ta.controller.RingBufferCollector.ringBufferCollector;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static java.math.BigDecimal.ONE;
 
@@ -33,9 +33,6 @@ public class SMAController extends BaseController {
         List<Price> prices = prices(_code, period);
         PriceAction result = prices.stream().collect(ringBufferCollector(new PriceAction[period], PriceAction.SMA));
         return last(prices).map(l -> new PriceVolSMA(l,result));
-//        Optional<Price> latest = last(prices);
-//        Optional<PriceAction> latestPriceAction = last(prices.stream().map(smaCloseVol(period)).flatMap(Optional::stream).collect(Reducers.list()));
-//        return latest.flatMap(p -> latestPriceAction.map(pa -> new PriceVolSMA(p, pa)));
     }
 
     @Data

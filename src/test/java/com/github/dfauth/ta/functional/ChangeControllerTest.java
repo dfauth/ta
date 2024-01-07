@@ -8,6 +8,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.github.dfauth.ta.controller.RingBufferCollector.ringBufferCollector;
 import static com.github.dfauth.ta.functional.Collectors.*;
 import static com.github.dfauth.ta.functional.Function2.curry;
 import static com.github.dfauth.ta.functional.Lists.mapList;

@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.BiFunction;
 
+import static com.github.dfauth.ta.controller.RingBufferCollector.ringBufferCollector;
 import static com.github.dfauth.ta.functional.Collectors.*;
 import static com.github.dfauth.ta.util.BigDecimalOps.multiply;
 
