@@ -53,6 +53,10 @@ public interface RSI {
         return calculateRSI(prices.stream(), prices.size());
     }
 
+    static Optional<BigDecimal> calculateRSI(List<BigDecimal> prices, int period) {
+        return calculateRSI(prices.stream(), period);
+    }
+
     static Optional<BigDecimal> calculateRSI(Stream<BigDecimal> prices, int period) {
         Function<BigDecimal, Optional<BigDecimal>> f = relativeStrengthIndex(period);
         return last(prices.map(f).flatMap(Optional::stream).collect(Collectors.toList()));

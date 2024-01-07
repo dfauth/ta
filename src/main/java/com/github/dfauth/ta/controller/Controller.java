@@ -22,8 +22,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.github.dfauth.ta.functional.Lists.mapList;
-import static com.github.dfauth.ta.functions.RSI.calculateRSI;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 import static com.github.dfauth.ta.model.Price.parseDate;
 import static com.github.dfauth.ta.model.Price.parsePrice;
@@ -197,19 +195,6 @@ public class Controller {
             log.error("exception when processing roc request for code {} period {} message: {}",_code,period,e.getMessage(),e);
             throw new RuntimeException(e);
         });
-    }
-
-    // rsi
-    @GetMapping("/prices/{_code}/rsi")
-    @ResponseStatus(HttpStatus.OK)
-    Optional<BigDecimal> rsi(@PathVariable String _code) {
-        return rsi(_code,14);
-    }
-
-    @GetMapping("/prices/{_code}/rsi/{period}")
-    @ResponseStatus(HttpStatus.OK)
-    Optional<BigDecimal> rsi(@PathVariable String _code, @PathVariable int period) {
-        return calculateRSI(mapList(prices(_code, period+2), Price::get_close));
     }
 
     @GetMapping("/price/{_code}/roc/{period}")
