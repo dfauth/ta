@@ -302,7 +302,7 @@ public class PNV {
     public void testRSI() {
         int period = 14;
         BigDecimal[] window = Arrays.copyOfRange(PRICES, PRICES.length - period, PRICES.length);
-        Optional<BigDecimal> rsi = RSI.calculateRSI(Arrays.asList(window), period);
+        Optional<BigDecimal> rsi = RSI.calculateRSI(Arrays.asList(window).stream(), period);
         assertTrue(rsi.isPresent());
         assertEquals(YAHOO_RSI.doubleValue(), rsi.orElseThrow().doubleValue(), YAHOO_RSI.doubleValue()*0.01);
     }

@@ -16,7 +16,7 @@ import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.util.List;
 
-import static com.github.dfauth.ta.functions.RSI.HUNDRED;
+import static com.github.dfauth.ta.util.BigDecimalOps.HUNDRED;
 import static java.math.BigDecimal.ONE;
 
 @Slf4j

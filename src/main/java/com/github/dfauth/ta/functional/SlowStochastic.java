@@ -9,7 +9,7 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.dfauth.ta.functions.RSI.ONE_HUNDRED;
+import static com.github.dfauth.ta.util.BigDecimalOps.HUNDRED;
 
 @Data
 @AllArgsConstructor
@@ -49,7 +49,7 @@ public class SlowStochastic {
     }
 
     public static BigDecimal calculateK(BigDecimal close, BigDecimal maxHigh, BigDecimal minLow) {
-        return ONE_HUNDRED.multiply(close.subtract(minLow).divide(maxHigh.subtract(minLow), RoundingMode.HALF_UP));
+        return HUNDRED.multiply(close.subtract(minLow).divide(maxHigh.subtract(minLow), RoundingMode.HALF_UP));
     }
 
 }
