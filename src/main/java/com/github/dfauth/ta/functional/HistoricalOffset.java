@@ -39,7 +39,11 @@ public class HistoricalOffset<T> {
     }
 
     public static <T> Stream<HistoricalOffset<T>> zipWithHistoricalOffset(List<T> listOfT) {
-        return zipWithHistoricalOffset(listOfT, Direction.BACKWARD);
+        return zipWithHistoricalOffset(listOfT.stream());
+    }
+
+    public static <T> Stream<HistoricalOffset<T>> zipWithHistoricalOffset(Stream<T> streamOfT) {
+        return zipWithHistoricalOffset(Lists.collect(streamOfT), Direction.BACKWARD);
     }
 
     public static <T> Stream<HistoricalOffset<T>> zipWithHistoricalOffset(List<T> listOfT, Direction direction) {

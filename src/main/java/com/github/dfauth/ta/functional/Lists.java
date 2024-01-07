@@ -61,6 +61,10 @@ public class Lists<T> extends ArrayList<T> {
         return Tuple2.tuple2(ts.subList(0,position),ts.subList(position,ts.size()));
     }
 
+    public static <T> List<T> collect(Stream<T> streamOfT) {
+        return streamOfT.collect(Collectors.toList());
+    }
+
     public <R> Lists<R> map(Function<T,R> f) {
         return new Lists<>(stream().map(f).collect(Collectors.toList()));
     }

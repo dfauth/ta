@@ -24,6 +24,10 @@ public class ConsecutiveUpDays {
             isUpDay.test(ho1.getPayload(),ho2.getPayload()) ? ho2.getOffset() - ho1.getOffset() : 0;
 
     public static Optional<Integer> consecutiveUpDays(List<BigDecimal> prices) {
+        return consecutiveUpDays(prices.stream());
+    }
+
+    public static Optional<Integer> consecutiveUpDays(Stream<BigDecimal> prices) {
         Stream<HistoricalOffset<BigDecimal>> historicalOffsetStream = zipWithHistoricalOffset(prices);
         return last(historicalOffsetStream.map(Interval::new).collect(comparing((i1,i2) -> {
             return isUpDay.test(i1.getStart().getPayload(),i2.getStart().getPayload()) ?
