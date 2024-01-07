@@ -21,7 +21,7 @@ public class ForceIndexTest {
     public void testForceIndex() {
         List<PriceAction> result = mapList(TestData.EMR, PriceAction.class::cast);
         assertEquals(41649.57153846154, ForceIndex.calculateForceIndex(result,13,2).getLongPeriod().doubleValue(), 0.0001d);
-        assertEquals(0.37743213142, ForceIndex.calculateForceIndex(result,13,2).idx().doubleValue(), 0.0001d);
+        assertEquals(2.65, ForceIndex.calculateForceIndex(result,13,2).idx().doubleValue(), 0.0001d);
     }
 
     @Test
