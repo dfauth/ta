@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -39,7 +40,7 @@ public class ForceIndexControllerTest {
     @Test
     public void testIt() throws JsonProcessingException {
 
-        ForceIndex result = fic.forceIndex(code, sma, ema);
-        log.info("result: {}",mapper.writeValueAsString(result));
+        Optional<ForceIndex> result = fic.forceIndex(code, sma, ema);
+        log.info("result: {}",mapper.writeValueAsString(result.get()));
     }
 }

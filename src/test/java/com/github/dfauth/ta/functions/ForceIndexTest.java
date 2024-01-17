@@ -20,19 +20,19 @@ public class ForceIndexTest {
     @Test
     public void testForceIndex() {
         List<PriceAction> result = mapList(TestData.EMR, PriceAction.class::cast);
-        assertEquals(41649.57153846154, ForceIndex.calculateForceIndex(result,13,2).getLongPeriod().doubleValue(), 0.0001d);
-        assertEquals(2.65, ForceIndex.calculateForceIndex(result,13,2).idx().doubleValue(), 0.0001d);
+        assertEquals(41649.57153846154, ForceIndex.calculateForceIndex(result,13,2).get().getLongPeriod().doubleValue(), 0.0001d);
+        assertEquals(2.65, ForceIndex.calculateForceIndex(result,13,2).get().idx().doubleValue(), 0.0001d);
     }
 
     @Test
     public void testEMAClose() {
         List<BigDecimal> result = mapList(TestData.EMR, Price::getClose);
-        assertEquals(1.879021207373472, EMA.apply(result).doubleValue(), 0.0001d);
+        assertEquals(1.879021207373472, EMA.apply(result).get().doubleValue(), 0.0001d);
     }
 
     @Test
     public void testSMAClose() {
         List<BigDecimal> result = mapList(TestData.EMR, Price::getClose);
-        assertEquals(1.6592460317460318, SMA.apply(result).doubleValue(), 0.0001d);
+        assertEquals(1.6592460317460318, SMA.apply(result).get().doubleValue(), 0.0001d);
     }
 }

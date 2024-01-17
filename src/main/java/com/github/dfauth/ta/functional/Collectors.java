@@ -7,24 +7,33 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collector;
 
+import static com.github.dfauth.ta.functional.Lists.last;
+import static com.github.dfauth.ta.functional.Lists.nonEmpty;
 import static com.github.dfauth.ta.functional.Tuple2.tuple2;
+import static com.github.dfauth.ta.util.BigDecimalOps.ONE3;
+import static com.github.dfauth.ta.util.BigDecimalOps.divide;
+import static java.math.BigDecimal.ZERO;
 import static java.util.function.Predicate.not;
 
 @Slf4j
 public class Collectors {
 
-    public static final Function<List<BigDecimal>, BigDecimal> SMA = l -> BigDecimal.valueOf(l.stream().mapToDouble(BigDecimal::doubleValue).sum() / l.size());
+    public static <T,R> Function<List<T>, Optional<Tuple2<Optional<R>,T>>> zipWithMostRecent(Function<List<T>,Optional<R>> f) {
+        return l -> last(l).map(t -> tuple2(f.apply(l),t));
+    }
 
-    public static final Function<List<BigDecimal>, BigDecimal> EMA = ema(2);
+    public static final Function<List<BigDecimal>, Optional<BigDecimal>> SMA = l -> nonEmpty(l)
+            .map(_l -> divide(_l.stream().reduce(ZERO,BigDecimal::add), _l.size()));
 
-    public static final Function<List<BigDecimal>, BigDecimal> ema(int smoothingFactor) {
+    public static final Function<List<BigDecimal>, Optional<BigDecimal>> EMA = ema(2);
+
+    public static final Function<List<BigDecimal>, Optional<BigDecimal>> ema(int smoothingFactor) {
         return l -> {
-            double firstValue = SMA.apply(l).doubleValue();
-            double weight = ((double) smoothingFactor)/(1+l.size());
-            return BigDecimal.valueOf(l.stream()
-                    .map(BigDecimal::doubleValue)
-                    .reduce(firstValue,
-                            (ema, v) -> v*weight + ema * (1-weight),
+            Optional<BigDecimal> firstValue = SMA.apply(l);
+            BigDecimal weight = BigDecimal.valueOf(((double) smoothingFactor) / (1 + l.size()));
+            return firstValue.map(fv -> l.stream()
+                    .reduce(fv,
+                            (ema, v) -> v.multiply(weight).add(ema.multiply(ONE3.subtract(weight))),
                             oops()
                     ));
         };

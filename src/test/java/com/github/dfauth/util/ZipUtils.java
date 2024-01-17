@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dfauth.ta.Application;
 import com.github.dfauth.ta.model.Price;
+import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import static com.github.dfauth.ta.functional.Lists.mapList;
 import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
 
 @Slf4j
@@ -38,19 +40,26 @@ public class ZipUtils {
     private PriceRepository priceRepository;
 
     @Test
-//    @Ignore
-    public void getPrices() throws IOException {
+    public void testGetPrices() throws IOException {
+        String prices = getPrices("ASX:WGX");
+        log.info("result: "+prices);
+    }
+
+    public String getPrices(String code) throws IOException {
+        return getPrices(code, 252);
+    }
+
+    public String getPrices(String code, int limit) throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
-        List<Price> prices = priceRepository.findByCode("ASX:PPL",252);
+        List<PriceAction> prices = mapList(priceRepository.findByCode(code,limit), PriceAction.class::cast);
         String result = prices.stream().map(p -> tryCatch(() -> mapper.writeValueAsString(p))).collect(Collectors.joining(",", "[", "]"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zip = new ZipOutputStream(baos);
         zip.putNextEntry(new ZipEntry("prices"));
         zip.write(result.getBytes());
         zip.close();
-        String result1 = Base64.getEncoder().encodeToString(baos.toByteArray());
-        log.info("result: "+result1);
+        return Base64.getEncoder().encodeToString(baos.toByteArray());
     }
 
     public static List<Price> unzip(String s) {

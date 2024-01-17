@@ -1,6 +1,5 @@
 package com.github.dfauth.ta.functional;
 
-import com.github.dfauth.ta.controller.RingBufferCollector;
 import com.github.dfauth.ta.util.RingBuffer;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
@@ -20,6 +19,14 @@ public class ReactiveStreamCollector<T,R> extends RingBufferCollector<T,R> imple
 
     private Subscriber<? super R> subscriber;
     private AtomicLong counter;
+
+    public static <T,R> ReactiveStreamCollector<T,List<T>> reactiveRingBufferCollector(T[]  buffer) {
+        return reactiveRingBufferCollector(buffer, Function.identity());
+    }
+
+    public static <T,R> ReactiveStreamCollector<T,R> reactiveRingBufferCollector(T[]  buffer, Function<List<T>,R> finisher) {
+        return new ReactiveStreamCollector<>(buffer, finisher);
+    }
 
     public ReactiveStreamCollector(T[] buffer, Function<List<T>, R> finisher) {
         super(buffer, finisher);

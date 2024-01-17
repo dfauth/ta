@@ -19,6 +19,9 @@ public class BigDecimalOps {
     public static final BigDecimal ONE3 = valueOf(ONE);
     public static final BigDecimal ONE_CENT = valueOf(0.01d);
 
+    public static boolean isGreaterThanZero(BigDecimal bd1) {
+        return isGreaterThan(bd1, ZERO3);
+    }
     public static boolean isGreaterThan(BigDecimal bd1, BigDecimal bd2) {
         return bd1.compareTo(bd2)>0;
     }
@@ -64,7 +67,11 @@ public class BigDecimalOps {
     }
 
     public static BigDecimal multiply(BigDecimal bd, Integer i) {
-        return bd.multiply(BigDecimal.valueOf(i));
+        return multiply(bd, BigDecimal.valueOf(i));
+    }
+
+    public static BigDecimal multiply(BigDecimal bd1, BigDecimal bd2) {
+        return bd1.multiply(bd2);
     }
 
     public static BigDecimal compare(BigDecimal bd1, BigDecimal bd2, BinaryOperator<BigDecimal> f2) {

@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.functions;
 
+import com.github.dfauth.ta.functional.RingBufferPublisher;
 import com.github.dfauth.ta.util.ArrayRingBuffer;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import com.github.dfauth.ta.util.RingBuffer;
@@ -7,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -18,14 +18,22 @@ import java.util.stream.Stream;
 import static com.github.dfauth.ta.functional.Collectors.adjacent;
 import static com.github.dfauth.ta.functional.ImmutableCollector.collector;
 import static com.github.dfauth.ta.functional.Lists.last;
+import static com.github.dfauth.ta.functional.RingBufferPublisher.ringBufferPublisher;
 import static com.github.dfauth.ta.util.BigDecimalOps.*;
 import static java.math.BigDecimal.ONE;
 
 public interface RSI {
 
     BiFunction<BigDecimal,BigDecimal,GainLoss> gainLoss = GainLoss::create;
-    static Function<BigDecimal, Optional<BigDecimal>> relativeStrengthIndex(int period) {
-        RingBuffer<BigDecimal> ringBuffer = new ArrayRingBuffer<>(new BigDecimal[period+1]);
+
+    static Function<BigDecimal, Optional<BigDecimal>> rsi() {
+        return rsi(14);
+    }
+
+    static Function<BigDecimal, Optional<BigDecimal>> rsi(int period) {
+        RingBuffer<BigDecimal> ringBuffer = new ArrayRingBuffer<>(new BigDecimal[period]);
+        RingBufferPublisher<GainLoss, BigDecimal> gainLossPublisher = ringBufferPublisher(new GainLoss[period], l -> last(l.stream().collect(adjacent(GainLoss.stepTwo(period)))));
+
         return bd -> {
             ringBuffer.write(bd);
             Optional<List<GainLoss>> result = Optional.of(ringBuffer).filter(RingBuffer::isFull).flatMap(rb -> rb.collect(adjacent(gainLoss)));
@@ -33,19 +41,6 @@ public interface RSI {
                     GainLoss::add,
                     gl -> gl.divide(period).relativeStrengthIndex()))
             );
-        };
-    }
-
-    static Function<BigDecimal, Optional<BigDecimal>> rsi() {
-        return rsi(14);
-    }
-
-    static Function<BigDecimal, Optional<BigDecimal>> rsi(int period) {
-        List<BigDecimal> prices = new ArrayList<>();
-        Function<BigDecimal, Optional<BigDecimal>> f = relativeStrengthIndex(period);
-        return t -> {
-            prices.add(t);
-            return last(prices.stream().map(f).flatMap(Optional::stream).collect(Collectors.toList()));
         };
     }
 
@@ -58,7 +53,7 @@ public interface RSI {
     }
 
     static Optional<BigDecimal> calculateRSI(Stream<BigDecimal> prices, int period) {
-        Function<BigDecimal, Optional<BigDecimal>> f = relativeStrengthIndex(period);
+        Function<BigDecimal, Optional<BigDecimal>> f = rsi(period);
         return last(prices.map(f).flatMap(Optional::stream).collect(Collectors.toList()));
     }
 
@@ -98,6 +93,21 @@ public interface RSI {
 
         public BigDecimal relativeStrengthIndex() {
             return subtract(HUNDRED, BigDecimalOps.divide(HUNDRED, ONE.add(relativeStrength())));
+        }
+
+        public static BiFunction<GainLoss,GainLoss,BigDecimal> stepTwo(int period) {
+            return (prev,curr) -> curr.stepTwo(prev, period);
+        }
+
+        public BigDecimal stepTwo(GainLoss previousAvg, int period) {
+            return HUNDRED.subtract(BigDecimalOps.divide(HUNDRED,ONE3.add(smooth(previousAvg, period))));
+        }
+
+        private BigDecimal smooth(GainLoss previousAvg, int period) {
+            return BigDecimalOps.divide(
+                    multiply(previousAvg.getGain(),period-1).add(gain),
+                    multiply(previousAvg.getLoss(),period-1).add(loss)
+            );
         }
     }
 }

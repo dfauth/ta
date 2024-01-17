@@ -18,7 +18,7 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.dfauth.ta.controller.RingBufferCollector.ringBufferCollector;
+import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static java.math.BigDecimal.ONE;
 

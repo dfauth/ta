@@ -1,9 +1,6 @@
 package com.github.dfauth.ta.functional;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -11,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.github.dfauth.ta.functional.Tuple2.tuple2;
 import static java.util.function.Predicate.not;
 
 public class Lists<T> extends ArrayList<T> {
@@ -33,6 +31,24 @@ public class Lists<T> extends ArrayList<T> {
 
     public static <T> Optional<T> last(List<T> l) {
         return Optional.of(l).filter(not(List::isEmpty)).map(_l -> _l.get(l.size()-1));
+    }
+
+    public static <T> Optional<T> head(List<T> l) {
+        return headAndTail(l).map(Tuple2::_1);
+    }
+
+    public static <T> List<T> tail(List<T> l) {
+        return headAndTail(l).map(Tuple2::_2).orElse(Collections.emptyList());
+    }
+
+    public static <T> Optional<Tuple2<T,List<T>>> headAndTail(List<T> l) {
+        return Optional.of(l)
+                .filter(not(List::isEmpty))
+                .map(_l -> tuple2(
+                        _l.get(0),
+                        Optional.of(l)
+                                .filter(__l -> __l.size() > 1)
+                                .map(__l -> __l.subList(1,_l.size()-1)).orElse(Collections.emptyList())));
     }
 
     public static <T> List<T> add(List<T> l, T t) {
@@ -58,11 +74,15 @@ public class Lists<T> extends ArrayList<T> {
 
     public static <T> Tuple2<List<T>, List<T>> splitAt(List<T> ts, UnaryOperator<Integer> splitter) {
         int position = splitter.apply(ts.size());
-        return Tuple2.tuple2(ts.subList(0,position),ts.subList(position,ts.size()));
+        return tuple2(ts.subList(0,position),ts.subList(position,ts.size()));
     }
 
     public static <T> List<T> collect(Stream<T> streamOfT) {
         return streamOfT.collect(Collectors.toList());
+    }
+
+    public static <T> Optional<List<T>> nonEmpty(List<T> l) {
+        return Optional.ofNullable(l).filter(not(List::isEmpty));
     }
 
     public <R> Lists<R> map(Function<T,R> f) {

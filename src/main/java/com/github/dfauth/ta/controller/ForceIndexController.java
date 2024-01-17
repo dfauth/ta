@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
+
 import static com.github.dfauth.ta.functional.Lists.mapList;
 import static java.lang.Math.max;
 
@@ -23,7 +25,7 @@ public class ForceIndexController {
 
     @GetMapping("/force/index/{code}/{smaPeriod}/{emaPeriod}")
     @ResponseStatus(HttpStatus.OK)
-    public ForceIndex forceIndex(@PathVariable String code, @PathVariable int smaPeriod, @PathVariable int emaPeriod) {
+    public Optional<ForceIndex> forceIndex(@PathVariable String code, @PathVariable int smaPeriod, @PathVariable int emaPeriod) {
         log.info("force index {} {} {}",code,smaPeriod,emaPeriod);
         return ForceIndex.calculateForceIndex(mapList(repository.findByCode(code,max(smaPeriod,emaPeriod)+1), PriceAction.class::cast),smaPeriod, emaPeriod);
     }

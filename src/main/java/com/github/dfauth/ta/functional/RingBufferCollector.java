@@ -1,6 +1,5 @@
-package com.github.dfauth.ta.controller;
+package com.github.dfauth.ta.functional;
 
-import com.github.dfauth.ta.functional.MutableCollector;
 import com.github.dfauth.ta.util.ArrayRingBuffer;
 import com.github.dfauth.ta.util.RingBuffer;
 import lombok.extern.slf4j.Slf4j;

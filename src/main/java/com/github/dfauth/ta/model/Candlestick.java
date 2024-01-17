@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -16,14 +18,17 @@ public interface Candlestick extends PriceAction {
         return candlestickType.test(this);
     }
 
+    @JsonIgnore
     default boolean isRising() {
         return isOfType(CandlestickType.isRising());
     }
 
+    @JsonIgnore
     default boolean isFalling() {
         return isOfType(CandlestickType.isFalling());
     }
 
+    @JsonIgnore
     default boolean isDojo() {
         return isOfType(CandlestickType.isDojo());
     }
