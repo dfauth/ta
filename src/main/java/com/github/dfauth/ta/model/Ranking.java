@@ -4,7 +4,8 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum Ranking {
-    MOMENTUM_QUARTERLY("mtm_qtr");
+    MOMENTUM_QUARTERLY("mtm-qtr"),
+    ALLORDS_MOMENTUM_QUARTERLY("xao-mtm-qtr");
 
     private final String code;
 

@@ -18,6 +18,14 @@ import static java.util.function.Predicate.not;
 @Slf4j
 public class Collectors {
 
+    public static <K,V> Collector<Map.Entry<K,V>,?,Map<K,V>> toMapEntry() {
+        return toMapEntry(Map::entry);
+    }
+
+    public static <K,V,T,R> Collector<Map.Entry<K,V>,?,Map<T,R>> toMapEntry(BiFunction<K,V,Map.Entry<T,R>> mapper) {
+        return java.util.stream.Collectors.toMap(e -> mapper.apply(e.getKey(),e.getValue()).getKey(), e -> mapper.apply(e.getKey(),e.getValue()).getValue());
+    }
+
     public static <T,R> Function<List<T>, Optional<Tuple2<Optional<R>,T>>> zipWithMostRecent(Function<List<T>,Optional<R>> f) {
         return l -> last(l).map(t -> tuple2(f.apply(l),t));
     }

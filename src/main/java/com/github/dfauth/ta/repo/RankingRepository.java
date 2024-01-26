@@ -11,6 +11,7 @@ import java.util.Optional;
 
 public interface RankingRepository extends CrudRepository<RankListDateCodeComposite, ListDateCodeCompositeKey> {
 
+    @Query(value = "SELECT * FROM RANKING WHERE ID = ?1 AND CODE= ?2", nativeQuery = true)
     List<RankListDateCodeComposite> findByCode(int id, String code);
 
     @Query(value = "SELECT MAX(_DATE) FROM RANKING WHERE ID = ?1", nativeQuery = true)

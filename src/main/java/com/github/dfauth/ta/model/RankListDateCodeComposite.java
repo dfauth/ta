@@ -5,11 +5,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.IdClass;
+import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 @Slf4j
 @Entity
@@ -17,14 +18,21 @@ import java.util.Optional;
 @AllArgsConstructor
 @NoArgsConstructor
 @IdClass(ListDateCodeCompositeKey.class)
+@Table(name = "RANKING")
 public class RankListDateCodeComposite {
 
+    public static Function<RankListDateCodeComposite, Stream<Map.Entry<String, Integer>>> mapToRankEntry = rldc -> rldc.getOptionalRank().map(rank -> Map.entry(rldc.getDate().toString(), rank)).stream();
+
     @Id private int id;
-    @Id private Timestamp date;
+    @Id @Column(name = "ATDATE") private Timestamp date;
     @Id private String code;
-    private Optional<Integer> rank;
+    @Column(name = "_RANK") private Integer rank;
 
     public ListDateCodeCompositeKey getKey() {
         return new ListDateCodeCompositeKey(id, date, code);
+    }
+
+    public Optional<Integer> getOptionalRank() {
+        return Optional.ofNullable(rank);
     }
 }
