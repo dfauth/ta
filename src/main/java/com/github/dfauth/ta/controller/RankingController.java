@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functional.Collectors;
+import com.github.dfauth.ta.model.Market;
 import com.github.dfauth.ta.model.RankListDateCodeComposite;
 import com.github.dfauth.ta.model.Ranking;
 import com.github.dfauth.ta.repo.RankingRepository;
@@ -10,14 +11,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
+import static com.github.dfauth.ta.model.MarketEnum.ASX;
 import static com.github.dfauth.ta.model.RankListDateCodeComposite.mapToRankEntry;
-import static com.github.dfauth.ta.util.DateOps.sydneyCloseMostRecentWeekday;
-import static com.github.dfauth.ta.util.MarketOps.market;
 
 @RestController
 @Slf4j
@@ -29,6 +32,7 @@ public class RankingController {
 
     @Autowired
     private RankingRepository repository;
+    private Market market = ASX;
 
     @GetMapping("/rank/{list}/current/{code}")
     @ResponseStatus(HttpStatus.OK)
@@ -51,11 +55,11 @@ public class RankingController {
     public Long syncRank(@PathVariable String list, @RequestBody List<List<String>> o) {
         log.info("syncRank {} {}", list, o);
         int r = Ranking.findByCode(list).map(Ranking::ordinal).orElseThrow();
-        Timestamp sydneyClose = sydneyCloseMostRecentWeekday();
+        Timestamp sydneyClose = new Timestamp(market.atMarketCloseOn(market.getMarketDate()).toEpochMilli());
         final Iterator<List<String>> finalIt = o.iterator();
         List<RankListDateCodeComposite> codes = IntStream.rangeClosed(1, o.size())
                 .boxed()
-                .flatMap(i -> finalIt.next().stream().map(v -> Map.entry(i,market(v))))
+                .flatMap(i -> finalIt.next().stream().map(v -> Map.entry(i,market.withCode(v))))
                 .map(e -> new RankListDateCodeComposite(r, sydneyClose, e.getValue(), e.getKey()))
                 .collect(java.util.stream.Collectors.toList());
         Iterable<RankListDateCodeComposite> it = repository.saveAll(codes);

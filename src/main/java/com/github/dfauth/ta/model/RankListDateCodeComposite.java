@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static com.github.dfauth.ta.util.DateOps.formatDate;
+
 @Slf4j
 @Entity
 @Data
@@ -21,7 +23,7 @@ import java.util.stream.Stream;
 @Table(name = "RANKING")
 public class RankListDateCodeComposite {
 
-    public static Function<RankListDateCodeComposite, Stream<Map.Entry<String, Integer>>> mapToRankEntry = rldc -> rldc.getOptionalRank().map(rank -> Map.entry(rldc.getDate().toString(), rank)).stream();
+    public static Function<RankListDateCodeComposite, Stream<Map.Entry<String, Integer>>> mapToRankEntry = rldc -> rldc.getOptionalRank().map(rank -> Map.entry(formatDate(rldc.getDate().toInstant()), rank)).stream();
 
     @Id private int id;
     @Id @Column(name = "ATDATE") private Timestamp date;
