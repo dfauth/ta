@@ -22,23 +22,23 @@ public class ConsecutiveUpDaysTest {
     public void testSanity() {
         {
             Supplier<BigDecimal> generator = generator(100);
-            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> generator.get()).getClose());
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.mapPrices(bd -> generator.get()).getClose());
             assertEquals(251, consecutiveUpDays(CGC1).get());
         }
         {
             Supplier<BigDecimal> generator = generator(100);
-            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> subtract(HUNDRED, generator.get())).getClose());
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.mapPrices(bd -> subtract(HUNDRED, generator.get())).getClose());
             assertEquals(0, consecutiveUpDays(CGC1).get());
         }
         {
             Supplier<BigDecimal> generator = generator(100);
-            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> generator.get()).getClose());
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.mapPrices(bd -> generator.get()).getClose());
             CGC1.set(251-3, ZERO3);
             assertEquals(3, consecutiveUpDays(CGC1).get());
         }
         {
             Supplier<BigDecimal> generator = generator(100);
-            List<BigDecimal> CGC1 = mapList(CGC, p -> p.map(bd -> generator.get()).getClose());
+            List<BigDecimal> CGC1 = mapList(CGC, p -> p.mapPrices(bd -> generator.get()).getClose());
             CGC1.set(251-69, ZERO3);
             assertEquals(69, consecutiveUpDays(CGC1).get());
         }

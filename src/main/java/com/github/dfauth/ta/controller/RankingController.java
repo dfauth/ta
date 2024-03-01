@@ -11,11 +11,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
@@ -24,7 +24,7 @@ import static com.github.dfauth.ta.model.RankListDateCodeComposite.mapToRankEntr
 
 @RestController
 @Slf4j
-public class RankingController {
+public class RankingController implements ControllerMixIn {
 
     public static Function<RankListDateCodeComposite,String> keyMapper = rlcd -> rlcd.getDate().toString();
 
@@ -41,12 +41,46 @@ public class RankingController {
         return Ranking.findByCode(list).flatMap(r -> repository.findCurrentByCode(r.ordinal(), code).flatMap(RankListDateCodeComposite::getOptionalRank));
     }
 
-    @GetMapping("/rank/{list}/{code}")
+    @GetMapping("/ranks/localdate/{list}/{code}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String,Integer> ranks(@PathVariable String list, @PathVariable String code) {
+    public Map<LocalDate,Integer> ranksByLocalDate(@PathVariable String list, @PathVariable String code) {
         log.info("ranking list {} code {}",list,code);
         return Ranking.findByCode(list).map(r ->
                 repository.findByCode(r.ordinal(), code).stream().flatMap(mapToRankEntry).collect(Collectors.toMapEntry())
+        ).orElseThrow();
+    }
+
+    @GetMapping("/ranks/{list}/{code}/{date}")
+    @ResponseStatus(HttpStatus.OK)
+    public Integer ranks(@PathVariable String list, @PathVariable String code, @PathVariable String date) {
+        log.info("ranking list {} code {} date {}",list,code,date);
+        return ranksByLocalDate(list,code).get(LocalDate.parse(date));
+    }
+
+    @PostMapping("/ranks/int/{list}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String,Map<Integer,Integer>> ranksByInt(@PathVariable String list, @RequestBody List<List<String>> codes) {
+        log.info("ranking list {} code {}",list,codes);
+        return mapCode(codes, code -> ranksByInt(list,code));
+    }
+
+    @GetMapping("/ranks/int/{list}/{code}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<Integer,Integer> ranksByInt(@PathVariable String list, @PathVariable String code) {
+        log.info("ranking list {} code {}",list,code);
+        Map<LocalDate,Integer> sorted = new TreeMap(ranksByLocalDate(list, code));
+        AtomicInteger i= new AtomicInteger();
+        ToIntFunction<LocalDate> _keyMapper = k -> sorted.size() - i.getAndIncrement();
+        Map<Integer, Integer> result = sorted.entrySet().stream().map(e -> Map.entry(_keyMapper.applyAsInt(e.getKey()), e.getValue())).collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return result;
+    }
+
+    @GetMapping("/rank/{list}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String,Map<LocalDate,Integer>> ranks(@PathVariable String list) {
+        log.info("ranking list {}",list);
+        return Ranking.findByCode(list).map(r ->
+                repository.findByRanking(r.ordinal()).stream().flatMap(rldc -> rldc.getOptionalRank().stream().map(ignore -> rldc)).collect(Collectors.toMap(RankListDateCodeComposite::getCode, Ranking.reMapper))
         ).orElseThrow();
     }
 

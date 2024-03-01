@@ -7,6 +7,9 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Iterator;
+
+import static com.github.dfauth.ta.util.DateOps.WEEKDAYS;
 
 @Slf4j
 public class TestUtils {
@@ -31,4 +34,22 @@ public class TestUtils {
         return BigDecimalOps.scale(db,3);
     }
 
+    public static Iterator<LocalDate> iterateWeekDaysStarting(LocalDate start) {
+        final LocalDate[] date = {start};
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return true;
+            }
+
+            @Override
+            public LocalDate next() {
+                LocalDate tmp = date[0];
+                do {
+                    date[0] = date[0].plusDays(1);
+                } while(!WEEKDAYS.contains(date[0].getDayOfWeek()));
+                return tmp;
+            }
+        };
+    }
 }

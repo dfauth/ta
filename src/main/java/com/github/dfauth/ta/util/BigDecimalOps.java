@@ -1,18 +1,22 @@
 package com.github.dfauth.ta.util;
 
+import io.github.dfauth.trycatch.Try;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
+import static io.github.dfauth.trycatch.Try.tryWith;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static java.util.function.Function.identity;
 
-public class BigDecimalOps {
+public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
 
     public static final BigDecimal HUNDRED = BigDecimal.valueOf(100.000);
     public static final BigDecimal ZERO3 = valueOf(ZERO);
@@ -46,8 +50,20 @@ public class BigDecimalOps {
         return divide(bd, valueOf(i));
     }
 
+    static BigDecimalOps divide(BigDecimal bd1) {
+        return bd -> divide(bd1,bd);
+    }
+
     public static BigDecimal divide(BigDecimal bd1, BigDecimal bd2) {
         return bd1.divide(bd2, RoundingMode.HALF_UP);
+    }
+
+    public static Optional<BigDecimal> optDivide(BigDecimal bd1, BigDecimal bd2) {
+        return tryDivide(bd1,bd2).toOptional();
+    }
+
+    public static Try<BigDecimal> tryDivide(BigDecimal bd1, BigDecimal bd2) {
+        return tryWith(() -> divide(bd1, bd2));
     }
 
     public static BigDecimal pctChange(int i1, int i2) {
@@ -75,7 +91,7 @@ public class BigDecimalOps {
     }
 
     public static BigDecimal compare(BigDecimal bd1, BigDecimal bd2, BinaryOperator<BigDecimal> f2) {
-        return compare(bd1,bd2,identity(), f2);
+        return compare(bd1,bd2,t -> t, f2);
     }
     public static <T> T compare(T t1, T t2, Function<T,BigDecimal> extractor, BinaryOperator<BigDecimal> f2) {
         BigDecimal bd1 = extractor.apply(t1);
@@ -107,7 +123,11 @@ public class BigDecimalOps {
     }
 
     public static List<BigDecimal> collect(double... doubles) {
-        return DoubleStream.of(doubles).mapToObj(BigDecimalOps::valueOf).collect(Collectors.toList());
+        return collect(BigDecimalOps::valueOf, doubles);
+    }
+
+    public static <T> List<T> collect(Function<Double,T> f, double... doubles) {
+        return DoubleStream.of(doubles).boxed().map(f).collect(Collectors.toList());
     }
 
     public static BigDecimal add(BigDecimal bd1, BigDecimal bd2) {
@@ -116,5 +136,9 @@ public class BigDecimalOps {
 
     public static BigDecimal subtract(BigDecimal bd1, BigDecimal bd2) {
         return valueOf(bd1.subtract(bd2));
+    }
+
+    default BigDecimal by(BigDecimal divisor) {
+        return apply(divisor);
     }
 }

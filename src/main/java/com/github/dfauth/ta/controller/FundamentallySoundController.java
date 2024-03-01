@@ -14,6 +14,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -21,7 +22,7 @@ import static java.util.function.Predicate.not;
 
 @RestController
 @Slf4j
-public class FundamentallySoundController {
+public class FundamentallySoundController implements ControllerMixIn {
 
     @Autowired
     private FundamentallySoundRepository repository;
@@ -31,6 +32,13 @@ public class FundamentallySoundController {
     public Boolean fundamentallySound(@PathVariable String code) {
         log.info("is fundamentally sound {}",code);
         return repository.findCurrentByCode(code).isPresent();
+    }
+
+    @PostMapping("/sound")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, Boolean> fundamentallySound(@RequestBody List<List<String>> codes) {
+        log.info("is fundamentally sound {}",codes);
+        return mapCode(codes, code -> fundamentallySound(code));
     }
 
     @PostMapping("/sync/sound/{_date}")

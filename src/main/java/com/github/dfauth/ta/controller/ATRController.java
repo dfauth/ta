@@ -6,18 +6,16 @@ import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @Slf4j
-public class ATRController {
+public class ATRController implements ControllerMixIn {
 
     @Autowired
     private PriceRepository repository;
@@ -29,15 +27,27 @@ public class ATRController {
     // ATR
     @GetMapping("/atr/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Optional<BigDecimal> atr(@PathVariable String _code, @PathVariable int period) {
+    public Optional<BigDecimal> atr(@PathVariable String _code, @PathVariable int period) {
         log.info("atr/{}/{}",_code,period);
         return avgTrueRange(_code, period).map(ATR.AverageTrueRange::getAtr);
     }
 
     @GetMapping("/avgTrueRange/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Optional<ATR.AverageTrueRange> avgTrueRange(@PathVariable String _code, @PathVariable int period) {
-        log.info("avgTrueRange/{}/{}",_code,period);
-        return ATR.atr(prices(_code, period*2), period);
+    public Optional<ATR.AverageTrueRange> avgTrueRange(@PathVariable String _code, @PathVariable int period) {
+        try {
+            log.info("avgTrueRange/{}/{}",_code,period);
+            return ATR.atr(prices(_code, period*2), period);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
+    @PostMapping("/avgTrueRange/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String,ATR.AverageTrueRange> avgTrueRange(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        log.info("avgTrueRange/{}/{}",codes,period);
+        return flatMapCode(codes, code -> avgTrueRange(code, period).stream());
     }
 }

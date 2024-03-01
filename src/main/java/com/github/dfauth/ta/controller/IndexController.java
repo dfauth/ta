@@ -14,6 +14,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -21,7 +22,7 @@ import static java.util.function.Predicate.not;
 
 @RestController
 @Slf4j
-public class IndexController {
+public class IndexController implements ControllerMixIn {
 
     @Autowired
     private IndexRepository repository;
@@ -31,6 +32,13 @@ public class IndexController {
     public Boolean isInIndex(@PathVariable String idx,@PathVariable String code) {
         log.info("is in index {} {}",idx, code);
         return repository.findCurrentByCode(code).isPresent();
+    }
+
+    @PostMapping("/index/{idx}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, Boolean> isInIndex(@PathVariable String idx, @RequestBody List<List<String>> codes) {
+        log.info("is in index {} {}",idx, codes);
+        return mapCode(codes, code -> isInIndex(idx,code));
     }
 
     @PostMapping("/sync/index/{idx}/{_date}")

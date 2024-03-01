@@ -48,6 +48,11 @@
             <version>8.0.32</version>
         </dependency>
         <dependency>
+            <groupId>io.github.dfauth</groupId>
+            <artifactId>trycatch</artifactId>
+            <version>0.1.6</version>
+        </dependency>
+        <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>${hsqldb.version}</version>

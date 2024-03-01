@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 @Entity
 @Data
 @IdClass(PriceCompositeKey.class)
-public class Price implements Candlestick {
+public class Price implements Candlestick, Dated<PriceAction> {
 
     @Id
     @JsonIgnore
@@ -156,4 +156,13 @@ public class Price implements Candlestick {
         set_volume(vol);
     }
 
+    @Override
+    public LocalDate getLocalDate() {
+        return _date.toLocalDateTime().toLocalDate();
+    }
+
+    @Override
+    public PriceAction getPayload() {
+        return this;
+    }
 }

@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.FunctionUtils.noOp;
 import static com.github.dfauth.ta.util.Accumulator.averagingAccumulator;
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 

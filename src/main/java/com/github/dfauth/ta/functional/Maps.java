@@ -1,9 +1,11 @@
 package com.github.dfauth.ta.functional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functions.Reducers.groupBy;
 import static com.github.dfauth.ta.functions.Reducers.latest;

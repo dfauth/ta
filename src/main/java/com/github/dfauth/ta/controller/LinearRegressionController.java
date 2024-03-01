@@ -6,13 +6,11 @@ import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,19 +22,32 @@ import static java.math.RoundingMode.HALF_UP;
 
 @RestController
 @Slf4j
-public class LinearRegressionController {
+public class LinearRegressionController implements ControllerMixIn {
 
     @Autowired
     private PriceRepository repository;
 
     // lobf
+    @PostMapping("/lobf/slope/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Map<String, BigDecimal> lobf(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        log.info("lobf/slope/{}/{}",codes,period);
+        return flatMapCode(codes, code -> lobf(code, period)
+                .stream());
+    }
+
     @GetMapping("/lobf/slope/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> lobf(@PathVariable String _code, @PathVariable int period) {
-        log.info("lobf/slope/{}/{}",_code,period);
-        List<Price> prices = prices(_code, period);
-        Optional<LinearRegression> result = linearRegression(prices);
-        return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).get_close(), HALF_UP));
+        try {
+            log.info("lobf/slope/{}/{}",_code,period);
+            List<Price> prices = prices(_code, period);
+            Optional<LinearRegression> result = linearRegression(prices);
+            return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).get_close(), HALF_UP));
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return Optional.empty();
+        }
     }
 
     @GetMapping("/linearRegression/{_code}/{period}")

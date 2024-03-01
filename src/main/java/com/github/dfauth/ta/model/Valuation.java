@@ -8,12 +8,15 @@ import javax.persistence.Id;
 import javax.persistence.IdClass;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.Comparator;
 
 @Slf4j
 @Entity
 @Data
 @IdClass(CodeDateCompositeKey.class)
 public class Valuation {
+
+    public static Comparator<? super Valuation> sortByDate = Comparator.comparing(v -> v._date);
 
     @Id private String code;
     @Id private Timestamp _date;

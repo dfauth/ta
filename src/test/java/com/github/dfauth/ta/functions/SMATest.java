@@ -24,7 +24,7 @@ import static com.github.dfauth.ta.functions.RateOfChange.roc;
 import static com.github.dfauth.ta.functions.TestData.EMR;
 import static com.github.dfauth.ta.util.Accumulator.pvAveragingAccumulator;
 import static com.github.dfauth.ta.util.BigDecimalOps.pctChange;
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j

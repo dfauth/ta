@@ -13,6 +13,7 @@ import static com.github.dfauth.ta.functional.Tuple2.tuple2;
 import static com.github.dfauth.ta.util.BigDecimalOps.ONE3;
 import static com.github.dfauth.ta.util.BigDecimalOps.divide;
 import static java.math.BigDecimal.ZERO;
+import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 
 @Slf4j
@@ -119,5 +120,34 @@ public class Collectors {
         };
     }
 
+    public static <T,R,S> Collector<T, Map<R,S>,Map<R,S>> toMap(Function<T,R> keyMapper,Function<T,BiFunction<R,S,S>> reMapper) {
+        return new Collector<>() {
+
+            @Override
+            public Supplier<Map<R, S>> supplier() {
+                return HashMap::new;
+            }
+
+            @Override
+            public BiConsumer<Map<R, S>, T> accumulator() {
+                return (m,t) -> m.compute(keyMapper.apply(t),reMapper.apply(t));
+            }
+
+            @Override
+            public BinaryOperator<Map<R, S>> combiner() {
+                return oops();
+            }
+
+            @Override
+            public Function<Map<R, S>, Map<R, S>> finisher() {
+                return identity();
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return Set.of();
+            }
+        };
+    }
 
 }

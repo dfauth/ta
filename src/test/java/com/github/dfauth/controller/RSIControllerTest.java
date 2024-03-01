@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +24,13 @@ public class RSIControllerTest extends MockPriceRepoControllerTest<RSIController
 
         Optional<BigDecimal> result = getController().rsi("ASX:EMR",14);
         assertEquals(72.5, result.get().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testPost() throws JsonProcessingException {
+
+        Map<String, BigDecimal> result = getController().rsi(List.of(List.of("ASX:EMR", "ASX:WGX")), 14);
+        assertEquals(27.3, result.get("ASX:WGX").doubleValue(), 0.01d);
     }
 
     @Override

@@ -74,7 +74,10 @@ public class Lists<T> extends ArrayList<T> {
 
     public static <T> Tuple2<List<T>, List<T>> splitAt(List<T> ts, UnaryOperator<Integer> splitter) {
         int position = splitter.apply(ts.size());
-        return tuple2(ts.subList(0,position),ts.subList(position,ts.size()));
+        return Optional.ofNullable(ts)
+                .filter(_ts -> _ts.size() > position)
+                .map(_ts -> tuple2(_ts.subList(0,position),ts.subList(position,ts.size())))
+                .orElse(tuple2(ts, Collections.emptyList()));
     }
 
     public static <T> List<T> collect(Stream<T> streamOfT) {
@@ -92,4 +95,10 @@ public class Lists<T> extends ArrayList<T> {
     public <R,S> R reduce(Reducer<T, S, R> reducer) {
         return stream().collect(reducer);
     }
+
+    public static <V,T,R> Map<T,R> toMap(List<V> l, Function<V,T> keyMapper, Function<V,R> valueMapper) {
+        return l.stream().collect(Collectors.toMap(keyMapper,valueMapper));
+    }
+
+
 }

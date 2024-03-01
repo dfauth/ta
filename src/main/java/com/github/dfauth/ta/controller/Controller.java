@@ -3,18 +3,14 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functions.Accumulator;
 import com.github.dfauth.ta.functions.MovingAverages;
 import com.github.dfauth.ta.functions.RateOfChange;
-import com.github.dfauth.ta.model.*;
+import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
-import com.github.dfauth.ta.repo.TradeRepository;
-import com.github.dfauth.ta.repo.ValuationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +21,7 @@ import java.util.stream.Stream;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 import static com.github.dfauth.ta.model.Price.parseDate;
 import static com.github.dfauth.ta.model.Price.parsePrice;
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 
 @RestController
 @Slf4j
@@ -33,12 +29,6 @@ public class Controller {
 
     @Autowired
     private PriceRepository repository;
-
-    @Autowired
-    private ValuationRepository valuationRepo;
-
-    @Autowired
-    private TradeRepository tradeRepo;
 
     private DateTimeFormatter dtf = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -52,101 +42,6 @@ public class Controller {
                 .collect(Collectors.toList());
         repository.saveAll(prices);
         return prices.size();
-    }
-
-    @PostMapping("/sync/valuations/{_date}")
-    @ResponseStatus(HttpStatus.CREATED)
-    Integer valuations(@PathVariable Integer _date, @RequestBody Object[][] args) {
-        log.error("args: ",args);
-        Timestamp timestamp = new Timestamp(LocalDateTime.of(LocalDate.of(_date / 100, _date % 100, 1), LocalTime.of(0, 0)).toInstant(ZoneOffset.UTC).toEpochMilli());
-        List<Valuation> valuations = Stream.of(args).filter(arr -> !toCode(arr[0]).isEmpty()).map(arr -> {
-            return new Valuation(
-                    toCode(arr[0]),
-                    timestamp,
-                    Rating.fromString((String)arr[4]),
-                    (Integer) arr[5],
-                    (Integer) arr[6],
-                    (Integer) arr[7],
-                    toBigDecimal(arr[8])
-            );
-        }).collect(Collectors.toList());
-        valuationRepo.saveAll(valuations);
-        return valuations.size();
-    }
-
-    @PostMapping("/sync/trades")
-    @ResponseStatus(HttpStatus.CREATED)
-    Integer trades(@RequestBody Object[][] args) {
-        log.info("args: ",args);
-
-        List<Trade> trades = Stream.of(args).map(arr -> new Trade(0,
-            arr[18].toString(),
-            new Timestamp(LocalDate.parse((String)arr[0],dtf).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()),
-            (String)arr[1],
-            (Integer)arr[2],
-            toBigDecimal(arr[3]),
-            toBigDecimal(arr[4]),
-            Side.fromString(arr[5]),
-            arr[14].toString())
-        ).collect(Collectors.toList());
-        tradeRepo.saveAll(trades);
-        return trades.size();
-    }
-
-    @PostMapping("/sync/trades/update")
-    @ResponseStatus(HttpStatus.CREATED)
-    Integer tradeUpdate(@RequestBody Object[][] args) {
-        log.info("args: ",args);
-
-        List<Trade> trades = Stream.of(args).map(arr -> new Trade(0,
-                arr[18].toString(),
-                new Timestamp(LocalDate.parse((String) arr[0], dtf).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()),
-                (String) arr[1],
-                (Integer) arr[2],
-                toBigDecimal(arr[3]),
-                toBigDecimal(arr[4]),
-                Side.fromString(arr[5]),
-                arr[14].toString())
-        ).map(t -> Optional.ofNullable(tradeRepo.findBy_date_code_size(t))
-                .map(t1 -> {
-                    t1.setConfirmation_no(t.getConfirmation_no());
-                    return t1;
-                })).flatMap(Optional::stream)
-                .map(t -> tradeRepo.save(t)).collect(Collectors.toList());
-        return trades.size();
-    }
-
-    private static BigDecimal toBigDecimal(Object o) {
-        if(o == null) {
-            return null;
-        } else if(o instanceof Integer) {
-            return BigDecimal.valueOf((Integer)o);
-        } else if(o instanceof Double){
-            return BigDecimal.valueOf((Double) o);
-        } else if(o instanceof String){
-            if("".equals(o)) {
-                return null;
-            } else {
-                return new BigDecimal((String) o);
-            }
-        } else {
-            throw new IllegalArgumentException("Unsupported type: "+o.getClass());
-        }
-    }
-
-    private static String toCode(Object o) {
-        if(o instanceof Integer) {
-            return "ASX:"+ o;
-        } else if(o instanceof String){
-            String s = (String) o;
-            if(s.length() > 0) {
-                return "ASX:"+ s;
-            } else {
-                return s;
-            }
-        } else {
-            throw new IllegalArgumentException("Unsupported type: "+o.getClass());
-        }
     }
 
     // sma

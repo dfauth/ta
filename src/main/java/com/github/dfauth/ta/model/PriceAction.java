@@ -38,7 +38,7 @@ public interface PriceAction {
         return getClose().compareTo(getOpen()) < 0;
     }
 
-    default PriceAction map(UnaryOperator<BigDecimal> f) {
+    default PriceAction mapPrices(UnaryOperator<BigDecimal> f) {
         return new PriceAction() {
             @Override
             public BigDecimal getOpen() {
@@ -68,7 +68,7 @@ public interface PriceAction {
     }
 
     default PriceAction divide(int n) {
-        return map(divisionOperator(n));
+        return mapPrices(divisionOperator(n));
     }
 
     static UnaryOperator<BigDecimal> divisionOperator(int period) {

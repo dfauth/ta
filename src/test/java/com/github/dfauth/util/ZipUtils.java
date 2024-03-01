@@ -24,7 +24,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import static com.github.dfauth.ta.functional.Lists.mapList;
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 
 @Slf4j
 @ExtendWith(SpringExtension.class)

@@ -4,12 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dfauth.ta.controller.MomentumController;
 import com.github.dfauth.ta.functions.Momentum;
-import com.github.dfauth.ta.functions.TestData;
-import com.github.dfauth.ta.model.Price;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,11 +25,6 @@ public class MomentumControllerTest extends MockPriceRepoControllerTest<Momentum
         assertEquals(92.9, result.map(Momentum::getPercentage).get().doubleValue(), 0.01d);
         assertEquals(-7.1, result.map(Momentum::getPercentageIncrease).get().doubleValue(), 0.01d);
         assertEquals(-0.3087, result.map(Momentum::getPercentagePerPeriod).get().doubleValue(), 0.01d);
-    }
-
-    @Override
-    protected List<Price> getTestData() {
-        return TestData.WGX;
     }
 
     @Override

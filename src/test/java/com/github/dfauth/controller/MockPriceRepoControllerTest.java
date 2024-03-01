@@ -8,11 +8,12 @@ import org.junit.jupiter.api.BeforeEach;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,11 +30,19 @@ public abstract class MockPriceRepoControllerTest<T> {
                 .findFirst().orElseThrow();
         f.setAccessible(true);
         f.set(controller, mockRepo);
-        when(mockRepo.findByCode(anyString(), anyInt())).thenReturn(getTestData());
+        getTestData().entrySet().stream().forEach(e ->
+                when(mockRepo.findByCode(eq(e.getKey()), anyInt())).thenReturn(e.getValue())
+        );
     }
 
-    protected List<Price> getTestData() {
-        return TestData.EMR;
+    protected Map<String,List<Price>> getTestData() {
+        return Map.of("ASX:EMR", TestData.EMR,
+                "ASX:MP1", TestData.MP1,
+                "ASX:CGC", TestData.CGC,
+                "ASX:AX1", TestData.AX1,
+                "ASX:PPL", TestData.PPL,
+                "ASX:WGX", TestData.WGX
+        );
     }
 
     protected abstract T getController();

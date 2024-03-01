@@ -8,13 +8,11 @@ import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,7 +22,7 @@ import static com.github.dfauth.ta.functions.Reducers.latest;
 
 @RestController
 @Slf4j
-public class MaxMinController {
+public class MaxMinController implements ControllerMixIn {
 
     @Autowired
     private PriceRepository repository;
@@ -56,6 +54,13 @@ public class MaxMinController {
     }
 
     // days since
+    @PostMapping("/recentHigh/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Map<String, DaysSince.RecentHigh> recentLastHigh(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        log.info("recentHigh/{}/{}",codes,period);
+        return flatMapCode(codes, code -> recentLastHigh(code, period).stream());
+    }
+
     @GetMapping("/recentHigh/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<DaysSince.RecentHigh> recentLastHigh(@PathVariable String _code, @PathVariable int period) {

@@ -15,6 +15,13 @@ public class Function2 {
         return ignored -> s.get();
     }
 
+    public static <T> Function<T,T> peek(Runnable runnable) {
+        return ignored -> {
+            runnable.run();
+            return ignored;
+        };
+    }
+
     public static <T,R> Function<T,R> supply(Supplier<R> supplier) {
         return t -> supplier.get();
     }

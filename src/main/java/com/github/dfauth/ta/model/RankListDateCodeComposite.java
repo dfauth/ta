@@ -7,12 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import static com.github.dfauth.ta.util.DateOps.formatDate;
 
 @Slf4j
 @Entity
@@ -23,7 +22,9 @@ import static com.github.dfauth.ta.util.DateOps.formatDate;
 @Table(name = "RANKING")
 public class RankListDateCodeComposite {
 
-    public static Function<RankListDateCodeComposite, Stream<Map.Entry<String, Integer>>> mapToRankEntry = rldc -> rldc.getOptionalRank().map(rank -> Map.entry(formatDate(rldc.getDate().toInstant()), rank)).stream();
+    public static Function<RankListDateCodeComposite, Stream<Map.Entry<LocalDate, Integer>>> mapToRankEntry = rldc -> rldc.getOptionalRank().map(rank -> Map.entry(rldc.getDate().toLocalDateTime().toLocalDate(), rank)).stream();
+
+    public static Function<RankListDateCodeComposite, Stream<Map.Entry<String, Map.Entry<LocalDate, Integer>>>> mapToDateToRankEntry = rldc -> rldc.getOptionalRank().map(rank -> Map.entry(rldc.getCode(), Map.entry(rldc.getDate().toLocalDateTime().toLocalDate(), rldc.getRank()))).stream();
 
     @Id private int id;
     @Id @Column(name = "ATDATE") private Timestamp date;

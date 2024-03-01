@@ -15,8 +15,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functions.Reducers.*;
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatch;
-import static com.github.dfauth.ta.util.ExceptionalRunnable.tryCatchRunnable;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatchRunnable;
+import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReducersTest {
@@ -73,7 +74,7 @@ public class ReducersTest {
     public static <T> CompletableFuture<T> delay(T t, long delay, Executor executor) {
         CompletableFuture<T> f = new CompletableFuture<>();
         executor.execute(() -> {
-            tryCatchRunnable(() -> Thread.sleep(delay));
+            tryCatchRunnable(() -> sleep(delay));
             f.complete(t);
         });
         return f;
