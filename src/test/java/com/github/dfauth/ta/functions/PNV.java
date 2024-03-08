@@ -54,16 +54,25 @@ public class PNV {
 
     @Test
     public void testLobf() {
-        List<BigDecimal> window = mapList(TestData.MP1, p -> p.getClose());
+        testLobf(TestData.MP1);
+        testLobf(TestData.EMR);
+        testLobf(TestData.CGC);
+        testLobf(TestData.WGX);
+        testLobf(TestData.AX1);
+    }
+
+    public void testLobf(List<Price> prices) {
+        double tolerance = 0.01d;
+        List<BigDecimal> window = mapList(prices, p -> p.getClose());
         Optional<LinearRegression.LineOfBestFit> lobf = LinearRegression.lobf(window);
         assertNotNull(lobf);
 
         Optional<com.github.dfauth.ta.functions.ref.LinearRegression> ref = com.github.dfauth.ta.functions.ref.LinearRegression.calculate(window, BigDecimal::doubleValue);
-        assertEquals(BigDecimal.valueOf(ref.get().getSlope()), lobf.get().getSlope());
-//        assertEquals(ref.intercept(), lobf.get().getIntercept().doubleValue(), ref.intercept()*0.01);
-//        assertEquals(ref.R2(), lobf.get().getR2().doubleValue(), ref.R2()*0.01);
-//        assertEquals(ref.slopeStdErr(), lobf.get().getSlopeStdErr().doubleValue(), ref.slopeStdErr()*0.01);
-//        assertEquals(ref.interceptStdErr(), lobf.get().getInterceptStdErr().doubleValue(), ref.interceptStdErr()*0.01);
-//        assertEquals(ref.predict(i.get()), lobf.get().predict(i.get()).doubleValue(), ref.predict(i.get())*0.01);
+        assertEquals(ref.get().getSlope(), lobf.get().getSlope(), lobf.get().getSlope()*tolerance);
+        assertEquals(ref.get().getIntercept(), lobf.get().getIntercept(), lobf.get().getIntercept()*tolerance);
+        assertEquals(ref.get().getR2(), lobf.get().getR2(), lobf.get().getR2()*tolerance);
+        assertEquals(ref.get().slopeStdErr(), lobf.get().getSlopeStdErr().doubleValue(), lobf.get().getSlopeStdErr().doubleValue()*tolerance);
+        assertEquals(ref.get().interceptStdErr(), lobf.get().getInterceptStdErr().doubleValue(), lobf.get().getInterceptStdErr().doubleValue()*tolerance);
+        assertEquals(ref.get().predict(1), lobf.get().predict(1).doubleValue(), lobf.get().predict(1).doubleValue()*tolerance);
     }
 }

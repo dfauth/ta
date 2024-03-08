@@ -1,10 +1,12 @@
 package com.github.dfauth.ta.functions;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.dfauth.ta.functional.HistoricalOffset;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -159,7 +161,6 @@ public class LinearRegression {
         }
     }
 
-    @Data
     @AllArgsConstructor
     public static class LineOfBestFit {
         private final double slope;
@@ -169,16 +170,60 @@ public class LinearRegression {
         private final double svar0;
         private final double svar1;
 
+        @JsonIgnore
         public BigDecimal getSlopeStdErr() {
             return BigDecimal.valueOf(Math.sqrt(svar1));
         }
 
+        @JsonIgnore
         public BigDecimal getInterceptStdErr() {
             return BigDecimal.valueOf(Math.sqrt(svar0));
         }
 
         public BigDecimal predict(int i) {
             return BigDecimal.valueOf(slope*i+intercept);
+        }
+
+        public double getS() {
+            return scale(getSlope(),5);
+        }
+
+        public double getV() {
+            return scale(getSvar(),5);
+        }
+
+        private double scale(double value, int scale) {
+            return BigDecimal.valueOf(value).setScale(scale, RoundingMode.HALF_UP).doubleValue();
+        }
+
+        @JsonIgnore
+        public double getSlope() {
+            return slope;
+        }
+
+        @JsonIgnore
+        public double getIntercept() {
+            return intercept;
+        }
+
+        @JsonIgnore
+        public double getR2() {
+            return r2;
+        }
+
+        @JsonIgnore
+        public double getSvar() {
+            return svar;
+        }
+
+        @JsonIgnore
+        public double getSvar0() {
+            return svar0;
+        }
+
+        @JsonIgnore
+        public double getSvar1() {
+            return svar1;
         }
     }
 }

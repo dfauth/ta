@@ -4,7 +4,10 @@ import com.github.dfauth.ta.functions.Accumulator;
 import com.github.dfauth.ta.functions.MovingAverages;
 import com.github.dfauth.ta.functions.RateOfChange;
 import com.github.dfauth.ta.model.Price;
+import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.repo.PriceRepository;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,10 +26,11 @@ import static com.github.dfauth.ta.functions.Reducers.latest;
 import static com.github.dfauth.ta.model.Price.parseDate;
 import static com.github.dfauth.ta.model.Price.parsePrice;
 import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
+import static java.util.Optional.empty;
 
 @RestController
 @Slf4j
-public class Controller {
+public class Controller implements ControllerMixIn {
 
     @Autowired
     private PriceRepository repository;
@@ -102,13 +107,13 @@ public class Controller {
     @GetMapping("/price/{_code}/close")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> close(@PathVariable String _code) {
-        return price(_code).map(Price::get_close);
+        return price(_code).map(OHLC::getClose);
     }
 
     @GetMapping("/price/{_code}/volume")
     @ResponseStatus(HttpStatus.OK)
     Optional<Integer> volume(@PathVariable String _code) {
-        return price(_code).map(Price::get_volume);
+        return price(_code).map(OHLC::getVol);
     }
 
     @GetMapping("/prices/{_code}/volume/sma/{_period}")
@@ -122,11 +127,48 @@ public class Controller {
                 .reduce(latest());
     }
 
+    @PostMapping("/price")
+    @ResponseStatus(HttpStatus.OK)
+    Map<String, OHLC> price(@RequestBody List<List<String>> codes) {
+        try {
+            log.info("price/{}",codes);
+            Map<String, OHLC> result = flatMapCode(codes, code -> price(code).stream());
+            return result;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
+    }
+
     @GetMapping("/price/{_code}")
     @ResponseStatus(HttpStatus.OK)
-    Optional<Price> price(@PathVariable String _code) {
-        log.info("price/{}",_code);
-        return repository.findLatestByCode(_code);
+    Optional<OHLC> price(@PathVariable String _code) {
+        try {
+            log.info("price/{}",_code);
+            return repository.findLatestByCode(_code).map(OHLC::new);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return empty();
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class OHLC {
+
+        private final BigDecimal open;
+        private final BigDecimal hi;
+        private final BigDecimal lo;
+        private final BigDecimal close;
+        private final int vol;
+
+        public OHLC(PriceAction priceAction) {
+            this(priceAction.getOpen(),
+                 priceAction.getHigh(),
+                 priceAction.getLow(),
+                 priceAction.getClose(),
+                 priceAction.getVolume());
+        }
     }
 
 }

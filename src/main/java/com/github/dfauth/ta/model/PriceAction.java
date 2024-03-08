@@ -174,7 +174,7 @@ public interface PriceAction {
         }
     };
 
-    Function<List<PriceAction>, PriceAction> SMA = priceActions -> priceActions.stream().reduce(ZERO,(acc,pa) -> acc.add(pa),oops());
+    Function<List<PriceAction>, PriceAction> SMA = priceActions -> priceActions.stream().reduce(ZERO,(acc,pa) -> acc.add(pa),oops()).divide(priceActions.size());
 
 
 }

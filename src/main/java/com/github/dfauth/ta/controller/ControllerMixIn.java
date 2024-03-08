@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functional.Collectors;
+import io.github.dfauth.trycatch.ExceptionalRunnable;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,13 @@ import java.util.stream.Stream;
 import static java.util.function.Predicate.not;
 
 public interface ControllerMixIn {
+    static <T> Function<Throwable, T> logAndReturn(T t) {
+        return ex -> {
+            ExceptionalRunnable.log.accept(ex);
+            return t;
+        };
+    }
+
     default  <T> Map<String,T> mapCode(List<List<String>> codes, Function<String,T> f) {
         return codes.stream()
                 .flatMap(List::stream)

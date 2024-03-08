@@ -10,31 +10,40 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.github.dfauth.ta.functional.BollingerBand.calculateBollingerBands;
 import static com.github.dfauth.ta.functional.Lists.last;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.math.BigDecimal.ONE;
+import static java.util.Optional.empty;
 
 @RestController
 @Slf4j
-public class BBController extends BaseController {
+public class BBController extends BaseController implements ControllerMixIn {
+
+    @PostMapping("/bb/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, BollingerBand.BBPoint> bb(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        log.info("bb/{}/{}",codes,period);
+        return flatMapCode(codes, code -> bb(code, period).stream());
+    }
 
     @GetMapping("/bb/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Optional<BollingerBand.BBPoint> bb(@PathVariable String _code, @PathVariable int period) {
+    public Optional<BollingerBand.BBPoint> bb(@PathVariable String _code, @PathVariable int period) {
         log.info("bb/{}/{}",_code,period);
-        List<PriceAction> prices = Lists.mapList(prices(_code, period+1),PriceAction.class::cast);
-        List<BollingerBand.BBPoint> bb = calculateBollingerBands(period,2.0).apply(prices);
-        return last(bb);
+        return tryCatch(() -> {
+            List<PriceAction> prices = Lists.mapList(prices(_code, period+1),PriceAction.class::cast);
+            List<BollingerBand.BBPoint> bb = calculateBollingerBands(period,2.0).apply(prices);
+            return last(bb);
+        }, ControllerMixIn.logAndReturn(empty()));
     }
 
     @Data

@@ -11,9 +11,11 @@ package com.github.dfauth.ta.functions.ref;
  ******************************************************************************/
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -34,15 +36,15 @@ import java.util.stream.IntStream;
  *  @author Kevin Wayne
  */
 
-@Data
 @AllArgsConstructor
 public class LinearRegression {
 
-    private double slope = 0d;
-    private double intercept = 0d;
-    private double r2 = 0d;
-    private double svar0 = 0d;
-    private double svar1 = 0d;
+    private final double slope;
+    private final double intercept;
+    private final double r2;
+    private final double svar;
+    private final double svar0;
+    private final double svar1;
 
     public static <T> Optional<LinearRegression> calculate(List<T> y, Function<T,Double> f) {
         double[] array = y.stream().map(f).mapToDouble(Double::doubleValue).toArray();
@@ -106,7 +108,7 @@ public class LinearRegression {
         double svar1 = svar / xxbar;
         double svar0 = svar/n + xbar*xbar*svar1;
 
-        return Optional.of(new LinearRegression(slope, intercept, r2, svar0, svar1));
+        return Optional.of(new LinearRegression(slope, intercept, r2, svar, svar0, svar1));
     }
 
     /**
@@ -153,4 +155,45 @@ public class LinearRegression {
         return s.toString();
     }
 
+    public double getS() {
+        return scale(slope,5);
+    }
+
+    public double getV() {
+        return scale(svar,5);
+    }
+
+    private double scale(double v, int i) {
+        return BigDecimal.valueOf(v).setScale(i, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    @JsonIgnore
+    public double getSlope() {
+        return slope;
+    }
+
+    @JsonIgnore
+    public double getIntercept() {
+        return intercept;
+    }
+
+    @JsonIgnore
+    public double getR2() {
+        return r2;
+    }
+
+    @JsonIgnore
+    public double getSvar() {
+        return svar;
+    }
+
+    @JsonIgnore
+    public double getSvar0() {
+        return svar0;
+    }
+
+    @JsonIgnore
+    public double getSvar1() {
+        return svar1;
+    }
 }

@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -7,6 +9,8 @@ import java.util.function.Function;
 
 public interface Dated<T> {
     LocalDate getLocalDate();
+
+    @JsonIgnore
     T getPayload();
 
     default <R> Dated<R> map(Function<T,R> f) {

@@ -25,6 +25,12 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
         return l;
     }
 
+    default List<Price> findByCodeAndDate(String _code, Timestamp marketDate, int limit) {
+        List<Price> l = findLatestBy_date(_code, marketDate, limit);
+        Collections.reverse(l);
+        return l;
+    }
+
     default Optional<Price> findLatestByCode(String _code) {
         return findLatestBy_code(_code, 1).stream().findFirst();
     }

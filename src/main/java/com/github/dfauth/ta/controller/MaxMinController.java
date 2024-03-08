@@ -70,13 +70,25 @@ public class MaxMinController implements ControllerMixIn {
     }
 
     // pct below previous high
+    @PostMapping("/pctBelowPreviousHigh/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Map<String, BigDecimal> pctBelowPreviousHigh(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        log.info("pctBelowPreviousHigh/{}/{}",codes,period);
+        return flatMapCode(codes, code -> pctBelowPreviousHigh(code, period).stream());
+    }
+
     @GetMapping("/pctBelowPreviousHigh/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> pctBelowPreviousHigh(@PathVariable String _code, @PathVariable int period) {
-        log.info("pctBelowPreviousHigh/{}/{}",_code,period);
-        return LastHigh.pctBelow(prices(_code, period).stream()
-                .map(Price::get_close)
-                .collect(Collectors.toList()));
+        try {
+            log.info("pctBelowPreviousHigh/{}/{}",_code,period);
+            return LastHigh.pctBelow(prices(_code, period).stream()
+                    .map(Price::getClose)
+                    .collect(Collectors.toList()));
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
     }
 
     private Optional<BigDecimal> closeOperation(String _code, int period, Function<List<BigDecimal>, Optional<BigDecimal>> f1) {

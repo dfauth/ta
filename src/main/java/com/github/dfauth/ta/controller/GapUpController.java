@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.dfauth.ta.functional.GapUp;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
 import lombok.AllArgsConstructor;
@@ -14,23 +15,20 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
 import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.math.BigDecimal.ONE;
-import static java.util.Optional.empty;
 
 @RestController
 @Slf4j
-public class SMAController extends BaseController implements ControllerMixIn {
+public class GapUpController extends BaseController implements ControllerMixIn {
 
-    @PostMapping("/sma/{period}")
+    @PostMapping("/gapup")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, PriceAction> sma(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    public Map<String, Integer> gapUp(@RequestBody List<List<String>> codes) {
         try {
-            log.info("sma/{}/{}",codes,period);
-            Map<String, PriceAction> result = flatMapCode(codes, code -> sma(code, period).stream());
+            log.info("sma/{}/{}",codes);
+            Map<String, Integer> result = mapCode(codes, code -> gapUp(code));
             return result;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -38,14 +36,15 @@ public class SMAController extends BaseController implements ControllerMixIn {
         }
     }
 
-    @GetMapping("/sma/{_code}/{period}")
+    @GetMapping("/gapup/{_code}")
     @ResponseStatus(HttpStatus.OK)
-    public Optional<PriceAction> sma(@PathVariable String _code, @PathVariable int period) {
-        log.info("sma/{}/{}",_code,period);
+    public Integer gapUp(@PathVariable String _code) {
+        log.info("sma/{}",_code);
+        int period = 23;
         return tryCatch(() -> {
             List<Price> prices = prices(_code, period);
-            return Optional.of(prices.stream().collect(ringBufferCollector(new PriceAction[period], PriceAction.SMA)));
-        }, ControllerMixIn.logAndReturn(empty()));
+            return prices.stream().collect(GapUp.collector());
+        }, ControllerMixIn.logAndReturn(0));
     }
 
     @Data
