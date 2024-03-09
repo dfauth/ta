@@ -107,13 +107,13 @@ public class Controller implements ControllerMixIn {
     @GetMapping("/price/{_code}/close")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> close(@PathVariable String _code) {
-        return price(_code).map(OHLC::getClose);
+        return price(_code).map(OHLC::getC);
     }
 
     @GetMapping("/price/{_code}/volume")
     @ResponseStatus(HttpStatus.OK)
     Optional<Integer> volume(@PathVariable String _code) {
-        return price(_code).map(OHLC::getVol);
+        return price(_code).map(OHLC::getV);
     }
 
     @GetMapping("/prices/{_code}/volume/sma/{_period}")
@@ -156,11 +156,11 @@ public class Controller implements ControllerMixIn {
     @AllArgsConstructor
     public static class OHLC {
 
-        private final BigDecimal open;
-        private final BigDecimal hi;
-        private final BigDecimal lo;
-        private final BigDecimal close;
-        private final int vol;
+        private final BigDecimal o;
+        private final BigDecimal h;
+        private final BigDecimal l;
+        private final BigDecimal c;
+        private final int v;
 
         public OHLC(PriceAction priceAction) {
             this(priceAction.getOpen(),

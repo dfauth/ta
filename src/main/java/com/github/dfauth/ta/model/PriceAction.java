@@ -5,11 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-
-import static com.github.dfauth.ta.functional.Collectors.oops;
 
 public interface PriceAction {
 
@@ -72,7 +71,11 @@ public interface PriceAction {
     }
 
     static UnaryOperator<BigDecimal> divisionOperator(int period) {
-        return bd -> bd.divide(BigDecimal.valueOf(period), RoundingMode.HALF_UP);
+        return divisionOperator(period, 6);
+    }
+
+    static UnaryOperator<BigDecimal> divisionOperator(int period, int scale) {
+        return bd -> bd.divide(BigDecimal.valueOf(period).setScale(scale), scale, RoundingMode.HALF_UP);
     }
 
     default PriceAction add(PriceAction pa) {
@@ -174,7 +177,7 @@ public interface PriceAction {
         }
     };
 
-    Function<List<PriceAction>, PriceAction> SMA = priceActions -> priceActions.stream().reduce(ZERO,(acc,pa) -> acc.add(pa),oops()).divide(priceActions.size());
+    Function<List<PriceAction>, Optional<PriceAction>> SMA = priceActions -> priceActions.stream().reduce((pa1, pa2) -> pa1.add(pa2)).map(ps -> ps.divide(priceActions.size()));
 
 
 }

@@ -58,7 +58,8 @@ public class RingBufferProcessor<T,R> implements Processor<T,R> {
                     .map(peek(rb -> rb.write(t)))
                     .filter(RingBuffer::isFull)
                     .map(rb -> f.apply(collect(rb.stream())))
-                    .ifPresent(s::onNext);
+                    .ifPresent(v ->
+                            s.onNext(v));
         });
     }
 

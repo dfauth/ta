@@ -69,7 +69,8 @@ public class Lists<T> extends ArrayList<T> {
     }
 
     public static <T> Tuple2<List<T>, List<T>> splitAt(List<T> ts, int position) {
-        return splitAt(ts, _ignore -> position);
+        int p = position < 0 ? ts.size() + position : position;
+        return splitAt(ts, _ignore -> p);
     }
 
     public static <T> Tuple2<List<T>, List<T>> splitAt(List<T> ts, UnaryOperator<Integer> splitter) {

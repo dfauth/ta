@@ -2,12 +2,12 @@ package com.github.dfauth.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dfauth.ta.controller.Controller;
 import com.github.dfauth.ta.controller.SMAController;
-import com.github.dfauth.ta.model.PriceAction;
+import com.github.dfauth.ta.functions.TestData;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,15 +22,32 @@ public class SMAControllerTest extends MockPriceRepoControllerTest<SMAController
     @Test
     public void testIt() throws JsonProcessingException {
 
-        Optional<PriceAction> result = getController().sma("ASX:EMR", 14);
-        assertEquals(43218337, result.get().getVolume());
+        Optional<Controller.OHLC> result = getController().sma("ASX:EMR", 14);
+        assertEquals(43218337, result.get().getV());
     }
 
     @Test
     public void testPost() throws JsonProcessingException {
 
-        Map<String, PriceAction> result = getController().sma(List.of(List.of("ASX:EMR", "ASX:WGX")), 14);
-        assertEquals(18799220, result.get("ASX:WGX").getVolume());
+        Map<String, Controller.OHLC> result = getController().sma(TestData.CODES_AS_LIST_LIST, 14);
+        assertEquals(18799220, result.get("ASX:WGX").getV());
+    }
+
+    @Test
+    public void testPostMomentum() throws JsonProcessingException {
+
+//        log.info("WGX: \n{}",TestData.WGX.stream().map(p -> String.format("%.2f,%d",p.getClose().doubleValue(), p.getVolume())).collect(Collectors.joining("\n")));
+        Map<String, Controller.OHLC> result = getController().smaMomentum(TestData.CODES_AS_LIST_LIST, 23);
+        assertEquals(0.002268d, result.get("ASX:WGX").getC().doubleValue(), 0.001);
+        assertEquals(-33173d, (double) result.get("ASX:WGX").getV(), 1d);
+    }
+
+    @Test
+    public void testGetMomentum() throws JsonProcessingException {
+
+        Optional<Controller.OHLC> result = getController().smaMomentum("ASX:WGX", 23);
+        assertEquals(0.002268d, result.get().getC().doubleValue(), 0.001);
+        assertEquals(-33173d, (double) result.get().getV(), 1d);
     }
 
     @Override
