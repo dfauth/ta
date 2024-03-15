@@ -5,6 +5,7 @@ import com.github.dfauth.ta.util.RingBuffer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -15,10 +16,16 @@ import static java.util.function.Function.identity;
 public class RingBufferCollector<T,R> extends MutableCollector<T,RingBuffer<T>,R> {
 
     public RingBufferCollector(T[] buffer, Function<List<T>, R> finisher) {
+        this(buffer,
+                RingBuffer::write,
+                _rb -> finisher.apply(_rb.stream().collect(Collectors.toList())));
+    }
+
+    public RingBufferCollector(T[] buffer, BiConsumer<RingBuffer<T>, T> accumulator, Function<List<T>, R> finisher) {
         super(new ArrayRingBuffer<>(buffer),
-                (_rb,t) -> {
-                    _rb.write(t);
-                    return _rb;
+                (rb,t) -> {
+                    accumulator.accept(rb, t);
+                    return rb;
                 },
                 _rb -> finisher.apply(_rb.stream().collect(Collectors.toList())));
     }

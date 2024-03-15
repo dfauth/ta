@@ -1,69 +1,73 @@
 package com.github.dfauth.ta.functions;
 
-import com.github.dfauth.ta.functional.RingBufferPublisher;
+import com.github.dfauth.ta.functional.Lists;
+import com.github.dfauth.ta.functional.RingBufferCollector;
 import com.github.dfauth.ta.model.Dated;
-import com.github.dfauth.ta.util.ArrayRingBuffer;
 import com.github.dfauth.ta.util.BigDecimalOps;
-import com.github.dfauth.ta.util.RingBuffer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.Collectors.adjacent;
-import static com.github.dfauth.ta.functional.ImmutableCollector.collector;
-import static com.github.dfauth.ta.functional.Lists.last;
-import static com.github.dfauth.ta.functional.RingBufferPublisher.ringBufferPublisher;
-import static com.github.dfauth.ta.model.Dated.dated;
 import static com.github.dfauth.ta.util.BigDecimalOps.*;
 import static java.math.BigDecimal.ONE;
 import static java.util.function.Predicate.not;
 
 public interface RSI {
 
-    BiFunction<BigDecimal,BigDecimal,GainLoss> gainLoss = GainLoss::create;
+    static BiFunction<GainLoss,GainLoss,BigDecimal> step2(int period) {
+        return (prev, current) ->
+            HUNDRED.subtract(BigDecimalOps.divideWithZeroCheck(HUNDRED, ONE.add(BigDecimalOps.divideWithZeroCheck(
+                BigDecimalOps.multiply(prev.gain, period-1).add(current.gain),
+                BigDecimalOps.multiply(prev.loss, period-1).add(current.loss)
+            ).orElse(ZERO3))).orElse(ZERO3));
+    }
 
-    static Function<Dated<BigDecimal>, Dated<BigDecimal>> rsi() {
+    static BiFunction<Dated<GainLoss>, Dated<GainLoss>, Dated<BigDecimal>> datedStep2(int period) {
+        return Dated.apply((d1,d2) -> step2(period).apply(d1,d2));
+    }
+
+    BinaryOperator<Dated<GainLoss>> sumDatedGainLoss = (d1,d2) -> Dated.apply(GainLoss::addStatic).apply(d1,d2);
+
+    BiFunction<Dated<BigDecimal>,Dated<BigDecimal>,Dated<GainLoss>> toDatedGainLoss = (p,c) -> p.flatMap(_p -> c.map(_c -> GainLoss.create(_p,_c)));
+    BinaryOperator<Dated<GainLoss>> add = (prev,curr) -> prev.map(curr,GainLoss::add);
+
+    static Function<List<Dated<BigDecimal>>, Optional<Dated<BigDecimal>>> rsi() {
         return rsi(14);
     }
 
-    static Function<Dated<BigDecimal>, Dated<BigDecimal>> rsi(int period) {
-        RingBuffer<Dated<BigDecimal>> ringBuffer = new ArrayRingBuffer<Dated<BigDecimal>>(new Dated[period]);
-        BiFunction<Dated<GainLoss>, Dated<GainLoss>, Dated<BigDecimal>> __f2 = (d1,d2) -> d1.flatMap(_d1 -> d2.flatMap(_d2 -> dated(d2.getLocalDate(), GainLoss.stepTwo(period).apply(_d1, _d2))));
-        RingBufferPublisher<Dated<GainLoss>, Dated<BigDecimal>> gainLossPublisher = ringBufferPublisher(new Dated[period], l -> last(l.stream().collect(adjacent(__f2))));
+    static Function<List<Dated<BigDecimal>>, Optional<Dated<BigDecimal>>> rsi(int period) {
 
-        BiFunction<Dated<GainLoss>, Dated<GainLoss>, Dated<GainLoss>> accumulator = (previous, current) -> current.map(gl -> previous.getPayload().add(gl));
-        Function<Dated<GainLoss>, Dated<BigDecimal>> combiner = d -> d.map(gl -> gl.divide(period).relativeStrengthIndex());
+        Function<List<Dated<BigDecimal>>, List<Dated<GainLoss>>> stepOne = datedPrices -> datedPrices.stream().collect(adjacent(toDatedGainLoss));
 
-        return bd -> {
-            ringBuffer.write(bd);
-            List<Dated<GainLoss>> result = Optional.of(ringBuffer).filter(RingBuffer::isFull).flatMap(rb -> rb.collect(adjacent((prev, curr) -> curr.map(gl -> gainLoss.apply(prev.getPayload(), gl))))).orElse(Collections.emptyList());
-            return result.stream().collect(collector(dated(LocalDate.now(), GainLoss.ZERO),
-                    accumulator,
-                    combiner
-            ));
+        Function<List<Dated<GainLoss>>, Optional<Dated<BigDecimal>>> stepOnePointFive = datedGainLoss -> {
+            BiFunction<Dated<GainLoss>, Dated<GainLoss>, Dated<BigDecimal>> step2 = datedStep2(period);
+            List<Dated<BigDecimal>> tmp = new ArrayList<>();
+            Optional<Dated<BigDecimal>> result = datedGainLoss.stream()
+                    .collect(new RingBufferCollector<Dated<GainLoss>,Optional<Dated<BigDecimal>>>(
+                                new Dated[period],
+                                (rb,gl) -> {
+                                    Optional<Dated<GainLoss>> sma = rb.stream().reduce(sumDatedGainLoss).map(dgl -> dgl.map(_gl -> _gl.divide(period)));
+                                    sma.ifPresent(_sma -> tmp.add(step2.apply(_sma,gl)));
+                                    rb.write(gl);
+                                },
+                                ignore -> Lists.last(tmp)
+                            )
+                    );
+            return result;
         };
-    }
-
-    static Optional<Dated<BigDecimal>> calculateRSI(List<Dated<BigDecimal>> prices) {
-        return calculateRSI(prices.stream(), prices.size());
+        return stepOne.andThen(stepOnePointFive);
     }
 
     static Optional<Dated<BigDecimal>> calculateRSI(List<Dated<BigDecimal>> prices, int period) {
-        return calculateRSI(prices.stream(), period);
-    }
-
-    static Optional<Dated<BigDecimal>> calculateRSI(Stream<Dated<BigDecimal>> prices, int period) {
-        Function<Dated<BigDecimal>, Dated<BigDecimal>> f = rsi(period);
-        return last(prices.map(f).collect(Collectors.toList()));
+        return rsi(period).apply(prices);
     }
 
     @Data
@@ -80,7 +84,7 @@ public interface RSI {
             return isGreaterThanOrEqualTo(diff,ZERO3) ? new GainLoss(diff, ZERO3) : new GainLoss(ZERO3, diff.abs());
         }
 
-        public static GainLoss add1(GainLoss gainLoss1, GainLoss gainLoss2) {
+        public static GainLoss addStatic(GainLoss gainLoss1, GainLoss gainLoss2) {
             return new GainLoss(BigDecimalOps.add(gainLoss1.gain,gainLoss2.gain), BigDecimalOps.add(gainLoss1.loss,gainLoss2.loss));
         }
 
@@ -89,7 +93,7 @@ public interface RSI {
         }
 
         public GainLoss add(GainLoss gainLoss) {
-            return add1(this, gainLoss);
+            return GainLoss.addStatic(this, gainLoss);
         }
 
         public GainLoss divide(int period) {

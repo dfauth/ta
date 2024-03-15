@@ -38,17 +38,22 @@ public class RingBufferProcessor<T,R> implements Processor<T,R> {
     @Override
     public synchronized void subscribe(Subscriber<? super R> subscriber) {
         this.subscriber = subscriber;
-        tryInit();
+        initialize();
     }
 
-    private void tryInit() {
-        Optional.ofNullable(this.subscriber).ifPresent(s1 -> Optional.ofNullable(this.subscription).ifPresent(s1::onSubscribe));
+    private synchronized void initialize() {
+        if(this.subscriber != null) {
+            if(this.subscription != null) {
+                this.subscriber.onSubscribe(subscription);
+                this.subscription = null;
+            }
+        }
     }
 
     @Override
     public synchronized void onSubscribe(Subscription subscription) {
         this.subscription = subscription;
-        tryInit();
+        initialize();
     }
 
     @Override
@@ -58,8 +63,7 @@ public class RingBufferProcessor<T,R> implements Processor<T,R> {
                     .map(peek(rb -> rb.write(t)))
                     .filter(RingBuffer::isFull)
                     .map(rb -> f.apply(collect(rb.stream())))
-                    .ifPresent(v ->
-                            s.onNext(v));
+                    .ifPresent(s::onNext);
         });
     }
 

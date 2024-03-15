@@ -47,7 +47,7 @@ public class PNV {
     public void testRSI() {
         int period = 14;
         List<Dated<BigDecimal>> window = mapList(TestData.MP1, p -> dated(p.getDate(), p.getClose()));
-        Optional<Dated<BigDecimal>> rsi = RSI.calculateRSI(window.stream(), period);
+        Optional<Dated<BigDecimal>> rsi = RSI.calculateRSI(window, period);
         assertTrue(rsi.isPresent());
         assertEquals(YAHOO_RSI.doubleValue(), rsi.orElseThrow().getPayload().doubleValue(), YAHOO_RSI.doubleValue()*0.01);
     }
