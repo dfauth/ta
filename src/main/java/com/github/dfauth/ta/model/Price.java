@@ -157,6 +157,7 @@ public class Price implements Candlestick, Dated<PriceAction> {
     }
 
     @Override
+    @JsonIgnore
     public LocalDate getLocalDate() {
         return _date.toLocalDateTime().toLocalDate();
     }

@@ -3,15 +3,18 @@ package com.github.dfauth.controller;
 import com.github.dfauth.ta.functions.TestData;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
+import io.github.dfauth.trycatch.ExceptionalRunnable;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
+import static java.util.function.Predicate.not;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -36,13 +39,13 @@ public abstract class MockPriceRepoControllerTest<T> {
     }
 
     protected Map<String,List<Price>> getTestData() {
-        return Map.of("ASX:EMR", TestData.EMR,
-                "ASX:MP1", TestData.MP1,
-                "ASX:CGC", TestData.CGC,
-                "ASX:AX1", TestData.AX1,
-                "ASX:PPL", TestData.PPL,
-                "ASX:WGX", TestData.WGX
-        );
+        return Stream.of(TestData.class.getDeclaredFields())
+                .filter(not(f -> f.getName().equals("CODES")))
+                .filter(not(f -> f.getName().equals("CODES_AS_LIST_LIST")))
+                .map(f -> Map.entry(
+                        String.format("ASX:%s",f.getName()),
+                        ExceptionalRunnable.<List<Price>>tryCatch(() -> List.class.cast(f.get(TestData.class))))
+                ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     protected abstract T getController();

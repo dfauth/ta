@@ -25,7 +25,7 @@ public interface CandlestickComparator<T> extends BiFunction<Candlestick,Candles
 
     CandlestickComparator<Boolean> ENGULFING_COMPARATOR = (p,n) -> (n.isRising() && n.gapDown(p) && n.closedHigher(p)) ||
             (n.isFalling() && n.gapUp(p) && n.closedLower(p));
-    CandlestickComparator<Boolean> GAP_UP = (p,n) -> n.getOpen().compareTo(p.getClose()) > 0 && n.isRising();
+    CandlestickComparator<Boolean> GAP_UP = (p,n) -> n.getOpen().compareTo(p.getClose()) > 0;
 
     CandlestickComparator<Boolean> GAP_DOWN = (p,n) -> n.getOpen().compareTo(p.getClose()) < 0;
 
