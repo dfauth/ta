@@ -1,53 +1,59 @@
 package com.github.dfauth.ta.functions;
 
-import com.github.dfauth.ta.functional.HistoricalOffset;
-import com.github.dfauth.ta.util.BigDecimalOps;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import com.github.dfauth.ta.model.Candlestick;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
-import java.util.stream.Stream;
-
-import static com.github.dfauth.ta.functional.Collectors.comparing;
-import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
-import static com.github.dfauth.ta.functional.Lists.last;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 
 public class ConsecutiveUpDays {
 
-    public static BiPredicate<BigDecimal,BigDecimal> isUpDay = BigDecimalOps::isLessThan;
+    private int cnt;
+    private Candlestick prev;
 
-    public static BiFunction<HistoricalOffset<BigDecimal>,HistoricalOffset<BigDecimal>,Integer> consecutiveUpDays = (ho1,ho2) ->
-            isUpDay.test(ho1.getPayload(),ho2.getPayload()) ? ho2.getOffset() - ho1.getOffset() : 0;
+    public static Collector<Candlestick, ConsecutiveUpDays, Integer> collector() {
+        return new Collector<>() {
+            @Override
+            public Supplier<ConsecutiveUpDays> supplier() {
+                return ConsecutiveUpDays::new;
+            }
 
-    public static Optional<Integer> consecutiveUpDays(List<BigDecimal> prices) {
-        return consecutiveUpDays(prices.stream());
+            @Override
+            public BiConsumer<ConsecutiveUpDays, Candlestick> accumulator() {
+                return ConsecutiveUpDays::accumulate;
+            }
+
+            @Override
+            public BinaryOperator<ConsecutiveUpDays> combiner() {
+                return (gu1, gu2) -> {
+                    throw new UnsupportedOperationException();
+                };
+            }
+
+            @Override
+            public Function<ConsecutiveUpDays, Integer> finisher() {
+                return ConsecutiveUpDays::getCount;
+            }
+
+            public Set<Characteristics> characteristics() {
+                return Set.of();
+            }
+        };
     }
 
-    public static Optional<Integer> consecutiveUpDays(Stream<BigDecimal> prices) {
-        Stream<HistoricalOffset<BigDecimal>> historicalOffsetStream = zipWithHistoricalOffset(prices);
-        return last(historicalOffsetStream.map(Interval::new).collect(comparing((i1,i2) -> {
-            return isUpDay.test(i1.getStart().getPayload(),i2.getStart().getPayload()) ?
-                    new Interval<>(i1.getStart(),i2.getEnd()) :
-                    i2;
-        }))).map(Interval::getOffset);
+    public void accumulate(Candlestick curr) {
+        if(prev != null && curr.closedHigher(prev)) {
+            cnt++;
+        } else {
+            cnt = 0;
+        }
+        prev = curr;
     }
 
-    @Data
-    @AllArgsConstructor
-    public static class Interval<T> {
-        private final HistoricalOffset<T> start;
-        private final HistoricalOffset<T> end;
-
-        public Interval(HistoricalOffset<T> ho) {
-            this(ho,ho);
-        }
-
-        public Integer getOffset() {
-            return start.duration(end);
-        }
+    public int getCount() {
+        return cnt;
     }
 }
