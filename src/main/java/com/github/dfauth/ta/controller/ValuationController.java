@@ -64,16 +64,16 @@ public class ValuationController {
     @ResponseStatus(HttpStatus.CREATED)
     Integer valuations(@PathVariable Integer _date, @RequestBody Object[][] args) {
         log.error("args: ",args);
-        Timestamp timestamp = new Timestamp(LocalDateTime.of(LocalDate.of(_date / 100, _date % 100, 1), LocalTime.of(0, 0)).toInstant(ZoneOffset.UTC).toEpochMilli());
+        Timestamp timestamp = new Timestamp(LocalDateTime.of(LocalDate.of(_date / 10000, (_date % 10000)/100, _date % 100), LocalTime.of(0, 0)).toInstant(ZoneOffset.UTC).toEpochMilli());
         List<Valuation> valuations = Stream.of(args).filter(arr -> !toCode(arr[0]).isEmpty()).map(arr -> {
             return new Valuation(
                     toCode(arr[0]),
                     timestamp,
-                    Rating.fromString((String)arr[4]),
+                    Rating.fromString((String)arr[3]),
+                    (Integer) arr[4],
                     (Integer) arr[5],
                     (Integer) arr[6],
-                    (Integer) arr[7],
-                    toBigDecimal(arr[8])
+                    toBigDecimal(arr[7])
             );
         }).collect(Collectors.toList());
         repository.saveAll(valuations);

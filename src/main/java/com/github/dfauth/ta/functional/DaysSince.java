@@ -11,7 +11,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +19,7 @@ import static com.github.dfauth.ta.functional.Collectors.comparing;
 import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.Lists.splitAt;
-import static com.github.dfauth.ta.util.BigDecimalOps.compare;
+import static com.github.dfauth.ta.util.BigDecimalOps.*;
 import static java.util.stream.Collectors.toList;
 
 public class DaysSince {
@@ -72,7 +71,7 @@ public class DaysSince {
         }
 
         public BigDecimal getPctBelow() {
-            return last.getPayload().get_close().subtract(getPrice()).divide(getPrice(), RoundingMode.HALF_UP);
+            return divideWithZeroCheck(last.getPayload().get_close().subtract(getPrice()), getPrice()).orElse(ZERO3);
         }
     }
 }

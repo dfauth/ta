@@ -27,6 +27,12 @@ public class ConsecutiveUpDaysControllerTest extends MockPriceRepoControllerTest
     public void testPost() throws JsonProcessingException {
         Map<String, Integer> result = getController().consecutiveUpDays(TestData.CODES_AS_LIST_LIST, 252);
         assertEquals(0, result.get("ASX:LBL").intValue());
+        assertEquals(2, result.get("ASX:EMR").intValue());
+        assertEquals(2, result.get("ASX:CGC").intValue());
+        assertEquals(2, result.get("ASX:MP1").intValue());
+        assertEquals(0, result.get("ASX:AX1").intValue());
+        assertEquals(0, result.get("ASX:PPL").intValue());
+        assertEquals(1, result.get("ASX:WGX").intValue());
     }
 
     @Override

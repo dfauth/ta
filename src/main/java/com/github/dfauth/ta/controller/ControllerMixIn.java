@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.util.function.Predicate.not;
 
 public interface ControllerMixIn {
@@ -33,7 +34,7 @@ public interface ControllerMixIn {
         return codes.stream()
                 .flatMap(List::stream)
                 .filter(not(String::isEmpty))
-                .flatMap(code -> f.apply(code).map(v -> Map.entry(code, v)))
+                .flatMap(code -> tryCatch(() -> f.apply(code),e -> Optional.<T>empty().stream()).map(v -> Map.entry(code, v)))
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> (k,v) -> Optional.ofNullable(v).map(_v -> e.getValue()).orElseGet(e::getValue))
                 );
