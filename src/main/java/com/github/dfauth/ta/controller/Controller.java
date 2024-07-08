@@ -43,7 +43,7 @@ public class Controller implements ControllerMixIn {
     Integer sync(@PathVariable String _code, @RequestBody Object[][] args) {
         List<Price> prices = Stream.of(args)
                 .map(a -> new Price(_code, parseDate((String) a[0]), parsePrice(a[1]), parsePrice(a[2]), parsePrice(a[3]), parsePrice(a[4]), (Integer) a[5]))
-                .filter(p -> repository.findById(p.getKey()).isEmpty())
+                .filter(p -> repository.findById(p.getKey()).map(_p -> _p.getOpen() == null).orElse(true))
                 .collect(Collectors.toList());
         repository.saveAll(prices);
         return prices.size();

@@ -12,7 +12,8 @@ import java.util.List;
 
 public enum MarketEnum implements Market {
 
-    ASX("ASX","Australia/Sydney",LocalTime.of(10,0), LocalTime.of(16,0));
+    ASX("ASX","Australia/Sydney",LocalTime.of(10,0), LocalTime.of(16,0)),
+    NYSE("NYSE","America/New_York",LocalTime.of(9,30), LocalTime.of(16,0));
 
     private final String code;
     private final ZoneId zoneId;

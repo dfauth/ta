@@ -60,7 +60,9 @@ public class Price implements Candlestick, Dated<PriceAction> {
     }
 
     public static BigDecimal parsePrice(Object arg) {
-        if(arg instanceof Double) {
+        if(arg == null) {
+            return null;
+        } else if(arg instanceof Double) {
             return BigDecimal.valueOf((Double) arg).setScale(3);
         } else if(arg instanceof String) {
             return new BigDecimal((String) arg).setScale(3);

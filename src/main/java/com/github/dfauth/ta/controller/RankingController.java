@@ -2,6 +2,7 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functional.Collectors;
 import com.github.dfauth.ta.model.Market;
+import com.github.dfauth.ta.model.MarketEnum;
 import com.github.dfauth.ta.model.RankListDateCodeComposite;
 import com.github.dfauth.ta.model.Ranking;
 import com.github.dfauth.ta.repo.RankingRepository;
@@ -95,6 +96,23 @@ public class RankingController implements ControllerMixIn {
                 .boxed()
                 .flatMap(i -> finalIt.next().stream().map(v -> Map.entry(i,market.withCode(v))))
                 .map(e -> new RankListDateCodeComposite(r, sydneyClose, e.getValue(), e.getKey()))
+                .collect(java.util.stream.Collectors.toList());
+        Iterable<RankListDateCodeComposite> it = repository.saveAll(codes);
+        return StreamSupport.stream(it.spliterator(), false).count();
+    }
+
+    @PostMapping("/sync/rank/sp500/{list}")
+    @ResponseStatus(HttpStatus.OK)
+    public Long syncRankSP500(@PathVariable String list, @RequestBody List<List<String>> o) {
+        log.info("syncRankSP500 {} {}", list, o);
+        MarketEnum mkt = MarketEnum.NYSE;
+        int r = Ranking.findByCode(list).map(Ranking::ordinal).orElseThrow();
+        Timestamp mktClose = new Timestamp(mkt.atMarketCloseOn(mkt.getMarketDate()).toEpochMilli());
+        final Iterator<List<String>> finalIt = o.iterator();
+        List<RankListDateCodeComposite> codes = IntStream.rangeClosed(1, o.size())
+                .boxed()
+                .flatMap(i -> finalIt.next().stream().map(v -> Map.entry(i,mkt.withCode(v))))
+                .map(e -> new RankListDateCodeComposite(r, mktClose, e.getValue(), e.getKey()))
                 .collect(java.util.stream.Collectors.toList());
         Iterable<RankListDateCodeComposite> it = repository.saveAll(codes);
         return StreamSupport.stream(it.spliterator(), false).count();

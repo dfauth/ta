@@ -9,8 +9,11 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public enum Ranking {
+    // always add new enums at the bottom otherwise you mess up older data
     MOMENTUM_QUARTERLY("mtm-qtr"),
-    ALLORDS_MOMENTUM_QUARTERLY("xao-mtm-qtr");
+    ALLORDS_MOMENTUM_QUARTERLY("xao-mtm-qtr"),
+    AUS_MOMENTUM_CHARTIST("aus-mtm-chartist"),
+    US_MOMENTUM_CHARTIST("us-mtm-chartist");
 
     public static Function<RankListDateCodeComposite, BiFunction<String, Map<LocalDate,Integer>, Map<LocalDate,Integer>>> reMapper = rldc -> (c, r1) -> Optional.ofNullable(r1).map(_r -> {
         _r.put(rldc.getDate().toLocalDateTime().toLocalDate(), rldc.getRank());
