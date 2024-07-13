@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.dfauth.ta.util.ArrayRingBuffer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -9,6 +10,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public interface PriceAction {
 
@@ -178,6 +180,16 @@ public interface PriceAction {
     };
 
     Function<List<PriceAction>, Optional<PriceAction>> SMA = priceActions -> priceActions.stream().reduce((pa1, pa2) -> pa1.add(pa2)).map(ps -> ps.divide(priceActions.size()));
+
+    static Function<List<PriceAction>, List<PriceAction>> sma(int size) {
+        return l -> {
+            ArrayRingBuffer<PriceAction> ringBuffer = new ArrayRingBuffer<>(new PriceAction[l.size() - size]);
+            return l.stream().map(e -> {
+                ringBuffer.write(e);
+                return ringBuffer.stream().filter(_e -> ringBuffer.isFull()).reduce((pa1, pa2) -> pa1.add(pa2)).map(pa -> pa.divide(ringBuffer.capacity()));
+            }).flatMap(Optional::stream).collect(Collectors.toList());
+        };
+    }
 
 
 }
