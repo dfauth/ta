@@ -14,6 +14,10 @@ public interface RingBuffer<T> {
 
     Stream<T> stream();
 
+    default Stream<T> streamIfFull() {
+        return stream().filter(e -> isFull());
+    }
+
     boolean isFull();
 
     default <A,R> Optional<R> collect(Collector<T,A,R> f2) {

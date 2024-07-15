@@ -11,6 +11,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface PriceAction {
 
@@ -179,8 +180,9 @@ public interface PriceAction {
         }
     };
 
-    Function<List<PriceAction>, Optional<PriceAction>> SMA = priceActions -> priceActions.stream().reduce((pa1, pa2) -> pa1.add(pa2)).map(ps -> ps.divide(priceActions.size()));
+    Function<Stream<PriceAction>, Optional<PriceAction>> SUM = s -> s.reduce((pa1, pa2) -> pa1.add(pa2));
 
+    Function<List<PriceAction>, Optional<PriceAction>> SMA = priceActions -> SUM.apply(priceActions.stream()).map(ps -> ps.divide(priceActions.size()));
     static Function<List<PriceAction>, List<PriceAction>> sma(int size) {
         return l -> {
             ArrayRingBuffer<PriceAction> ringBuffer = new ArrayRingBuffer<>(new PriceAction[l.size() - size]);

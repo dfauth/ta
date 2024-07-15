@@ -37,7 +37,6 @@ public interface CandlestickComparator<T> extends BiFunction<Candlestick,Candles
 
     CandlestickComparator<Boolean> INCREASED_VOLUME = (p,n) -> n.getVolume() > p.getVolume();
 
-    BinaryOperator<BigDecimal> PCT_CHANGE = BigDecimalOps::pctChange;
     BiPredicate<BigDecimal,BigDecimal> SIGNIFICANT_RATIO = BigDecimalOps::isGreaterThanOrEqualTo;
 
     Predicate<Candlestick> SIGNIFICANT_VOLUME = candlestick -> adapt(Function2.curry(SIGNIFICANT_RATIO).apply(valueOf(1.3))).test(valueOf(candlestick.getVolume()));

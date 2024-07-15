@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class Valuations {
 
     public static List<BigDecimal> valuationChange(List<Valuation> valuations) {
-        BinaryOperator<BigDecimal> f = BigDecimalOps::pctChange;
+        BinaryOperator<BigDecimal> f = BigDecimalOps::pctChangeOrZero;
         return HistoricalOffset.zipWithPrevious(valuations).map(z -> new Tuple2<>(z.getPrevious().getTarget(), z.getCurrent().getTarget())).map(t -> t.map(f)).collect(Collectors.toList());
     }
 }
