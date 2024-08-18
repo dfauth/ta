@@ -34,7 +34,15 @@ public class SMAControllerTest extends MockPriceRepoControllerTest<SMAController
     }
 
     @Test
-    public void testPostMomentum() throws JsonProcessingException {
+    public void testEmaPostMomentum() {
+
+        Map<String, Controller.OHLC> result = getController().emaMomentum(TestData.CODES_AS_LIST_LIST, 23);
+        assertEquals(0.040728d, result.get("ASX:WGX").getC().doubleValue(), 0.001);
+        assertEquals(-68867.0, (double) result.get("ASX:WGX").getV(), 1d);
+    }
+
+    @Test
+    public void testPostMomentum() {
 
 //        log.info("WGX: \n{}",TestData.WGX.stream().map(p -> String.format("%.2f,%d",p.getClose().doubleValue(), p.getVolume())).collect(Collectors.joining("\n")));
         Map<String, Controller.OHLC> result = getController().smaMomentum(TestData.CODES_AS_LIST_LIST, 23);

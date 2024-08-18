@@ -35,6 +35,10 @@ public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
         return bd1.compareTo(bd2)>=0;
     }
 
+    static boolean isLessThanZero(BigDecimal bd) {
+        return isLessThan(bd, ZERO3);
+    }
+
     static boolean isLessThan(BigDecimal bd1, BigDecimal bd2) {
         return bd1.compareTo(bd2)<0;
     }

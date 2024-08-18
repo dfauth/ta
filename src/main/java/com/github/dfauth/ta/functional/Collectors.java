@@ -48,6 +48,7 @@ public class Collectors {
                     ));
         };
     }
+
     public static <T> Collector<T, Stack<T>,List<T>> comparing(BinaryOperator<T> f2) {
 
         return new Collector<>() {

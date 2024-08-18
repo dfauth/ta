@@ -116,11 +116,11 @@ public class SMATest {
         @JsonIgnore private PV sma;
 
         public BigDecimal getPriceVariation() {
-            return pctChange(price.getClose(),sma.getClosingPrice());
+            return pctChange(price.getClose(),sma.getClosingPrice()).get();
         }
 
         public BigDecimal getVolumeVariation() {
-            return pctChange(price.getVolume(),sma.getVolume());
+            return pctChange(price.getVolume(),sma.getVolume()).get();
         }
     }
 }

@@ -4,6 +4,8 @@ import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.RingBufferProcessor;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
+import com.github.dfauth.ta.util.ArrayRingBuffer;
+import com.github.dfauth.ta.util.RingBuffer;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Processor;
 import org.springframework.http.HttpStatus;
@@ -14,11 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Lists.head;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
 import static com.github.dfauth.ta.functional.RingBufferProcessor.ringBufferProcessor;
+import static com.github.dfauth.ta.model.PriceAction.EMA;
 import static com.github.dfauth.ta.model.PriceAction.SMA;
 import static com.github.dfauth.ta.reactive.OptionalProcessor.identity;
 import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
@@ -80,6 +84,38 @@ public class SMAController extends BaseController implements ControllerMixIn {
                     .flatMap(_l -> head(tail)
                     .map(_h -> _l.subtract(_h)
                             .divide(period)))
+                    .map(Controller.OHLC::new);
+        }, ControllerMixIn.logAndReturn(empty()));
+    }
+
+    @PostMapping("/ema/momentum/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, Controller.OHLC> emaMomentum(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        try {
+            log.info("ema/momentum/{}/{}",codes,period);
+            Map<String, Controller.OHLC> result = flatMapCode(codes, code -> emaMomentum(code, period).stream());
+            return result;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @GetMapping("/ema/momentum/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    public Optional<Controller.OHLC> emaMomentum(@PathVariable String _code, @PathVariable int period) {
+        RingBuffer<PriceAction> ringBuffer = new ArrayRingBuffer<>(new PriceAction[period]);
+        log.info("emaMomentum/{}/{}",_code,period);
+        return tryCatch(() -> {
+            List<Price> prices = prices(_code, 2 * period);
+            List<PriceAction> emas = prices.stream().map(pa -> {
+                ringBuffer.write(pa);
+                return EMA.apply(ringBuffer.streamIfFull().collect(Collectors.toList()));
+            }).flatMap(Optional::stream).collect(Collectors.toList());
+            return last(emas)
+                    .flatMap(_l -> head(emas)
+                            .map(_h -> _l.subtract(_h)
+                                    .divide(period)))
                     .map(Controller.OHLC::new);
         }, ControllerMixIn.logAndReturn(empty()));
     }

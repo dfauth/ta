@@ -11,15 +11,16 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.Thingy.ThingyState.fromSMA;
-import static com.github.dfauth.ta.model.PriceAction.SUM;
+import static com.github.dfauth.ta.functional.Trend.TrendState.fromSMA;
 import static com.github.dfauth.ta.util.BigDecimalOps.isGreaterThan;
 import static com.github.dfauth.ta.util.BigDecimalOps.pctChange;
 
 @Slf4j
 @Data
-public class Thingy {
+public class Trend {
 
     @JsonIgnore
     private final Nested previous;
@@ -28,13 +29,13 @@ public class Thingy {
     @JsonProperty("d")
     private final int daysInThisState;
     @JsonIgnore
-    private Optional<ThingyState> previousState;
+    private Optional<TrendState> previousState;
 
-    public Thingy(PriceAction pa, PriceAction l, PriceAction s, PriceAction f) {
+    public Trend(PriceAction pa, PriceAction l, PriceAction s, PriceAction f) {
         this(null, new Nested(pa, l, s, f), 0, Optional.empty());
     }
 
-    private Thingy(Nested previous, Nested current, int daysInThisState, Optional<ThingyState> previousState) {
+    private Trend(Nested previous, Nested current, int daysInThisState, Optional<TrendState> previousState) {
         this.previous = previous;
         this.current = current;
         this.previousState = previousState;
@@ -47,38 +48,38 @@ public class Thingy {
         return 0;
     }
 
-    public static Optional<Thingy> calculateThingy(List<PriceAction> priceAction) {
-        return calculateThingy(priceAction, 20, 50, 200);
+    public static Optional<Trend> calculateTrend(List<PriceAction> priceAction) {
+        return calculateTrend(priceAction, 20, 50, 200);
     }
 
-    public static Optional<Thingy> calculateThingy(List<PriceAction> priceAction, int fastPeriod, int slowPeriod, int longPeriod) {
+    public static Optional<Trend> calculateTrend(List<PriceAction> priceAction, int fastPeriod, int slowPeriod, int longPeriod) {
+        return calculateTrend(priceAction, fastPeriod, slowPeriod, longPeriod, PriceAction.SMA);
+    }
+
+    public static Optional<Trend> calculateTrend(List<PriceAction> priceAction, int fastPeriod, int slowPeriod, int longPeriod, Function<List<PriceAction>, Optional<PriceAction>> smoothingFunction) {
         RingBuffer<PriceAction> longBuffer = new ArrayRingBuffer<>(new PriceAction[longPeriod]);
         RingBuffer<PriceAction> slowBuffer = new ArrayRingBuffer<>(new PriceAction[slowPeriod]);
         RingBuffer<PriceAction> fastBuffer = new ArrayRingBuffer<>(new PriceAction[fastPeriod]);
 
-        Optional<Thingy> thingy = priceAction.stream().map(pa -> {
+        Optional<Trend> thingy = priceAction.stream().map(pa -> {
             longBuffer.write(pa);
             slowBuffer.write(pa);
             fastBuffer.write(pa);
 
-            return SUM.apply(fastBuffer.streamIfFull())
-                    .map(_pa -> _pa.divide(fastPeriod))
-                    .flatMap(f -> SUM.apply(slowBuffer.streamIfFull())
-                            .map(_pa -> _pa.divide(slowPeriod))
-                            .flatMap(s -> SUM.apply(longBuffer.streamIfFull())
-                                    .map(_pa -> _pa.divide(longPeriod)).map(l -> new Thingy(pa, l, s, f))
-                            )
-                    );
-        }).flatMap(Optional::stream).reduce(Thingy::next);
+            return smoothingFunction.apply(fastBuffer.streamIfFull().collect(Collectors.toList()))
+                    .flatMap(f -> smoothingFunction.apply(slowBuffer.streamIfFull().collect(Collectors.toList()))
+                                    .flatMap(s -> smoothingFunction.apply(longBuffer.streamIfFull().collect(Collectors.toList()))
+                                    .map(l -> new Trend(pa,l,s,f))));
+        }).flatMap(Optional::stream).reduce(Trend::next);
         return thingy;
     }
 
-    public Thingy next(Thingy next) {
-        return new Thingy(current, next.current, daysInThisState, previousState);
+    public Trend next(Trend next) {
+        return new Trend(current, next.current, daysInThisState, previousState);
     }
 
     @JsonProperty("s")
-    public ThingyState getState() {
+    public TrendState getState() {
         return current.getState();
     }
 
@@ -87,7 +88,7 @@ public class Thingy {
         return getState().ordinal();
     }
 
-    public Optional<BigDecimal> getSdfma() {
+    public Optional<BigDecimal> getFdsma() {
         return current.getFastDistanceFromSlowMA();
     }
 
@@ -110,40 +111,48 @@ public class Thingy {
         return current.getPriceDistanceFromLongMA();
     }
 
-    public enum ThingyState {
-        BULLISH, // l < s < f
-        BULLISH_FADEOUT, // l < f < s
-        ADVANCED_BULLISH_FADEOUT, // f < l < s
-        BEARISH, // f < s < l
-        BEARISH_RECOVERY, // s < f < l
-        ADVANCED_BEARISH_RECOVERY, // s < l < f
+//    public Optional<BigDecimal> getFvdlma() {
+//        return current.getFastVolumeDistanceFromLongMA();
+//    }
+//
+//    public Optional<BigDecimal> getSvdlma() {
+//        return current.getSlowVolumeDistanceFromLongMA();
+//    }
+
+    public enum TrendState {
+        LATE_BULL, // l < f < s
+        EARLY_BEAR, // f < l < s
+        BEAR, // f < s < l
+        LATE_BEAR, // s < f < l
+        EARLY_BULL, // s < l < f
+        BULL // l < s < f
         ;
 
-        public static ThingyState fromSMA(BigDecimal l, BigDecimal s, BigDecimal f) {
+        public static TrendState fromSMA(BigDecimal l, BigDecimal s, BigDecimal f) {
             return isGreaterThan(s,l) ? bullish(l, s, f) : bearish(l,s,f);
         }
 
-        private static ThingyState bearish(BigDecimal l, BigDecimal s, BigDecimal f) {
-            return isGreaterThan(s,f) ? BEARISH : isGreaterThan(f, l) ? ADVANCED_BEARISH_RECOVERY : BEARISH_RECOVERY;
+        private static TrendState bearish(BigDecimal l, BigDecimal s, BigDecimal f) {
+            return isGreaterThan(s,f) ? BEAR : isGreaterThan(f, l) ? EARLY_BULL : LATE_BEAR;
         }
 
-        private static ThingyState bullish(BigDecimal l, BigDecimal s, BigDecimal f) {
-            return isGreaterThan(f,s) ? BULLISH : isGreaterThan(l, s) ? ADVANCED_BULLISH_FADEOUT : BULLISH_FADEOUT;
+        private static TrendState bullish(BigDecimal l, BigDecimal s, BigDecimal f) {
+            return isGreaterThan(f,s) ? BULL : isGreaterThan(l, s) ? EARLY_BEAR : LATE_BULL;
         }
 
-        public PriceAction getRelevantMA(Thingy.Nested thingy) {
-            return thingy.fastPriceAction;
+        public PriceAction getRelevantMA(Trend.Nested nested) {
+            return nested.fastPriceAction;
         }
     }
 
     @Data
-    static class Nested {
+    public static class Nested {
         private final PriceAction priceAction;
         private final PriceAction longPriceAction;
         private final PriceAction slowPriceAction;
         private final PriceAction fastPriceAction;
 
-        public ThingyState getState() {
+        public TrendState getState() {
             return fromSMA(longPriceAction.getClose(),
                     slowPriceAction.getClose(),
                     fastPriceAction.getClose()
@@ -170,8 +179,20 @@ public class Thingy {
             return getDistance(priceAction, fastPriceAction);
         }
 
+        public Optional<BigDecimal> getFastVolumeDistanceFromLongMA() {
+            return getDistance(fastPriceAction, longPriceAction, pa -> BigDecimal.valueOf(pa.getVolume()));
+        }
+
+        public Optional<BigDecimal> getSlowVolumeDistanceFromLongMA() {
+            return getDistance(slowPriceAction, longPriceAction, pa -> BigDecimal.valueOf(pa.getVolume()));
+        }
+
         public static Optional<BigDecimal> getDistance(PriceAction pa1, PriceAction pa2) {
-            return pctChange(pa1.getClose(), pa2.getClose());
+            return getDistance(pa1, pa2, PriceAction::getClose);
+        }
+
+        public static Optional<BigDecimal> getDistance(PriceAction pa1, PriceAction pa2, Function<PriceAction,BigDecimal> fn) {
+            return pctChange(fn.apply(pa1), fn.apply(pa2));
         }
     }
 }

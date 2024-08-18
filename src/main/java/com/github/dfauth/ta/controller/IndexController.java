@@ -45,7 +45,7 @@ public class IndexController implements ControllerMixIn {
     @ResponseStatus(HttpStatus.OK)
     public Long syncIndex(@PathVariable String idx,@PathVariable Integer _date, @RequestBody List<List<String>> o) {
         log.info("syncIndex {} {} {}",idx,_date,o);
-        LocalDateTime dt = LocalDateTime.of(LocalDate.of(_date / 100, _date % 100, 1), LocalTime.of(0,0));
+        LocalDateTime dt = LocalDateTime.of(LocalDate.of(_date / 10000, _date/100 % 100, 1), LocalTime.of(0,0));
         Timestamp timestamp = new Timestamp(dt.toInstant(ZoneOffset.UTC).toEpochMilli());
         List<Indx> codes = o.stream().flatMap(Collection::stream).filter(not(""::equals)).map(c -> new Indx(idx,timestamp, c)).collect(Collectors.toList());
         Iterable<Indx> it = repository.saveAll(codes);

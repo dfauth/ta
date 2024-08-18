@@ -5,8 +5,11 @@ import java.math.RoundingMode;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
+import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functions.Accumulator.BD_ACCUMULATOR;
 import static java.math.BigDecimal.ZERO;
 
@@ -19,6 +22,26 @@ public class MovingAverages {
     public static Function<BigDecimal, Optional<BigDecimal>> sma(int period) {
         return sma(period, BD_ACCUMULATOR.get());
     }
+
+    public static <T> Function<List<T>, Optional<T>> sma(BinaryOperator<T> addition, BiFunction<T,Double,T> division) {
+        return l -> l.stream().reduce(addition).map(u -> division.apply(u, (double) l.size()));
+    };
+
+    public static <T> Function<List<T>, Optional<T>> ema(BinaryOperator<T> addition, BiFunction<T,Double,T> multiplication, BiFunction<T,Double,T> division) {
+        return ema(2, addition, multiplication, division);
+    }
+
+    public static <T> Function<List<T>, Optional<T>> ema(int smoothingFactor, BinaryOperator<T> addition, BiFunction<T,Double,T> multiplication, BiFunction<T,Double,T> division) {
+        return l -> {
+            Optional<T> firstValue = sma(addition, division).apply(l);
+            double weight = (double) smoothingFactor / (1 + l.size());
+            return firstValue.map(fv -> l.stream()
+                    .reduce(fv,
+                            (ema, v) -> addition.apply(multiplication.apply(v, weight), multiplication.apply(ema, 1.0d - weight)),
+                            oops()
+                    ));
+        };
+    };
 
     public static <T extends Number, R extends Number> Function<T, Optional<R>> sma(int period, Accumulator<T,R> ops) {
         LinkedList<T> l = new LinkedList<>();

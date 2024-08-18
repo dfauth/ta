@@ -1,17 +1,18 @@
 package com.github.dfauth.ta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.dfauth.ta.util.ArrayRingBuffer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static com.github.dfauth.ta.functions.MovingAverages.ema;
+import static com.github.dfauth.ta.functions.MovingAverages.sma;
 
 public interface PriceAction {
 
@@ -69,15 +70,23 @@ public interface PriceAction {
         };
     }
 
-    default PriceAction divide(int n) {
+    default PriceAction multiply(double n) {
+        return mapPrices(multiplicationOperator(n));
+    }
+
+    default PriceAction divide(double n) {
         return mapPrices(divisionOperator(n));
     }
 
-    static UnaryOperator<BigDecimal> divisionOperator(int period) {
+    static UnaryOperator<BigDecimal> divisionOperator(double period) {
         return divisionOperator(period, 6);
     }
 
-    static UnaryOperator<BigDecimal> divisionOperator(int period, int scale) {
+    static UnaryOperator<BigDecimal> multiplicationOperator(double period) {
+        return bd -> bd.multiply(BigDecimal.valueOf(period));
+    }
+
+    static UnaryOperator<BigDecimal> divisionOperator(double period, int scale) {
         return bd -> bd.divide(BigDecimal.valueOf(period).setScale(scale), scale, RoundingMode.HALF_UP);
     }
 
@@ -180,18 +189,17 @@ public interface PriceAction {
         }
     };
 
-    Function<Stream<PriceAction>, Optional<PriceAction>> SUM = s -> s.reduce((pa1, pa2) -> pa1.add(pa2));
+    Function<List<PriceAction>, Optional<PriceAction>> SMA = l -> {
+        BinaryOperator<PriceAction> a = (pa1, pa2) -> pa1.add(pa2);
+        return sma(a, PriceAction::divide).apply(l);
+    };
 
-    Function<List<PriceAction>, Optional<PriceAction>> SMA = priceActions -> SUM.apply(priceActions.stream()).map(ps -> ps.divide(priceActions.size()));
-    static Function<List<PriceAction>, List<PriceAction>> sma(int size) {
-        return l -> {
-            ArrayRingBuffer<PriceAction> ringBuffer = new ArrayRingBuffer<>(new PriceAction[l.size() - size]);
-            return l.stream().map(e -> {
-                ringBuffer.write(e);
-                return ringBuffer.stream().filter(_e -> ringBuffer.isFull()).reduce((pa1, pa2) -> pa1.add(pa2)).map(pa -> pa.divide(ringBuffer.capacity()));
-            }).flatMap(Optional::stream).collect(Collectors.toList());
-        };
-    }
+    Function<List<PriceAction>, Optional<PriceAction>> EMA = l -> {
+        BinaryOperator<PriceAction> a = (pa1, pa2) -> pa1.add(pa2);
+        BiFunction<PriceAction, Double, PriceAction> m = PriceAction::multiply;
+        BiFunction<PriceAction, Double, PriceAction> d = PriceAction::divide;
+        return ema(a, m, d).apply(l);
+    };
 
 
 }
