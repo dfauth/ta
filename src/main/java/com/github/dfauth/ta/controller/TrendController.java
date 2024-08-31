@@ -15,14 +15,14 @@ import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 
 @RestController
 @Slf4j
-public class ThingyController extends BaseController implements ControllerMixIn {
+public class TrendController extends BaseController implements ControllerMixIn {
 
-    @PostMapping("/thingy/{period}")
+    @PostMapping("/trend/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Trend> thingy(@PathVariable int period, @RequestBody List<List<String>> codes) {
+    public Map<String, Trend> trend(@PathVariable int period, @RequestBody List<List<String>> codes) {
         try {
-            log.info("thingy/{}",codes);
-            Map<String, Trend> result = flatMapCode(codes, code -> thingy(period, code).stream());
+            log.info("trend/{}",codes);
+            Map<String, Trend> result = flatMapCode(codes, code -> trend(period, code).stream());
             return result;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -30,10 +30,10 @@ public class ThingyController extends BaseController implements ControllerMixIn 
         }
     }
 
-    @GetMapping("/thingy/{_code}/{period}")
+    @GetMapping("/trend/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Optional<Trend> thingy(@PathVariable int period, @PathVariable String _code) {
-        log.info("thingy/{}",_code);
+    public Optional<Trend> trend(@PathVariable int period, @PathVariable String _code) {
+        log.info("trend/{}",_code);
         return tryCatch(() -> {
             List<PriceAction> prices = mapList(prices(_code, period),PriceAction.class::cast);
             return Trend.calculateTrend(prices);

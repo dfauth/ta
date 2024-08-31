@@ -10,13 +10,13 @@ import static com.github.dfauth.ta.functional.Collectors.oops;
 @Slf4j
 public class CSVReader {
 
-    public static <T> Stream<Stream<String>> read(InputStream istream) throws IOException {
+    public static <T> Stream<Stream<String>> read(InputStream istream, int limit) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(istream));
         reader.readLine(); // ignore header
         String line = null;
         Stream.Builder<Stream<String>> builder = Stream.builder();
         while((line = reader.readLine())!=null) {
-            builder.add(Stream.of(tabify(line).split("\\|")).map(CSVReader::trimStrings));
+            builder.add(Stream.of(tabify(line).split("\\|",limit)).map(CSVReader::trimStrings));
         }
         return builder.build();
     }

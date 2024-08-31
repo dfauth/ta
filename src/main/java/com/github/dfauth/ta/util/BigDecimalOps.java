@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
+import java.util.stream.Stream;
 
 import static io.github.dfauth.trycatch.Try.tryWith;
 import static java.math.BigDecimal.ONE;
@@ -149,6 +150,10 @@ public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
 
     static BigDecimal subtract(BigDecimal bd1, BigDecimal bd2) {
         return valueOf(bd1.subtract(bd2));
+    }
+
+    static Optional<BigDecimal> maxOf(BigDecimal... bds) {
+        return Stream.of(bds).reduce(BigDecimal::max);
     }
 
     default BigDecimal by(BigDecimal divisor) {

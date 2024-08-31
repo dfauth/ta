@@ -2,6 +2,7 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.RingBufferProcessor;
+import com.github.dfauth.ta.functions.Momentum;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.util.ArrayRingBuffer;
@@ -22,6 +23,7 @@ import static com.github.dfauth.ta.functional.Lists.head;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
 import static com.github.dfauth.ta.functional.RingBufferProcessor.ringBufferProcessor;
+import static com.github.dfauth.ta.functions.Momentum.processPricesMomentum;
 import static com.github.dfauth.ta.model.PriceAction.EMA;
 import static com.github.dfauth.ta.model.PriceAction.SMA;
 import static com.github.dfauth.ta.reactive.OptionalProcessor.identity;
@@ -93,8 +95,7 @@ public class SMAController extends BaseController implements ControllerMixIn {
     public Map<String, Controller.OHLC> emaMomentum(@RequestBody List<List<String>> codes, @PathVariable int period) {
         try {
             log.info("ema/momentum/{}/{}",codes,period);
-            Map<String, Controller.OHLC> result = flatMapCode(codes, code -> emaMomentum(code, period).stream());
-            return result;
+            return flatMapCode(codes, code -> emaMomentum(code, period).stream());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
@@ -117,6 +118,16 @@ public class SMAController extends BaseController implements ControllerMixIn {
                             .map(_h -> _l.subtract(_h)
                                     .divide(period)))
                     .map(Controller.OHLC::new);
+        }, ControllerMixIn.logAndReturn(empty()));
+    }
+
+    @GetMapping("/ema/momentum/new/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    public Optional<Momentum> emaMomentumNew(@PathVariable String _code, @PathVariable int period) {
+        log.info("emaMomentum/{}/{}",_code,period);
+        return tryCatch(() -> {
+            List<Price> prices = prices(_code, 4 * period);
+            return processPricesMomentum(period, prices, EMA);
         }, ControllerMixIn.logAndReturn(empty()));
     }
 

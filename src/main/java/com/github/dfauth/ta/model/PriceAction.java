@@ -83,7 +83,7 @@ public interface PriceAction {
     }
 
     static UnaryOperator<BigDecimal> multiplicationOperator(double period) {
-        return bd -> bd.multiply(BigDecimal.valueOf(period));
+        return bd -> bd.multiply(BigDecimal.valueOf(period).setScale(3, RoundingMode.HALF_UP));
     }
 
     static UnaryOperator<BigDecimal> divisionOperator(double period, int scale) {

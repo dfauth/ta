@@ -53,7 +53,7 @@ public class Trend {
     }
 
     public static Optional<Trend> calculateTrend(List<PriceAction> priceAction, int fastPeriod, int slowPeriod, int longPeriod) {
-        return calculateTrend(priceAction, fastPeriod, slowPeriod, longPeriod, PriceAction.SMA);
+        return calculateTrend(priceAction, fastPeriod, slowPeriod, longPeriod, PriceAction.EMA);
     }
 
     public static Optional<Trend> calculateTrend(List<PriceAction> priceAction, int fastPeriod, int slowPeriod, int longPeriod, Function<List<PriceAction>, Optional<PriceAction>> smoothingFunction) {
@@ -61,7 +61,7 @@ public class Trend {
         RingBuffer<PriceAction> slowBuffer = new ArrayRingBuffer<>(new PriceAction[slowPeriod]);
         RingBuffer<PriceAction> fastBuffer = new ArrayRingBuffer<>(new PriceAction[fastPeriod]);
 
-        Optional<Trend> thingy = priceAction.stream().map(pa -> {
+        Optional<Trend> trend = priceAction.stream().map(pa -> {
             longBuffer.write(pa);
             slowBuffer.write(pa);
             fastBuffer.write(pa);
@@ -71,7 +71,7 @@ public class Trend {
                                     .flatMap(s -> smoothingFunction.apply(longBuffer.streamIfFull().collect(Collectors.toList()))
                                     .map(l -> new Trend(pa,l,s,f))));
         }).flatMap(Optional::stream).reduce(Trend::next);
-        return thingy;
+        return trend;
     }
 
     public Trend next(Trend next) {
