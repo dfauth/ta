@@ -1,8 +1,14 @@
 package com.github.dfauth.util;
 
+import com.github.dfauth.ta.model.txn.CSVReducer;
+import com.github.dfauth.ta.model.txn.TxnEntry;
+import com.github.dfauth.ta.util.CSVReader;
+import com.github.dfauth.ta.util.RestClient;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatusCode;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,17 +29,19 @@ public class TransactionProcessingTest {
 
     @Test
     public void testIt2() throws IOException {
-        var tmp = CSVReader.read(new FileInputStream("src/test/resources/Data_export_10082024.csv"), TxnEntry.FieldHandler.values().length+1);
-        List<TxnEntry.Payment> txns = tmp.map(fieldStream -> fieldStream.collect(new CSVReducer<>(new TxnEntry.Accumulator(), TxnEntry.FieldHandler.values(), TxnEntry.Accumulator::instead))).collect(Collectors.toList());
-        log.info("total dividends: "+txns.stream()
-                        .map(e -> {
+        var tmp = CSVReader.read(new FileInputStream("src/test/resources/Data_export_10082024.csv"), TxnEntry.FieldHandler.values().length);
+        List<TxnEntry.Payment> txns = tmp.map(fieldStream -> fieldStream
+                .collect(new CSVReducer<>(new TxnEntry.Accumulator(),
+                        TxnEntry.FieldHandler.values(),
+                        TxnEntry.Accumulator::instead)))
+                .collect(Collectors.toList());
+        txns.stream()
+                        .forEach(e -> {
                             log.info("read: "+e);
-                            return e;
-                        })
-                .filter(TxnEntry.Payment::isDividendPayment)
-                .filter(p -> p.getDate().getYear() == 2024)
-                .map(TxnEntry.Payment::getValue)
-                .reduce((n1,n2) -> n1.doubleValue()+n2.doubleValue()));
+                        });
+
+        HttpStatusCode httpStatusCode = new RestClient().uploadPayments(txns);
+        Assertions.assertEquals(HttpStatusCode.valueOf(200), httpStatusCode);
     }
 
 }

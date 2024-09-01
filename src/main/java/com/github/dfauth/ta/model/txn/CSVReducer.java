@@ -1,4 +1,4 @@
-package com.github.dfauth.util;
+package com.github.dfauth.ta.model.txn;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -27,12 +27,6 @@ public class CSVReducer<T,R> implements Collector<String,T,R> {
         return new CSVReducer<>(accumulator, fieldHandlers, identity());
     }
 
-    public CSVReducer process(String s) {
-        fieldHandlers[i].accept(accumulator, s);
-        i = (i+1)%fieldHandlers.length;
-        return this;
-    }
-
     @Override
     public Supplier<T> supplier() {
         return () -> accumulator;
@@ -40,7 +34,10 @@ public class CSVReducer<T,R> implements Collector<String,T,R> {
 
     @Override
     public BiConsumer<T, String> accumulator() {
-        return (t,s) -> process(s);
+        return (t,s) -> {
+            fieldHandlers[i].accept(accumulator, s);
+            i = (i+1)%fieldHandlers.length;
+        };
     }
 
     @Override

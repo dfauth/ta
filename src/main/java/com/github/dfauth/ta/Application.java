@@ -3,12 +3,14 @@ package com.github.dfauth.ta;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @Slf4j
 @SpringBootApplication
+//@EnableJpaRepositories("com.github.dfauth.ta.*")
+//@ComponentScan(basePackages = { "com.github.dfauth.ta.*" })
+//@EntityScan("com.github.dfauth.ta.model.*")
 public class Application {
 
     @Autowired

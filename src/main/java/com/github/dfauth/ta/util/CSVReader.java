@@ -1,4 +1,4 @@
-package com.github.dfauth.util;
+package com.github.dfauth.ta.util;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,7 +16,7 @@ public class CSVReader {
         String line = null;
         Stream.Builder<Stream<String>> builder = Stream.builder();
         while((line = reader.readLine())!=null) {
-            builder.add(Stream.of(tabify(line).split("\\|",limit)).map(CSVReader::trimStrings));
+            builder.add(Stream.of(tabify(line).split("\\|",limit+1)).map(CSVReader::trimStrings));
         }
         return builder.build();
     }
