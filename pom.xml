@@ -19,7 +19,7 @@
 
     <properties>
         <java.version>17</java.version>
-        <hsqldb.version>2.7.1</hsqldb.version>
+        <hsqldb.version>2.7.3</hsqldb.version>
     </properties>
 
     <dependencies>

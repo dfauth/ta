@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.model;
 
+import jakarta.persistence.GenerationType;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +19,8 @@ import java.sql.Timestamp;
 @EqualsAndHashCode
 public class Trade {
 
-    @Id @GeneratedValue private long id;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
     private String confirmation_no;
     private Timestamp _date;
     private String code;

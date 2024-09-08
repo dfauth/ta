@@ -3,6 +3,7 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.model.Side;
 import com.github.dfauth.ta.model.Trade;
 import com.github.dfauth.ta.repo.TradeRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,10 +35,14 @@ public class TradeController {
     // Save
     @PostMapping("/sync/trades")
     @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
     Integer trades(@RequestBody Object[][] args) {
         log.info("args: ",args);
 
-        List<Trade> trades = Stream.of(args).map(arr -> new Trade(0,
+        List<Trade> trades = Stream.of(args)
+                .filter(arr -> arr[0] != null)
+                .filter(arr -> arr[0] != "")
+                .map(arr -> new Trade(0,
             arr[18].toString(),
             new Timestamp(LocalDate.parse((String)arr[0],dtf).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()),
             (String)arr[1],

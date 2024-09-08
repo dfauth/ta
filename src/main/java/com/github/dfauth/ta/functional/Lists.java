@@ -33,6 +33,10 @@ public class Lists<T> extends ArrayList<T> {
         return Optional.of(l).filter(not(List::isEmpty)).map(_l -> _l.get(l.size()-1));
     }
 
+    public static <T> List<T> last(List<T> l, int n) {
+        return Optional.of(l).filter(_l -> _l.size() >= n).map(_l -> _l.subList(l.size()-n,l.size())).orElse(List.of());
+    }
+
     public static <T> Optional<T> head(List<T> l) {
         return headAndTail(l).map(Tuple2::_1);
     }

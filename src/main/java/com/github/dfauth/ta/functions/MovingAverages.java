@@ -9,7 +9,6 @@ import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
-import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functions.Accumulator.BD_ACCUMULATOR;
 import static java.math.BigDecimal.ZERO;
 
@@ -33,13 +32,15 @@ public class MovingAverages {
 
     public static <T> Function<List<T>, Optional<T>> ema(int smoothingFactor, BinaryOperator<T> addition, BiFunction<T,Double,T> multiplication, BiFunction<T,Double,T> division) {
         return l -> {
-            Optional<T> firstValue = sma(addition, division).apply(l);
             double weight = (double) smoothingFactor / (1 + l.size());
-            return firstValue.map(fv -> l.stream()
-                    .reduce(fv,
-                            (ema, v) -> addition.apply(multiplication.apply(v, weight), multiplication.apply(ema, 1.0d - weight)),
-                            oops()
-                    ));
+            return l.stream()
+                    .reduce((ema, v) -> {
+                                T weightedPrevious = multiplication.apply(ema, 1.0d - weight);
+                                T weightedCurrent = multiplication.apply(v, weight);
+                                T sum = addition.apply(weightedCurrent, weightedPrevious);
+                                return sum;
+                            }
+                    );
         };
     };
 

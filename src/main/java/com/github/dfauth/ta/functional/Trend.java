@@ -11,10 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.Trend.TrendState.fromSMA;
 import static com.github.dfauth.ta.util.BigDecimalOps.isGreaterThan;
 import static com.github.dfauth.ta.util.BigDecimalOps.pctChange;
 
@@ -43,6 +43,10 @@ public class Trend {
                 current.getState() == previous.getState() ? daysInThisState +1 : resetPreviousState();
     }
 
+    public <T> T map(BiFunction<Nested,Nested,T> f2) {
+        return f2.apply(current,previous);
+    }
+
     private int resetPreviousState() {
         this.previousState = Optional.of(previous.getState());
         return 0;
@@ -53,7 +57,7 @@ public class Trend {
     }
 
     public static Optional<Trend> calculateTrend(List<PriceAction> priceAction, int fastPeriod, int slowPeriod, int longPeriod) {
-        return calculateTrend(priceAction, fastPeriod, slowPeriod, longPeriod, PriceAction.EMA);
+        return calculateTrend(priceAction, fastPeriod+1, slowPeriod+1, longPeriod+1, PriceAction.EMA);
     }
 
     public static Optional<Trend> calculateTrend(List<PriceAction> priceAction, int fastPeriod, int slowPeriod, int longPeriod, Function<List<PriceAction>, Optional<PriceAction>> smoothingFunction) {
@@ -128,7 +132,7 @@ public class Trend {
         BULL // l < s < f
         ;
 
-        public static TrendState fromSMA(BigDecimal l, BigDecimal s, BigDecimal f) {
+        public static TrendState getState(BigDecimal l, BigDecimal s, BigDecimal f) {
             return isGreaterThan(s,l) ? bullish(l, s, f) : bearish(l,s,f);
         }
 
@@ -153,7 +157,7 @@ public class Trend {
         private final PriceAction fastPriceAction;
 
         public TrendState getState() {
-            return fromSMA(longPriceAction.getClose(),
+            return TrendState.getState(longPriceAction.getClose(),
                     slowPriceAction.getClose(),
                     fastPriceAction.getClose()
             );

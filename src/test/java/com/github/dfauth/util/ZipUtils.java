@@ -41,7 +41,7 @@ public class ZipUtils {
 
     @Test
     public void testGetPrices() throws IOException {
-        String prices = getPrices("ASX:LBL");
+        String prices = getPrices("ASX:ALL");
         log.info("result: "+prices);
     }
 
