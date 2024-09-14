@@ -180,7 +180,7 @@ public class Trend {
         }
 
         public Optional<BigDecimal> getPriceDistanceFromLongMA() {
-            return getDistance(priceAction, fastPriceAction);
+            return getDistance(priceAction, longPriceAction);
         }
 
         public Optional<BigDecimal> getFastVolumeDistanceFromLongMA() {

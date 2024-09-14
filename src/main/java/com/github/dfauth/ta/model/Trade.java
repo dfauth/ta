@@ -22,7 +22,7 @@ public class Trade {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     private String confirmation_no;
-    private Timestamp _date;
+    private Timestamp date;
     private String code;
     private Integer size;
     private BigDecimal price;

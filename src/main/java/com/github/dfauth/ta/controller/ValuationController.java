@@ -50,7 +50,7 @@ public class ValuationController {
     Map<LocalDate,BigDecimal> valuationHistoryTargetPrice(@PathVariable String _code) {
         log.info("valuationHistoryTargetPrice code: {}",_code);
         List<Valuation> result = valuationHistory(_code);
-        return Lists.toMap(result, v -> v.get_date().toLocalDateTime().toLocalDate(),Valuation::getTarget);
+        return Lists.toMap(result, v -> v.getDate().toLocalDateTime().toLocalDate(),Valuation::getTarget);
     }
 
     @GetMapping("/valuation/{_code}/change/{period}")

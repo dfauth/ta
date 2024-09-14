@@ -60,7 +60,7 @@ public class LinearRegressionController extends PriceController implements Contr
             log.info("lobf/slope/{}/{}",_code,period);
             List<Price> prices = prices(_code, period);
             Optional<LinearRegression> result = linearRegression(prices);
-            return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).get_close(), HALF_UP));
+            return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).getClose(), HALF_UP));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return empty();
@@ -104,7 +104,7 @@ public class LinearRegressionController extends PriceController implements Contr
 
     public static Optional<LinearRegression> linearRegression(List<Price> prices) {
         Function<List<BigDecimal>, Optional<LinearRegression>> f = l -> LinearRegression.calculate(l, BigDecimal::doubleValue);
-        return f.apply(prices.stream().map(Price::get_close).collect(Collectors.toList()));
+        return f.apply(prices.stream().map(Price::getClose).collect(Collectors.toList()));
     }
 
 }

@@ -17,17 +17,17 @@ import java.sql.Timestamp;
 public class CodeDateComposite {
 
     @Id private String code;
-    @Id private Timestamp _date;
+    @Id private Timestamp date;
 
     public CodeDateComposite() {
     }
 
-    public CodeDateComposite(Timestamp _date, String code) {
-        this._date = _date;
+    public CodeDateComposite(Timestamp date, String code) {
+        this.date = date;
         this.code = code;
     }
 
     public CodeDateCompositeKey getKey() {
-        return new CodeDateCompositeKey(code, _date);
+        return new CodeDateCompositeKey(code, date);
     }
 }

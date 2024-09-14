@@ -9,14 +9,14 @@ import java.sql.Timestamp;
 public class CodeDateCompositeKey implements Serializable {
 
     private String code;
-    private Timestamp _date;
+    private Timestamp date;
 
     public CodeDateCompositeKey() {
     }
 
-    public CodeDateCompositeKey(String code, Timestamp _date) {
+    public CodeDateCompositeKey(String code, Timestamp date) {
         this.code = code;
-        this._date = _date;
+        this.date = date;
     }
 
 

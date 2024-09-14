@@ -16,10 +16,10 @@ import java.util.Comparator;
 @IdClass(CodeDateCompositeKey.class)
 public class Valuation {
 
-    public static Comparator<? super Valuation> sortByDate = Comparator.comparing(v -> v._date);
+    public static Comparator<? super Valuation> sortByDate = Comparator.comparing(v -> v.date);
 
     @Id private String code;
-    @Id private Timestamp _date;
+    @Id private Timestamp date;
     private Rating rating;
     private Integer buy;
     private Integer hold;
@@ -29,9 +29,9 @@ public class Valuation {
     public Valuation() {
     }
 
-    public Valuation(String code, Timestamp _date, Rating rating, Integer buy, Integer hold, Integer sell, BigDecimal target) {
+    public Valuation(String code, Timestamp date, Rating rating, Integer buy, Integer hold, Integer sell, BigDecimal target) {
         this.code = code;
-        this._date = _date;
+        this.date = date;
         this.rating = rating;
         this.buy = buy;
         this.hold = hold;
@@ -40,6 +40,6 @@ public class Valuation {
     }
 
     public CodeDateCompositeKey getKey() {
-        return new CodeDateCompositeKey(code, _date);
+        return new CodeDateCompositeKey(code, date);
     }
 }

@@ -60,7 +60,7 @@ public class DaysSince {
         }
 
         public BigDecimal getPrice() {
-            return high.getPayload().get_close();
+            return high.getPayload().getClose();
         }
 
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
@@ -71,7 +71,7 @@ public class DaysSince {
         }
 
         public BigDecimal getPctBelow() {
-            return divideWithZeroCheck(last.getPayload().get_close().subtract(getPrice()), getPrice()).orElse(ZERO3);
+            return divideWithZeroCheck(last.getPayload().getClose().subtract(getPrice()), getPrice()).orElse(ZERO3);
         }
     }
 }

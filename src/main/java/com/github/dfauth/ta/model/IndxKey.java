@@ -9,18 +9,15 @@ import java.sql.Timestamp;
 public class IndxKey implements Serializable {
 
     private String idx;
-    private Timestamp _date;
+    private Timestamp date;
     private String code;
 
     public IndxKey() {
     }
 
-    public IndxKey(String idx, Timestamp _date, String code) {
+    public IndxKey(String idx, Timestamp date, String code) {
         this.idx = idx;
-        this._date = _date;
+        this.date = date;
         this.code = code;
     }
-
-
-
 }

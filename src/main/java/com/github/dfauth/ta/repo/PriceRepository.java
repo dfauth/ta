@@ -13,12 +13,6 @@ import java.util.Optional;
 
 public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey> {
 
-    List<Price> findBy_code(String _code);
-
-    default List<Price> findByCode(String _code) {
-        return findBy_code(_code);
-    }
-
     default List<Price> findByCode(String _code, int limit) {
         List<Price> l = findLatestBy_code(_code, limit);
         Collections.reverse(l);
@@ -26,7 +20,7 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
     }
 
     default List<Price> findByCodeAndDate(String _code, Timestamp marketDate, int limit) {
-        List<Price> l = findLatestBy_date(_code, marketDate, limit);
+        List<Price> l = findLatestByDate(_code, marketDate, limit);
         Collections.reverse(l);
         return l;
     }
@@ -35,19 +29,19 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
         return findLatestBy_code(_code, 1).stream().findFirst();
     }
 
-    @Query(value = "SELECT * FROM Price p WHERE p._Code = ?1 order by p._DATE DESC LIMIT ?2", nativeQuery = true)
-    List<Price> findLatestBy_code(String _code, int limit);
+    @Query(value = "SELECT * FROM Price p WHERE p.code = ?1 order by p.date DESC LIMIT ?2", nativeQuery = true)
+    List<Price> findLatestBy_code(String code, int limit);
 
-    @Query(value = "SELECT CODE FROM Price p WHERE p._DATE < ?1 order by CODE DESC", nativeQuery = true)
-    List<String> findCodesBy_date(Date date);
+    @Query(value = "SELECT CODE FROM Price p WHERE p.date < ?1 order by CODE DESC", nativeQuery = true)
+    List<String> findCodesByDate(Date date);
 
-    @Query(value = "SELECT * FROM Price p WHERE p._Code = ?1 and p._DATE < ?2 LIMIT ?3", nativeQuery = true)
-    List<Price> findLatestBy_date(String _code, Date date, int limit);
+    @Query(value = "SELECT * FROM Price p WHERE p.code = ?1 and p.date < ?2 LIMIT ?3", nativeQuery = true)
+    List<Price> findLatestByDate(String _code, Date date, int limit);
 
-    @Query(value = "SELECT max(_Date) FROM Price", nativeQuery = true)
+    @Query(value = "SELECT max(date) FROM Price", nativeQuery = true)
     Timestamp latestPriceDate();
 
-    @Query(value = "SELECT * FROM Price where _Date >= ?1", nativeQuery = true)
+    @Query(value = "SELECT * FROM Price where date >= ?1", nativeQuery = true)
     List<Price> activeAsAtDate(Timestamp date);
 
 }

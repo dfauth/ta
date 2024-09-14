@@ -56,7 +56,7 @@ public class Controller implements ControllerMixIn {
         log.info("sma/{}/{}",_code,period);
         Function<BigDecimal, Optional<BigDecimal>> f = MovingAverages.sma(period);
         return prices(_code, period+2).stream()
-                .map(Price::get_close)
+                .map(Price::getClose)
                 .map(f)
                 .flatMap(Optional::stream)
                 .reduce(latest());
@@ -69,7 +69,7 @@ public class Controller implements ControllerMixIn {
         log.info("ema/{}/{}",_code,period);
         Function<BigDecimal, Optional<BigDecimal>> f = MovingAverages.ema(period);
         return prices(_code, period+2).stream()
-                .map(Price::get_close)
+                .map(Price::getClose)
                 .map(f)
                 .flatMap(Optional::stream)
                 .reduce(latest());
@@ -86,7 +86,7 @@ public class Controller implements ControllerMixIn {
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> roc(@PathVariable String _code, @PathVariable int period) {
         return tryCatch(() -> prices(_code, period+2).stream()
-                .map(Price::get_close)
+                .map(Price::getClose)
                 .map(RateOfChange.roc())
                 .flatMap(Optional::stream)
                 .map(MovingAverages.sma(period))
@@ -121,7 +121,7 @@ public class Controller implements ControllerMixIn {
     Optional<Double> volume(@PathVariable String _code, @PathVariable Integer _period) {
         return prices(_code,_period+1)
                 .stream()
-                .map(Price::get_volume)
+                .map(Price::getVolume)
                 .map(MovingAverages.sma(_period, Accumulator.INT_ACCUMULATOR.get()))
                 .flatMap(Optional::stream)
                 .reduce(latest());

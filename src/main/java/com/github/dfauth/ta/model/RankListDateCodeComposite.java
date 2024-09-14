@@ -27,9 +27,9 @@ public class RankListDateCodeComposite {
     public static Function<RankListDateCodeComposite, Stream<Map.Entry<String, Map.Entry<LocalDate, Integer>>>> mapToDateToRankEntry = rldc -> rldc.getOptionalRank().map(rank -> Map.entry(rldc.getCode(), Map.entry(rldc.getDate().toLocalDateTime().toLocalDate(), rldc.getRank()))).stream();
 
     @Id private int id;
-    @Id @Column(name = "ATDATE") private Timestamp date;
+    @Id private Timestamp date;
     @Id private String code;
-    @Column(name = "_RANK") private Integer rank;
+    private Integer rank;
 
     public ListDateCodeCompositeKey getKey() {
         return new ListDateCodeCompositeKey(id, date, code);

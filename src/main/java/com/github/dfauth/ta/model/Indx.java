@@ -15,19 +15,19 @@ import java.sql.Timestamp;
 public class Indx {
 
     @Id private String idx;
-    @Id private Timestamp _date;
+    @Id private Timestamp date;
     @Id private String code;
 
     public Indx() {
     }
 
-    public Indx(String idx, Timestamp _date, String code) {
+    public Indx(String idx, Timestamp date, String code) {
         this.idx = idx;
-        this._date = _date;
+        this.date = date;
         this.code = code;
     }
 
     public IndxKey getKey() {
-        return new IndxKey(idx, _date, code);
+        return new IndxKey(idx, date, code);
     }
 }

@@ -49,7 +49,7 @@ public class MaxMinController implements ControllerMixIn {
     Optional<Integer> daysSinceLastHigh(@PathVariable String _code, @PathVariable int period) {
         log.info("daysSinceLastHigh/{}/{}",_code,period);
         return DaysSince.lastHigh(prices(_code, period).stream()
-                .map(Price::get_close)
+                .map(Price::getClose)
                 .collect(Collectors.toList()));
     }
 
@@ -94,7 +94,7 @@ public class MaxMinController implements ControllerMixIn {
     private Optional<BigDecimal> closeOperation(String _code, int period, Function<List<BigDecimal>, Optional<BigDecimal>> f1) {
         Function<BigDecimal, Optional<BigDecimal>> f = windowfy(period, f1);
         return prices(_code, period).stream()
-                .map(Price::get_close)
+                .map(Price::getClose)
                 .map(f)
                 .flatMap(Optional::stream)
                 .reduce(latest());

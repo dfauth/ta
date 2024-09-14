@@ -12,7 +12,7 @@ public interface TradeRepository extends CrudRepository<Trade, String> {
     Trade findByConfirmationNo(String confirmation_no);
 
     default Trade findBy_date_code_size(Trade trade) {
-        String confirmation_no = String.format("%s_%s_%d", DateTimeFormatter.ofPattern("yyyyMMdd").format(trade.get_date().toInstant()),trade.getCode(),trade.getSize());
+        String confirmation_no = String.format("%s_%s_%d", DateTimeFormatter.ofPattern("yyyyMMdd").format(trade.getDate().toInstant()),trade.getCode(),trade.getSize());
         return findByConfirmationNo(confirmation_no);
     }
 

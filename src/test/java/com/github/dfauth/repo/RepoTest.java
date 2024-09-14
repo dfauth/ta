@@ -51,7 +51,7 @@ public class RepoTest {
         Timestamp latestPriceDate = priceRepository.latestPriceDate();
         List<Price> active = priceRepository.activeAsAtDate(latestPriceDate);
         active.stream().forEach(p -> {
-            log.error("code: {}, date: {}, close: {}, volume: {}", p.get_code(), p.get_date(), p.get_close(), p.get_volume());
+            log.error("code: {}, date: {}, close: {}, volume: {}", p.getCode(), p.get_date(), p.getClose(), p.getVolume());
         });
     }
 

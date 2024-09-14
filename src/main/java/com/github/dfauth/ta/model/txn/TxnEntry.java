@@ -232,7 +232,6 @@ public class TxnEntry {
         private long id;
         @Column(name = "TYPE")
         private final TxnType txnType;
-        @Column(name = "TXNDATE")
         private final LocalDate date;
         private final String detail;
         private final BigDecimal value;

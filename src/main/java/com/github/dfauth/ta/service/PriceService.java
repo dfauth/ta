@@ -33,17 +33,17 @@ public class PriceService {
 
     public Stream<List<Price>> activeLatestPricesAsStream(int windowSize) {
         return activeLatestPrice().stream().map(p -> {
-            return priceRepository.findLatestBy_code(p.get_code(),windowSize);
+            return priceRepository.findLatestBy_code(p.getCode(),windowSize);
         });
     }
 
     public List<Tuple2<String, BigDecimal>> momentum(int windowSize, Function<List<BigDecimal>, Optional<BigDecimal>> f) {
-        return momentum(windowSize, Price::get_close, f, BigDecimal::compareTo);
+        return momentum(windowSize, Price::getClose, f, BigDecimal::compareTo);
     }
 
     public List<Tuple2<String, BigDecimal>> momentum(int windowSize, Function<Price,BigDecimal> extractor, Function<List<BigDecimal>, Optional<BigDecimal>> f, Comparator<? super BigDecimal> comparator) {
         List<Tuple2<String, BigDecimal>> result = activeLatestPricesAsStream(windowSize)
-                .map(l -> tuple2(l.get(0).get_code(), mapList(l, extractor)))
+                .map(l -> tuple2(l.get(0).getCode(), mapList(l, extractor)))
                 .map(t -> t.mapValue(f))
                 .flatMap(t -> t.map(_k -> _v -> _v.<Tuple2<String,BigDecimal>>map(v -> tuple2(_k, v))).stream())
                 .collect(Collectors.toList());

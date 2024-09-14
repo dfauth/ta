@@ -17,14 +17,14 @@ public interface RankingRepository extends CrudRepository<RankListDateCodeCompos
     @Query(value = "SELECT * FROM RANKING WHERE ID = ?1 AND CODE= ?2", nativeQuery = true)
     List<RankListDateCodeComposite> findByCode(int id, String code);
 
-    @Query(value = "SELECT MAX(_DATE) FROM RANKING WHERE ID = ?1", nativeQuery = true)
+    @Query(value = "SELECT MAX(DATE) FROM RANKING WHERE ID = ?1", nativeQuery = true)
     Timestamp findMaxDate(int id);
 
     default Optional<RankListDateCodeComposite> findCurrentByCode(int id, String code) {
         return findByCodeAndDate(id, Optional.of(code.split(":")).filter(array -> array.length> 1).map(array -> array[1]).orElse(code), findMaxDate(id));
     }
 
-    @Query(value = "SELECT * FROM RANKING r WHERE r.id = ?1 and r.code = ?2 and r.ATDATE = ?3", nativeQuery = true)
+    @Query(value = "SELECT * FROM RANKING r WHERE r.id = ?1 and r.code = ?2 and r.DATE = ?3", nativeQuery = true)
     Optional<RankListDateCodeComposite> findByCodeAndDate(int id, String code, Timestamp maxDate);
 
 }

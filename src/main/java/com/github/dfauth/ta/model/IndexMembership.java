@@ -15,17 +15,17 @@ import java.sql.Timestamp;
 public class IndexMembership {
 
     @Id private String code;
-    @Id private Timestamp _date;
+    @Id private Timestamp date;
 
     public IndexMembership() {
     }
 
-    public IndexMembership(Timestamp _date, String code) {
-        this._date = _date;
+    public IndexMembership(Timestamp date, String code) {
+        this.date = date;
         this.code = code;
     }
 
     public CodeDateCompositeKey getKey() {
-        return new CodeDateCompositeKey(code, _date);
+        return new CodeDateCompositeKey(code, date);
     }
 }

@@ -40,7 +40,7 @@ public class PNV {
     }
 
     public static BigDecimal[] toClosingPrices(String code, String priceString) {
-        return toPrices(code, priceString).stream().map(Price::get_close).collect(Collectors.toList()).toArray(BigDecimal[]::new);
+        return toPrices(code, priceString).stream().map(Price::getClose).collect(Collectors.toList()).toArray(BigDecimal[]::new);
     }
 
     @Test

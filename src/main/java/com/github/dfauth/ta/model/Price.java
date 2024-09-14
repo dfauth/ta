@@ -1,11 +1,7 @@
 package com.github.dfauth.ta.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -27,32 +23,33 @@ public class Price implements Candlestick, Dated<PriceAction> {
 
     @Id
     @JsonIgnore
-    private String _code;
+    private String code;
     @Id
     @JsonIgnore
+    @Column(name = "date")
     private Timestamp _date;
     @JsonIgnore
-    private BigDecimal _open;
+    private BigDecimal open;
     @JsonIgnore
-    private BigDecimal _high;
+    private BigDecimal high;
     @JsonIgnore
-    private BigDecimal _low;
+    private BigDecimal low;
     @JsonIgnore
-    private BigDecimal _close;
+    private BigDecimal close;
     @JsonIgnore
-    private Integer _volume;
+    private int volume;
 
     public Price() {
     }
 
-    public Price(String _code, Timestamp date, BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, Integer volume) {
-        this._code = _code;
+    public Price(String code, Timestamp date, BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal close, Integer volume) {
+        this.code = code;
         this._date = date;
-        this._open = open;
-        this._high = high;
-        this._low = low;
-        this._close = close;
-        this._volume = volume;
+        this.open = open;
+        this.high = high;
+        this.low = low;
+        this.close = close;
+        this.volume = volume;
     }
 
     public static Timestamp parseDate(String dateString) {
@@ -88,80 +85,17 @@ public class Price implements Candlestick, Dated<PriceAction> {
 
     @JsonIgnore
     public PriceCompositeKey getKey() {
-        return new PriceCompositeKey(_code, _date);
+        return new PriceCompositeKey(code, _date);
     }
 
     @Override
-    public String getCode() {
-        return get_code();
+    public LocalDate getLocalDate() {
+        return getDate();
     }
-
-    public void setCode(String code) {
-        set_code(code);
-    }
-
 
     @Override
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    @JsonSerialize(using=LocalDateSerializer.class)
-    @JsonDeserialize(using=LocalDateDeserializer.class)
     public LocalDate getDate() {
         return get_date().toLocalDateTime().toLocalDate();
-    }
-
-    public void setDate(LocalDate date) {
-        set_date(new Timestamp(date.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()));
-    }
-
-
-    @Override
-    public BigDecimal getOpen() {
-        return get_open();
-    }
-
-    public void setOpen(BigDecimal open) {
-        set_open(open);
-    }
-
-    @Override
-    public BigDecimal getHigh() {
-        return get_high();
-    }
-
-    public void setLow(BigDecimal low) {
-        set_low(low);
-    }
-
-    @Override
-    public BigDecimal getLow() {
-        return get_low();
-    }
-
-    public void setHigh(BigDecimal high) {
-        set_high(high);
-    }
-
-    @Override
-    public BigDecimal getClose() {
-        return get_close();
-    }
-
-    public void setClose(BigDecimal close) {
-        set_close(close);
-    }
-
-    @Override
-    public int getVolume() {
-        return get_volume();
-    }
-    public void setVolume(int vol) {
-        set_volume(vol);
-    }
-
-    @Override
-    @JsonIgnore
-    public LocalDate getLocalDate() {
-        return _date.toLocalDateTime().toLocalDate();
     }
 
     @Override
