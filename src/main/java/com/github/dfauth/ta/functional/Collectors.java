@@ -4,12 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.stream.Collector;
 
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.Lists.nonEmpty;
+import static com.github.dfauth.ta.functional.Consecutive.swappable;
 import static com.github.dfauth.ta.functional.Tuple2.tuple2;
 import static com.github.dfauth.ta.util.BigDecimalOps.ONE3;
 import static com.github.dfauth.ta.util.BigDecimalOps.divide;
@@ -83,30 +83,27 @@ public class Collectors {
         };
     }
 
-    public static <T,R> Collector<T, AtomicReference<T>,List<R>> adjacent(BiFunction<T,T,R> f2) {
+    public static <T,R> Collector<T, Consecutive<T,R>,List<R>> consecutive(BiFunction<T,T,R> f2) {
 
         List<R> tmp = new ArrayList<>();
         return new Collector<>() {
             @Override
-            public Supplier<AtomicReference<T>> supplier() {
-                return AtomicReference::new;
+            public Supplier<Consecutive<T,R>> supplier() {
+                return () -> swappable(f2);
             }
 
             @Override
-            public BiConsumer<AtomicReference<T>, T> accumulator() {
-                return (ref,t) -> {
-                    Optional.ofNullable(ref.get()).map(_t -> f2.apply(_t, t)).ifPresent(r -> tmp.add(r));
-                    ref.set(t);
-                };
+            public BiConsumer<Consecutive<T,R>, T> accumulator() {
+                return (consecutive, curr) -> consecutive.swap(curr).ifPresent(tmp::add);
             }
 
             @Override
-            public BinaryOperator<AtomicReference<T>> combiner() {
+            public BinaryOperator<Consecutive<T,R>> combiner() {
                 return oops();
             }
 
             @Override
-            public Function<AtomicReference<T>, List<R>> finisher() {
+            public Function<Consecutive<T,R>, List<R>> finisher() {
                 return ignored -> tmp;
             }
 

@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+import static com.github.dfauth.ta.functional.Collectors.consecutive;
 import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
-import static com.github.dfauth.ta.functional.Collectors.*;
 import static com.github.dfauth.ta.util.BigDecimalOps.multiply;
 
 @Slf4j
@@ -26,11 +26,11 @@ public class ForceIndex {
 
         List<BigDecimal> result = priceAction
                 .stream()
-                .collect(Collectors.adjacent(forceIndex));
+                .collect(consecutive(forceIndex));
         Optional<BigDecimal> sma = result.stream()
-                .collect(ringBufferCollector(new BigDecimal[smaPeriod], SMA));
+                .collect(ringBufferCollector(new BigDecimal[smaPeriod], BigDecimalOps.sma()));
         Optional<BigDecimal> ema = result.stream()
-                .collect(ringBufferCollector(new BigDecimal[emaPeriod], EMA));
+                .collect(ringBufferCollector(new BigDecimal[emaPeriod], BigDecimalOps.ema()));
         return ema.flatMap(_ema -> sma.map(_sma -> new ForceIndex(_ema,_sma)));
     }
 

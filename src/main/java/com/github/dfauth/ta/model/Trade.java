@@ -1,12 +1,9 @@
 package com.github.dfauth.ta.model;
 
-import jakarta.persistence.GenerationType;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
@@ -27,6 +24,24 @@ public class Trade {
     private Integer size;
     private BigDecimal price;
     private BigDecimal cost;
+    @Transient
     private Side side;
+    @Basic
+    @Column(name = "SIDE")
+    private int persistedSide;
     private String notes;
+
+    @PostLoad
+    void loadSide() {
+        if (persistedSide > 0) {
+            this.side = Side.fromMultiplier(persistedSide);
+        }
+    }
+
+    @PrePersist
+    void persistSide() {
+        if (side != null) {
+            this.persistedSide = side.getMultiplier();
+        }
+    }
 }

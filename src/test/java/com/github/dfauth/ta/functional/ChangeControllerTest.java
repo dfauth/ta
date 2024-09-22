@@ -2,17 +2,21 @@ package com.github.dfauth.ta.functional;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
-import static com.github.dfauth.ta.functional.Collectors.*;
+import static com.github.dfauth.ta.functional.Collectors.SMA;
+import static com.github.dfauth.ta.functional.Collectors.consecutive;
 import static com.github.dfauth.ta.functional.Function2.curry;
 import static com.github.dfauth.ta.functional.Lists.mapList;
+import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ChangeControllerTest {
@@ -23,19 +27,27 @@ public class ChangeControllerTest {
 
     @Test
     public void testIt() {
+
+        List<Integer> l = new ArrayList<>() {
+        };
+        l.add(1);
+        Type gsc = l.getClass().getGenericSuperclass();
+        ParameterizedType pt = (ParameterizedType) gsc;
+
+        Type at = pt.getActualTypeArguments()[0];
         List<Function<Integer, Integer>> result = mapList(INPUT, curriedIncrement);
         BiFunction<Integer, Function<Integer, Integer>, Integer> f1 = (i, _f) -> _f.apply(i);
         List<Integer> a = INPUT.subList(1, result.size());
         List<Function<Integer, Integer>> b = result.subList(0, result.size() - 1);
-        List<Integer> result1 = Lists.zip(a,b,f1).collect(Collectors.toList());
-        assertEquals(List.of(1,2,4,8), result1);
-        Optional<BigDecimal> sma = result1.stream().collect(ringBufferCollector(new Integer[3],Lists.<Integer,BigDecimal>mapList(BigDecimal::valueOf).andThen(SMA)));
+        List<Integer> result1 = Lists.zip(a, b, f1).collect(Collectors.toList());
+        assertEquals(List.of(1, 2, 4, 8), result1);
+        Optional<BigDecimal> sma = result1.stream().collect(ringBufferCollector(new Integer[3], Lists.<Integer, BigDecimal>mapList(BigDecimal::valueOf).andThen(SMA)));
         assertEquals(4.66667, sma.get().doubleValue(), 0.001d);
     }
 
     @Test
     public void testItAgain() {
-        Optional<BigDecimal> sma = INPUT.stream().collect(adjacent(increment)).stream().collect(ringBufferCollector(new Integer[3],Lists.<Integer,BigDecimal>mapList(BigDecimal::valueOf).andThen(SMA)));
+        Optional<BigDecimal> sma = INPUT.stream().collect(consecutive(increment)).stream().collect(ringBufferCollector(new Integer[3],Lists.<Integer,BigDecimal>mapList(BigDecimal::valueOf).andThen(SMA)));
         assertEquals(4.66667, sma.get().doubleValue(), 0.001d);
     }
 }

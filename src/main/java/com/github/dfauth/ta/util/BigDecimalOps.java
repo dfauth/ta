@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.util;
 
+import com.github.dfauth.ta.functions.MovingAverages;
 import io.github.dfauth.trycatch.Try;
 
 import java.math.BigDecimal;
@@ -102,6 +103,21 @@ public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
 
     static BigDecimal multiply(BigDecimal bd1, BigDecimal bd2) {
         return bd1.multiply(bd2);
+    }
+
+    static Function<List<BigDecimal>, Optional<BigDecimal>> sma() {
+        return MovingAverages.sma(BigDecimal::add, (bd, d) -> divide(bd, valueOf(d)));
+    }
+
+    static Function<List<BigDecimal>, Optional<BigDecimal>> ema() {
+        return ema(2);
+    }
+
+    static Function<List<BigDecimal>, Optional<BigDecimal>> ema(int period) {
+        return MovingAverages.ema(period,
+                BigDecimal::add,
+                (bd, d) -> bd.multiply(valueOf(d)),
+                (bd, d) -> divide(bd, valueOf(d)));
     }
 
     static BigDecimal compare(BigDecimal bd1, BigDecimal bd2, BinaryOperator<BigDecimal> f2) {

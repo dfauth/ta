@@ -15,7 +15,7 @@ import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
-import static com.github.dfauth.ta.functional.Collectors.adjacent;
+import static com.github.dfauth.ta.functional.Collectors.consecutive;
 import static com.github.dfauth.ta.util.BigDecimalOps.*;
 import static java.math.BigDecimal.ONE;
 import static java.util.function.Predicate.not;
@@ -45,7 +45,7 @@ public interface RSI {
 
     static Function<List<Dated<BigDecimal>>, Optional<Dated<BigDecimal>>> rsi(int period) {
 
-        Function<List<Dated<BigDecimal>>, List<Dated<GainLoss>>> stepOne = datedPrices -> datedPrices.stream().collect(adjacent(toDatedGainLoss));
+        Function<List<Dated<BigDecimal>>, List<Dated<GainLoss>>> stepOne = datedPrices -> datedPrices.stream().collect(consecutive(toDatedGainLoss));
 
         Function<List<Dated<GainLoss>>, Optional<Dated<BigDecimal>>> stepOnePointFive = datedGainLoss -> {
             BiFunction<Dated<GainLoss>, Dated<GainLoss>, Dated<BigDecimal>> step2 = datedStep2(period);

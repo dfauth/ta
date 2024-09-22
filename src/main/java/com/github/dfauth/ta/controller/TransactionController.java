@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @Slf4j
-public class TransactionController extends BaseController implements ControllerMixIn {
+public class TransactionController {
 
     @Autowired
     private TransactionRepository transactionRepository;

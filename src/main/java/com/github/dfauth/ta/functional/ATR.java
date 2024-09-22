@@ -21,13 +21,13 @@ public class ATR {
         if(period > prices.size()) {
             throw new IllegalArgumentException("period of "+period+" is less the sample size of "+prices.size());
         }
-        return prices.stream().collect(adjacent(PriceAction.trueRange)).stream().collect(ringBufferCollector(new BigDecimal[period], SMA));
+        return prices.stream().collect(consecutive(PriceAction.trueRange)).stream().collect(ringBufferCollector(new BigDecimal[period], SMA));
     }
 
     public static Optional<BigDecimal> avgTrueRange(List<Price> prices, int period) {
         Tuple2<List<Price>,List<Price>> t2 = Lists.splitAt(prices,prices.size() - period);
         Optional<BigDecimal> otr = trueRange(t2._1(), period);
-        return otr.map(tr -> t2._2().stream().collect(adjacent(PriceAction.trueRange))
+        return otr.map(tr -> t2._2().stream().collect(consecutive(PriceAction.trueRange))
                 .stream()
                 .reduce(tr,
                     (atr,_tr) -> divide(multiply(atr, period-1).add(_tr),period),
