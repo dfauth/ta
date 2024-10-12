@@ -4,6 +4,7 @@ import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.function.Supplier;
 import static com.github.dfauth.ta.util.BigDecimalOps.*;
 import static com.github.dfauth.util.ZipUtils.unzip;
 
+@Slf4j
 public class TestData {
 
     public static String CODES = "INDEXASX:XAO,ASX:360,ASX:29M,ASX:3DP,ASX:3PL,ASX:4DS,ASX:4DX,ASX:5EA,ASX:A11,ASX:A1M,ASX:A1N,ASX:A2M,ASX:A4N,ASX:AAC,ASX:ABA,ASX:ABB,ASX:ABC,ASX:ABG,ASX:ABY,ASX:ACE,ASX:ACF,ASX:ACL,ASX:ACW,ASX:AD8,ASX:ADA,ASX:ADH,ASX:ADT,ASX:AEE,ASX:AEF,ASX:AFG,ASX:AFI,ASX:AFP,ASX:AGE,ASX:AGI,ASX:AGL,ASX:AGY,ASX:AHC,ASX:AHL,ASX:AHX,ASX:AIA,ASX:AIM,ASX:AIS,ASX:AIZ,ASX:AKP,ASX:ALC,ASX:ALD,ASX:ALI,ASX:ALK,ASX:ALL,ASX:ALQ,ASX:ALU,ASX:ALX,ASX:AMA,ASX:AMC,ASX:AMH,ASX:AMI,ASX:AMP,ASX:AND,ASX:ANG,ASX:ANN,ASX:ANO,ASX:ANZ,ASX:AOF,ASX:APA,ASX:APE,ASX:APM,ASX:APX,ASX:APZ,ASX:AQZ,ASX:ARA,ASX:ARB,ASX:ARF,ASX:ARG,ASX:ART,ASX:ARU,ASX:ARX,ASX:ASB,ASX:ASG,ASX:ASM,ASX:ASN,ASX:ASO,ASX:ASX,ASX:ATA,ASX:ATR,ASX:ATS,ASX:AUB,ASX:AUC,ASX:AUI,ASX:AVA,ASX:AVG,ASX:AVH,ASX:AVR,ASX:AVZ,ASX:AWC,ASX:AX1,ASX:AZJ,ASX:AZL,ASX:AZS,ASX:BAP,ASX:BBN,ASX:BC8,ASX:BCB,ASX:BCC,ASX:BCI,ASX:BEN,ASX:BEO,ASX:BET,ASX:BEZ,ASX:BFG,ASX:BFL,ASX:BGA,ASX:BGL,ASX:BGP,ASX:BHP,ASX:BIS,ASX:BIT,ASX:BKI,ASX:BKT,ASX:BKW,ASX:BLD,ASX:BLU,ASX:BLX,ASX:BLY,ASX:BML,ASX:BMN,ASX:BNR,ASX:BOE,ASX:BOQ,ASX:BPH,ASX:BPT,ASX:BRE,ASX:BRG,ASX:BRI,ASX:BRL,ASX:BRN,ASX:BSE,ASX:BSL,ASX:BSX,ASX:BTH,ASX:BUB,ASX:BVS,ASX:BWP,ASX:BWX,ASX:BXB,ASX:C79,ASX:CAI,ASX:CAJ,ASX:CAR,ASX:CAT,ASX:CBA,ASX:CBO,ASX:CCP,ASX:CCR,ASX:CCV,ASX:CCX,ASX:CDA,ASX:CDM,ASX:CDP,ASX:CEL,ASX:CEN,ASX:CGC,ASX:CGF,ASX:CGS,ASX:CHC,ASX:CHL,ASX:CHN,ASX:CHR,ASX:CIA,ASX:CIN,ASX:CIP,ASX:CKA,ASX:CKF,ASX:CLG,ASX:CLV,ASX:CLW,ASX:CLX,ASX:CMM,ASX:CMW,ASX:CNB,ASX:CNI,ASX:CNU,ASX:COB,ASX:COE,ASX:COF,ASX:COG,ASX:COH,ASX:COI,ASX:COL,ASX:COS,ASX:CPU,ASX:CPV,ASX:CQE,ASX:CQR,ASX:CRD,ASX:CRN,ASX:CSL,ASX:CSR,ASX:CSS,ASX:CTD,ASX:CTM,ASX:CTT,ASX:CU6,ASX:CUV,ASX:CVL,ASX:CVN,ASX:CVV,ASX:CVW,ASX:CWP,ASX:CWY,ASX:CXL,ASX:CXM,ASX:CXO,ASX:CXZ,ASX:CYC,ASX:CYG,ASX:CYL,ASX:DBI,ASX:DCC,ASX:DDR,ASX:DEG,ASX:DGL,ASX:DHG,ASX:DJW,ASX:DLI,ASX:DMP,ASX:DNK,ASX:DOC,ASX:DOW,ASX:DRE,ASX:DRO,ASX:DRR,ASX:DSE,ASX:DSK,ASX:DTL,ASX:DUG,ASX:DUI,ASX:DVP,ASX:DXB,ASX:DXC,ASX:DXI,ASX:DXS,ASX:DYL,ASX:E25,ASX:EBO,ASX:EBR,ASX:ECF,ASX:EDV,ASX:EGG,ASX:EGH,ASX:EGR,ASX:EHL,ASX:EL8,ASX:ELD,ASX:EMH,ASX:EML,ASX:EMR,ASX:EMV,ASX:ENN,ASX:EOL,ASX:EOS,ASX:EQR,ASX:EQT,ASX:ERA,ASX:ERD,ASX:ESK,ASX:EUR,ASX:EVN,ASX:EVO,ASX:EVS,ASX:EVT,ASX:EXP,ASX:FBU,ASX:FCL,ASX:FCT,ASX:FDV,ASX:FFM,ASX:FGG,ASX:FGX,ASX:FID,ASX:FL1,ASX:FLC,ASX:FLT,ASX:FMG,ASX:FND,ASX:FPH,ASX:FPR,ASX:FSF,ASX:FSG,ASX:FWD,ASX:G6M,ASX:GAL,ASX:GCI,ASX:GDC,ASX:GDF,ASX:GDG,ASX:GDI,ASX:GEM,ASX:GEN,ASX:GHY,ASX:GL1,ASX:GLB,ASX:GLN,ASX:GMD,ASX:GMG,ASX:GNC,ASX:GNE,ASX:GNG,ASX:GNP,ASX:GNX,ASX:GOR,ASX:GOZ,ASX:GPT,ASX:GQG,ASX:GRE,ASX:GRR,ASX:GSS,ASX:GT1,ASX:GTH,ASX:GTK,ASX:GTN,ASX:GUD,ASX:GWA,ASX:HAS,ASX:HCH,ASX:HCL,ASX:HCW,ASX:HDN,ASX:HFR,ASX:HGH,ASX:HHR,ASX:HIT,ASX:HLI,ASX:HLO,ASX:HLS,ASX:HM1,ASX:HMC,ASX:HPG,ASX:HPI,ASX:HSN,ASX:HTA,ASX:HUB,ASX:HUM,ASX:HVN,ASX:HZN,ASX:IAG,ASX:IDX,ASX:IEL,ASX:IFL,ASX:IFM,ASX:IFT,ASX:IGL,ASX:IGO,ASX:IIQ,ASX:IJP,ASX:IKE,ASX:ILU,ASX:IMD,ASX:IMM,ASX:IMU,ASX:INA,ASX:IND,ASX:INF,ASX:ING,ASX:INR,ASX:IOD,ASX:IPD,ASX:IPG,ASX:IPH,ASX:IPL,ASX:IRE,ASX:IVZ,ASX:IXR,ASX:JAN,ASX:JBH,ASX:JDO,ASX:JHX,ASX:JIN,ASX:JLG,ASX:JMS,ASX:JRV,ASX:KAR,ASX:KCN,ASX:KED,ASX:KGN,ASX:KKC,ASX:KLS,ASX:KMD,ASX:KME,ASX:KOV,ASX:KPG,ASX:KSC,ASX:KSL,ASX:KTG,ASX:LAU,ASX:LBL,ASX:LEL,ASX:LFG,ASX:LFS,ASX:LGI,ASX:LGL,ASX:LGP,ASX:LIC,ASX:LIN,ASX:LKE,ASX:LLC,ASX:LLL,ASX:LM8,ASX:LMG,ASX:LNK,ASX:LNW,ASX:LOT,ASX:LOV,ASX:LPD,ASX:LPI,ASX:LRK,ASX:LRS,ASX:LSF,ASX:LTR,ASX:LYC,ASX:LYL,ASX:M7T,ASX:MAD,ASX:MAF,ASX:MAH,ASX:MAP,ASX:MAQ,ASX:MAY,ASX:MCA,ASX:MCL,ASX:MCP,ASX:MCY,ASX:MDR,ASX:MEI,ASX:MEZ,ASX:MFF,ASX:MFG,ASX:MGF,ASX:MGH,ASX:MGR,ASX:MGX,ASX:MHJ,ASX:MIN,ASX:MIR,ASX:MKR,ASX:MLX,ASX:MMI,ASX:MMS,ASX:MND,ASX:MNS,ASX:MOT,ASX:MOV,ASX:MOZ,ASX:MP1,ASX:MPL,ASX:MQG,ASX:MRM,ASX:MSB,ASX:MTO,ASX:MTS,ASX:MVF,ASX:MVP,ASX:MXI,ASX:MXT,ASX:MYR,ASX:MYS,ASX:MYX,ASX:NAB,ASX:NAM,ASX:NAN,ASX:NBI,ASX:NCK,ASX:NEC,ASX:NEM,ASX:NEU,ASX:NGI,ASX:NHC,ASX:NHF,ASX:NIC,ASX:NIS,ASX:NMT,ASX:NOL,ASX:NOX,ASX:NPR,ASX:NSR,ASX:NST,ASX:NTU,ASX:NUF,ASX:NVX,ASX:NWC,ASX:NWF,ASX:NWH,ASX:NWL,ASX:NWS,ASX:NXD,ASX:NXG,ASX:NXL,ASX:NXS,ASX:NXT,ASX:NZK,ASX:NZM,ASX:OBL,ASX:OBM,ASX:OCA,ASX:OCL,ASX:OFX,ASX:OMH,ASX:OML,ASX:OPH,ASX:OPT,ASX:ORA,ASX:ORG,ASX:ORI,ASX:ORR,ASX:PAA,ASX:PAC,ASX:PAI,ASX:PAN,ASX:PAR,ASX:PBH,ASX:PBP,ASX:PCI,ASX:PDI,ASX:PDN,ASX:PE1,ASX:PEB,ASX:PEK,ASX:PEN,ASX:PEX,ASX:PFP,ASX:PGC,ASX:PGF,ASX:PGH,ASX:PGL,ASX:PIC,ASX:PIL,ASX:PIQ,ASX:PL8,ASX:PLL,ASX:PLS,ASX:PLT,ASX:PLY,ASX:PMC,ASX:PME,ASX:PMT,ASX:PMV,ASX:PNC,ASX:PNI,ASX:PNR,ASX:PNV,ASX:POS,ASX:PPC,ASX:PPE,ASX:PPK,ASX:PPL,ASX:PPM,ASX:PPS,ASX:PPT,ASX:PRN,ASX:PRO,ASX:PRU,ASX:PSC,ASX:PSI,ASX:PSQ,ASX:PTM,ASX:PWH,ASX:PWR,ASX:PXA,ASX:PYC,ASX:QAL,ASX:QAN,ASX:QBE,ASX:QOR,ASX:QRI,ASX:QUB,ASX:RAC,ASX:RBD,ASX:RBTZ,ASX:RDG,ASX:RDM,ASX:RDN,ASX:RDY,ASX:REA,ASX:RED,ASX:REG,ASX:REH,ASX:REP,ASX:RF1,ASX:RFF,ASX:RFG,ASX:RFT,ASX:RG8,ASX:RGN,ASX:RHC,ASX:RHI,ASX:RIC,ASX:RIM,ASX:RIO,ASX:RMC,ASX:RMD,ASX:RMS,ASX:RNU,ASX:RPL,ASX:RRL,ASX:RSG,ASX:RTH,ASX:RTR,ASX:RUL,ASX:RWC,ASX:RXL,ASX:RXM,ASX:S32,ASX:SBM,ASX:SCG,ASX:SDF,ASX:SDR,ASX:SEK,ASX:SFR,ASX:SFX,ASX:SGF,ASX:SGI,ASX:SGLLV,ASX:SGM,ASX:SGP,ASX:SGR,ASX:SHA,ASX:SHJ,ASX:SHL,ASX:SHN,ASX:SHV,ASX:SIG,ASX:SIQ,ASX:SKC,ASX:SKO,ASX:SKT,ASX:SLC,ASX:SLH,ASX:SLR,ASX:SLX,ASX:SM1,ASX:SMI,ASX:SMP,ASX:SMR,ASX:SND,ASX:SNL,ASX:SNZ,ASX:SOL,ASX:SOM,ASX:SOP,ASX:SPK,ASX:SPL,ASX:SPX,ASX:SPZ,ASX:SQ2,ASX:SRG,ASX:SRL,ASX:SRV,ASX:SRX,ASX:SSG,ASX:SSM,ASX:SSR,ASX:SST,ASX:STA,ASX:STK,ASX:STM,ASX:STO,ASX:STP,ASX:STX,ASX:SUL,ASX:SUN,ASX:SVL,ASX:SVM,ASX:SVR,ASX:SVW,ASX:SWM,ASX:SXE,ASX:SXG,ASX:SXL,ASX:SYA,ASX:SYM,ASX:SYR,ASX:TAH,ASX:TBN,ASX:TCG,ASX:TCL,ASX:TER,ASX:TG6,ASX:TGP,ASX:THL,ASX:TIE,ASX:TLC,ASX:TLG,ASX:TLS,ASX:TLX,ASX:TNE,ASX:TPG,ASX:TPW,ASX:TRA,ASX:TRJ,ASX:TRS,ASX:TSK,ASX:TSO,ASX:TTM,ASX:TTT,ASX:TUA,ASX:TWE,ASX:TWR,ASX:TYR,ASX:UBN,ASX:UNI,ASX:UOS,ASX:URF,ASX:URW,ASX:VCX,ASX:VEA,ASX:VEE,ASX:VG1,ASX:VGL,ASX:VHM,ASX:VHT,ASX:VIT,ASX:VML,ASX:VMM,ASX:VMT,ASX:VNT,ASX:VSL,ASX:VUK,ASX:VUL,ASX:VVA,ASX:WA1,ASX:WAA,ASX:WAF,ASX:WAM,ASX:WBC,ASX:WBT,ASX:WC8,ASX:WDS,ASX:WEB,ASX:WES,ASX:WGB,ASX:WGN,ASX:WGX,ASX:WHC,ASX:WHF,ASX:WLE,ASX:WMG,ASX:WMI,ASX:WML,ASX:WOR,ASX:WOW,ASX:WPR,ASX:WR1,ASX:WTC,ASX:WTN,ASX:XRF,ASX:XRO,ASX:YAL,ASX:ZIM,ASX:ZIP,ASX:ZNC,ASX:ZNO";
@@ -90,4 +92,100 @@ public class TestData {
             };
         }
     }
+
+//    @Data
+//    public static class Position {
+//        private final ZonedDateTime date;
+//        private final String code;
+//        private final int size;
+//        private final BigDecimal cost;
+//        public static Map<String, List<com.github.dfauth.ta.model.Position>> getPositions() {
+//            log.info("AZ1 zipped: "+zipBytes(AX1.getBytes()));
+//            return Map.of();
+////            return Map.of("ASX:AX1", unzipListPosition(zip(AX1)));
+//        }
+//
+//        public static String AX1 = "[\n" +
+//                "  {\n" +
+//                "    \"date\": \"2024-10-02T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 43840,\n" +
+//                "    \"cost\": 15695.43\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2023-06-19T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 54800,\n" +
+//                "    \"cost\": 40985.8\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2023-04-26T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 48800,\n" +
+//                "    \"cost\": 30825.85\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2020-03-18T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 61000,\n" +
+//                "    \"cost\": 62145.36\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2019-08-22T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 46000,\n" +
+//                "    \"cost\": 52000.41\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2017-05-11T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 39654,\n" +
+//                "    \"cost\": 41953.78\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2017-03-20T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 24654,\n" +
+//                "    \"cost\": 31808.83\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2017-02-23T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 19754,\n" +
+//                "    \"cost\": 26766.38\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2017-02-05T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 15254,\n" +
+//                "    \"cost\": 21751.43\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2016-12-08T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 11408,\n" +
+//                "    \"cost\": 16885.52\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2016-10-30T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 10200,\n" +
+//                "    \"cost\": 15246.85\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2016-08-24T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 6800,\n" +
+//                "    \"cost\": 10160.9\n" +
+//                "  },\n" +
+//                "  {\n" +
+//                "    \"date\": \"2016-06-05T00:00:00.000+00:00\",\n" +
+//                "    \"code\": \"ASX:AX1\",\n" +
+//                "    \"size\": 3900,\n" +
+//                "    \"cost\": 5109.45\n" +
+//                "  }\n" +
+//                "]";
+//    }
+//
+//
 }

@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.model;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
@@ -127,4 +128,8 @@ public interface Market {
         };
     }
 
+    default ZonedDateTime atCloseOn(String date) {
+        LocalDate d = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return d.atTime(getMarketClose()).atZone(getZone());
+    }
 }

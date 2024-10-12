@@ -1,10 +1,13 @@
 package com.github.dfauth.ta.util;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class StreamOps {
 
@@ -22,5 +25,13 @@ public class StreamOps {
 
     public static <K,V> Optional<Map.Entry<K, V>> flattenEntry(Map.Entry<K,Optional<V>> entry) {
         return entry.getValue().map(v -> Map.entry(entry.getKey(), v));
+    }
+
+    public static <T> Stream<T> stream(Iterable<T> iterable) {
+        return stream(iterable.iterator());
+    }
+
+    public static <T> Stream<T> stream(Iterator<T> iterator) {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, 0),false);
     }
 }

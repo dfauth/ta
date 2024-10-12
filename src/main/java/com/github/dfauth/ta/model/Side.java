@@ -1,6 +1,5 @@
 package com.github.dfauth.ta.model;
 
-import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -21,7 +20,15 @@ public enum Side {
     }
 
     public BigDecimal valueOf(BigDecimal bd) {
-        return BigDecimalOps.multiply(bd, multiplier);
+        return BigDecimal.valueOf(valueOf(bd.doubleValue()));
+    }
+
+    public int valueOf(int i) {
+        return multiplier * i;
+    }
+
+    public double valueOf(double d) {
+        return multiplier * d;
     }
 
     public static Side fromString(Object o) {
@@ -32,5 +39,13 @@ public enum Side {
         } else {
             throw new IllegalArgumentException("Unexpected type: "+o);
         }
+    }
+
+    public boolean isSell() {
+        return !isBuy();
+    }
+
+    public boolean isBuy() {
+        return this == Buy;
     }
 }

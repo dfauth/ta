@@ -33,7 +33,7 @@ public class Trade {
 
     @PostLoad
     void loadSide() {
-        if (persistedSide > 0) {
+        if (persistedSide != 0) {
             this.side = Side.fromMultiplier(persistedSide);
         }
     }

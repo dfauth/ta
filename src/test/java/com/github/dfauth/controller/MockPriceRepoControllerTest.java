@@ -42,6 +42,10 @@ public abstract class MockPriceRepoControllerTest<T> {
         return Stream.of(TestData.class.getDeclaredFields())
                 .filter(not(f -> f.getName().equals("CODES")))
                 .filter(not(f -> f.getName().equals("CODES_AS_LIST_LIST")))
+                .map(f -> {
+                    f.setAccessible(true);
+                    return f;
+                })
                 .map(f -> Map.entry(
                         String.format("ASX:%s",f.getName()),
                         ExceptionalRunnable.<List<Price>>tryCatch(() -> List.class.cast(f.get(TestData.class))))
