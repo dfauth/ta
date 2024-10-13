@@ -84,4 +84,11 @@ public class TransactionController {
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
         return transactionRepository.findByDateAndType(s,e, type);
     }
+
+    @GetMapping("/txns/sum/{start}/{end}/{type}")
+    @ResponseStatus(HttpStatus.OK)
+    @Transactional
+    public Optional<BigDecimal> sumOfTransactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
+        return transactionsByDateAndType(start,end,type).stream().map(TxnEntry.Payment::getValue).reduce(BigDecimal::add);
+    }
 }
