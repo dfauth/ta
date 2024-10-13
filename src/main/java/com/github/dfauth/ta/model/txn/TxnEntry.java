@@ -205,41 +205,47 @@ public class TxnEntry {
     }
 
     public static Payment parsePaymentString(TxnEntry e) {
-        // PAYMENT BY AUTHORITY TO WESTPAC SECURITI B DUR 42855945-0
-        String tmp = e.detail.substring(PREAMBLE_LENGTH);
         Payment result;
-        if(tmp.startsWith("Westpac Securitie")) {
-            // some other payment type
+        // WITHDRAWAL ONLINE 1934011 TFR Westpac Cho renovation fund
+        if(e.detail.startsWith("WITHDRAWAL ONLINE")) {
             result = new Payment(0, TxnType.PAYMENT, e.date,e.detail, e.debit.get(), e.balance.get(), null, null, null);
         } else {
-            String[] strings = tmp.split(" ");
-            Side side = Side.valueOf(strings[0]);
-            String code = strings[1];
-            String contractNo = strings[2].split("\\-")[0];
-            result = new SecuritiesPurchase(e.date, e.detail, side, "ASX:"+code, contractNo, e.debit.get(), e.balance.get());
+            // PAYMENT BY AUTHORITY TO WESTPAC SECURITI B DUR 42855945-0
+            String tmp = e.detail.substring(PREAMBLE_LENGTH);
+            if(tmp.startsWith("Westpac Securitie")) {
+                // some other payment type
+                result = new Payment(0, TxnType.PAYMENT, e.date,e.detail, e.debit.get(), e.balance.get(), null, null, null);
+            } else {
+                String[] strings = tmp.split(" ");
+                Side side = Side.valueOf(strings[0]);
+                String code = strings[1];
+                String contractNo = strings[2].split("\\-")[0];
+                result = new SecuritiesPurchase(e.date, e.detail, side, "ASX:"+code, contractNo, e.debit.get(), e.balance.get());
+            }
         }
         return result;
     }
 
     @AllArgsConstructor
+    @NoArgsConstructor
     @ToString
     @EqualsAndHashCode
-    @Getter
+    @Data
     @Entity
     @Table(name = "PAYMENT")
     public static class Payment {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         private long id;
         @Column(name = "TYPE")
-        private final TxnType txnType;
-        private final LocalDate date;
-        private final String detail;
-        private final BigDecimal value;
-        private final BigDecimal balance;
-        private final Side side;
-        private final String code;
+        private TxnType txnType;
+        private LocalDate date;
+        private String detail;
+        private BigDecimal value;
+        private BigDecimal balance;
+        private Side side;
+        private String code;
         @Column(name = "CONTRACTNO")
-        private final String contractNo;
+        private String contractNo;
 
         public Payment(Payment p) {
             this(0, p.txnType, p.date, p.detail, p.value, p.balance, p.side, p.code, p.contractNo);

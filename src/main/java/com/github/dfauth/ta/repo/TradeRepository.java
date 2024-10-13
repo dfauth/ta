@@ -7,12 +7,13 @@ import com.github.dfauth.ta.util.StreamOps;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 
 public interface TradeRepository extends CrudRepository<Trade, String> {
 
@@ -23,7 +24,7 @@ public interface TradeRepository extends CrudRepository<Trade, String> {
     List<Trade> findByCode(String code);
 
     default Trade findBy_date_code_size(Trade trade) {
-        String confirmation_no = String.format("%s_%s_%d", DateTimeFormatter.ofPattern("yyyyMMdd").format(trade.getDate().toInstant()),trade.getCode(),trade.getSize());
+        String confirmation_no = String.format("%s_%s_%d", YYYYMMDD.format(trade.getDate().toInstant()),trade.getCode(),trade.getSize());
         return findByConfirmationNo(confirmation_no);
     }
 
