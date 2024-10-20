@@ -2,6 +2,7 @@ package com.github.dfauth.ta.repo;
 
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.model.Position;
+import com.github.dfauth.ta.model.Theme;
 import com.github.dfauth.ta.model.Trade;
 import com.github.dfauth.ta.util.StreamOps;
 import org.springframework.data.jpa.repository.Query;
@@ -51,4 +52,6 @@ public interface TradeRepository extends CrudRepository<Trade, String> {
     @Query(value = "SELECT t FROM Trade t, Position p where t.code = p.code and p.size > 0 order by t.date", nativeQuery = true)
     Iterable<Trade> findOpenPositionEvents();
 
+    @Query(value = "SELECT t FROM Trade t where t.theme = ?1")
+    List<Trade> findByTheme(Theme theme);
 }

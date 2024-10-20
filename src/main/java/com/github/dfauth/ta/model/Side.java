@@ -48,4 +48,8 @@ public enum Side {
     public boolean isBuy() {
         return this == Buy;
     }
+
+    public Side flip() {
+        return isBuy() ? Sell : Buy;
+    }
 }

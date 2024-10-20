@@ -29,6 +29,7 @@ public class TradeService {
                             _t.setCost(t.getCost());
                             _t.setSide(t.getSide());
                             _t.setNotes(t.getNotes());
+                            _t.setTheme(t.getTheme());
                             return _t;
                         })
                         .orElse(t)

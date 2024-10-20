@@ -5,12 +5,12 @@ import java.util.function.UnaryOperator;
 
 public class CAGR {
 
-    double cagr(double pctRtn, int periods) {
-        double x = (1.0d / periods) - 1.0d;
-        return Math.pow((1.0d + pctRtn),x);
+    public static double cagr(double pctRtn, double periods) {
+        double x = (1.0d / periods);
+        return Math.pow((1.0d + pctRtn),x)  - 1.0d;
     }
 
-    <T> T cagr(T pctRtn, int periods, BiFunction<T, UnaryOperator<Double>,T> mapper) {
+    public static <T> T cagr(T pctRtn, int periods, BiFunction<T, UnaryOperator<Double>,T> mapper) {
         double x = (1.0d / periods) - 1.0d;
         return mapper.apply(pctRtn, z -> Math.pow((1.0d + z),x));
     }

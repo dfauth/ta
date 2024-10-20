@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.model.Side;
+import com.github.dfauth.ta.model.Theme;
 import com.github.dfauth.ta.model.Trade;
 import com.github.dfauth.ta.service.PositionService;
 import com.github.dfauth.ta.service.TradeService;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.controller.ControllerUtils.toBigDecimal;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 
 @RestController
 @Slf4j
@@ -57,6 +59,7 @@ public class TradeController {
                                 BigDecimal cost = toBigDecimal(arr[4]);
                                 Side side = Side.fromString(arr[5]);
                                 String notes = arr[14].toString();
+                                Theme theme = tryCatch(() -> Theme.valueOf(arr[20].toString()), e -> null);
                                 return  new Trade(0,
                                                 confirmationNo,
                                                 date,
@@ -66,7 +69,8 @@ public class TradeController {
                                                 cost,
                                                 side,
                                                 side.getMultiplier(),
-                                                notes);
+                                                notes,
+                                                theme);
                             }
                     )
                     .collect(Collectors.toList());

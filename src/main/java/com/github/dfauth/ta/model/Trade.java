@@ -30,6 +30,7 @@ public class Trade {
     @Column(name = "SIDE")
     private int persistedSide;
     private String notes;
+    private Theme theme;
 
     @PostLoad
     void loadSide() {
