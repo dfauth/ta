@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functions.CAGR.cagr;
@@ -35,11 +36,11 @@ public interface TradingMetrics {
     }
 
     default BigDecimal getAverageLoss() {
-        return BigDecimalOps.divide(getTotalLoss(), getLosingPositions());
+        return BigDecimalOps.divideWithZeroCheck(getTotalLoss(), getLosingPositions()).orElse(BigDecimal.ZERO);
     }
 
     default BigDecimal getAverageGain() {
-        return BigDecimalOps.divide(getTotalGain(), getWinningPositions());
+        return BigDecimalOps.divideWithZeroCheck(getTotalGain(), getWinningPositions()).orElse(BigDecimal.ZERO);
     }
 
     default double getWinRate() {
@@ -59,15 +60,24 @@ public interface TradingMetrics {
     }
 
     default BigDecimal getAvergePositionSize() {
-        return BigDecimalOps.divide(getTurnover(), (2*getTotalPositions()));
+        return BigDecimalOps.divide(getCostBase(), getTotalPositions());
     }
 
     default BigDecimal getAverageTradeSize() {
-        return BigDecimalOps.divide(getTurnover(), (2*(getTradeCount() - getTotalPositions())));
+        return BigDecimalOps.divide(getTurnover(), getTradeCount());
     }
 
     default double getRoi() {
         return getExpectancy() / getAvergePositionSize().doubleValue();
+//        return BigDecimalOps.divide(getProfit(),getCostBase()).doubleValue();
+    }
+
+    default BigDecimal getCostBase() {
+        return BigDecimalOps.divide(getTurnover().subtract(getProfit()),2);
+    }
+
+    default BigDecimal getProfit() {
+        return getTotalGain().add(getTotalLoss());
     }
 
     default double getOccupancy() {
@@ -75,7 +85,7 @@ public interface TradingMetrics {
     }
 
     default double getCagr() {
-        return cagr(getRoi(), (double)Duration.between(getStart().atStartOfDay(), getEnd().atStartOfDay()).toDays()/365);
+        return cagr(getRoi(), (double) getDuration() /(365*getTotalPositions()));
     }
 
     default TradingMetrics merge(TradingMetrics tm) {
@@ -93,18 +103,27 @@ public interface TradingMetrics {
         );
     }
 
-    static Optional<TradingMetrics> calculateTradingMetrics(Map<String, List<Trade>> tradeMap) {
-        // step 1 aggregate individual trades into positions
-        Map<String, TradeAccumulator> positionMap = Maps.mapValues(tradeMap, TradingMetrics::aggregate);
-        // step 2 filter open positions
-        Map<String, List<AggregatedTrade>> closedPositions = Maps.mapValues(positionMap, TradeAccumulator::getAggregatedTrades);
+    static Optional<TradingMetrics> openTradingMetrics(Map<String, TradeAccumulator> positionMap, Function<String, BigDecimal> priceCallback) {
+
+        // step 2a filter open positions
+        Map<String, AggregatedTrade> openPositions = Maps.of(positionMap).mapValues(TradeAccumulator::getOpenTrade).mapValues(t -> t.closeAt(priceCallback.apply(t.getCode())));
+
         // aggregate across securities
-        Optional<TradingMetrics> tradingMetrics = closedPositions.values().stream()
-                .flatMap(List::stream).map(TradingMetrics.class::cast).reduce(TradingMetrics::merge);
-        return tradingMetrics;
+        return openPositions.values().stream()
+                .map(TradingMetrics.class::cast).reduce(TradingMetrics::merge);
     }
 
-    private static TradeAccumulator aggregate(List<Trade> values) {
+    static Optional<TradingMetrics> closedTradingMetrics(Map<String, TradeAccumulator> positionMap) {
+
+        // step 2b filter closed positions
+        Map<String, List<AggregatedTrade>> closedPositions = Maps.mapValues(positionMap, TradeAccumulator::getAggregatedTrades);
+
+        // aggregate across securities
+        return closedPositions.values().stream()
+                .flatMap(List::stream).map(TradingMetrics.class::cast).reduce(TradingMetrics::merge);
+    }
+
+    static TradeAccumulator aggregate(List<Trade> values) {
         return values.stream().reduce(new TradeAccumulator(), TradeAccumulator::add, oops());
     }
 

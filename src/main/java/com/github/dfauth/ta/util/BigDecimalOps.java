@@ -65,6 +65,10 @@ public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
         return bd1.divide(bd2, RoundingMode.HALF_UP);
     }
 
+    static Optional<BigDecimal> divideWithZeroCheck(BigDecimal bd1, int n) {
+        return divideWithZeroCheck(bd1, valueOf(n));
+    }
+
     static Optional<BigDecimal> divideWithZeroCheck(BigDecimal bd1, BigDecimal bd2) {
         return Optional.ofNullable(bd2).filter(not(ZERO3::equals)).map(_bd2 -> bd1.divide(_bd2, RoundingMode.HALF_UP));
     }

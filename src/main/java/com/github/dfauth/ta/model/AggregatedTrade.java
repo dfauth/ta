@@ -6,6 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Data
@@ -82,5 +83,12 @@ public class AggregatedTrade implements TradingMetrics {
     @Override
     public long getDuration() {
         return Duration.between(open.toLocalDateTime(), close.toLocalDateTime()).toDays();
+    }
+
+    public AggregatedTrade closeAt(BigDecimal price) {
+        this.profit = this.profit.add(BigDecimalOps.multiply(price, size));
+        this.size = 0;
+        this.close = Timestamp.from(Instant.now());
+        return this;
     }
 }

@@ -1,11 +1,9 @@
 package com.github.dfauth.ta.functional;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functions.Reducers.groupBy;
 import static com.github.dfauth.ta.functions.Reducers.latest;
@@ -39,6 +37,10 @@ public class Maps<K,V> extends HashMap<K,V> {
 
     public static <K,V> Maps<K,V> of(K k, V v, K k1, V v1) {
         return new Maps<>(Map.of(k,v,k1,v1));
+    }
+
+    public static <K,V> Maps<K,V> of(Map<K,V> m) {
+        return new Maps<>(m);
     }
 
     public <R> Maps<K,R> mapValues(Function<V,R> valueMapper) {
