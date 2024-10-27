@@ -43,6 +43,7 @@ public class PositionService {
                             .map(_p -> {
                                 _p.setSize(p.getSize());
                                 _p.setCost(p.getCost());
+                                _p.setCommission(p.getCommission());
                                 return _p;
                             }).orElse(p);
                 })

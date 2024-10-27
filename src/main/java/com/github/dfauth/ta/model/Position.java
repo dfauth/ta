@@ -26,6 +26,7 @@ public class Position {
     private String code;
     private Integer size;
     private BigDecimal cost;
+    private BigDecimal commission;
 
     public Position(Trade t) {
         this(List.of(t));
@@ -39,13 +40,14 @@ public class Position {
         this.date = t.stream().map(Trade::getDate).mapToLong(Timestamp::getTime).max().stream().mapToObj(Timestamp::new).findFirst().orElseThrow();
         this.size = t.stream().mapToInt(_t -> _t.getSide().valueOf(_t.getSize())).sum();
         this.cost = t.stream().map(_t -> _t.getSide().valueOf(_t.getCost())).reduce(BigDecimal::add).orElseThrow();
+        this.commission = t.stream().map(Trade::getCommission).reduce(BigDecimal::add).orElseThrow();
     }
 
     public Position onTrade(Trade t) {
         if(!t.getCode().equals(code)) {
             throw new IllegalArgumentException("Mismatching codes: cannot aggregate positions: "+code+" with "+t.getCode());
         }
-        return new Position(t.getDate().toInstant().isAfter(date.toInstant()) ? t.getDate() : date, code, t.getSide().valueOf(t.getSize())+size, t.getSide().valueOf(t.getCost()).add(cost));
+        return new Position(t.getDate().toInstant().isAfter(date.toInstant()) ? t.getDate() : date, code, t.getSide().valueOf(t.getSize())+size, t.getSide().valueOf(t.getCost()).add(cost), this.commission.add(t.getCommission()));
     }
 
     public Position later(Position p) {

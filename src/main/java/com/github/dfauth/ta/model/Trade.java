@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
+import static com.github.dfauth.ta.util.BigDecimalOps.multiply;
+
 @Slf4j
 @Entity
 @Data
@@ -44,5 +46,9 @@ public class Trade {
         if (side != null) {
             this.persistedSide = side.getMultiplier();
         }
+    }
+
+    public BigDecimal getCommission() {
+        return cost.subtract(multiply(price, size)).abs();
     }
 }

@@ -22,6 +22,7 @@ public class PortfolioSummary {
     private BigDecimal cash = BigDecimal.ZERO;
     private int count = 0;
     private BigDecimal cost = BigDecimal.ZERO;
+    private BigDecimal commission = BigDecimal.ZERO;
     private BigDecimal marketValue = BigDecimal.ZERO;
     private List<PositionWithMarketValue> positions = new ArrayList<>();
 
@@ -33,6 +34,7 @@ public class PortfolioSummary {
     public PortfolioSummary withPosition(Position p, BigDecimal marketPrice) {
         this.count++;
         this.cost = this.cost.add(p.getCost());
+        this.commission = this.commission.add(p.getCommission());
         BigDecimal _marketValue = multiply(marketPrice, p.getSize());
         this.positions.add(new PositionWithMarketValue(p, _marketValue));
         this.marketValue = this.marketValue.add(_marketValue);
@@ -43,6 +45,10 @@ public class PortfolioSummary {
         return marketValue.add(cash);
     }
 
+    public BigDecimal getTotalCost() {
+        return cost.add(commission);
+    }
+
     public PortfolioSummary compare(PortfolioSummary prev) {
         Set<PositionWithMarketValue> p = new HashSet<>(positions);
         p.removeAll(new HashSet<>(prev.getPositions()));
@@ -50,6 +56,7 @@ public class PortfolioSummary {
                 cash.subtract(prev.cash),
                 count - prev.getCount(),
                 cost.subtract(prev.getCost()),
+                commission.subtract(prev.getCommission()),
                 marketValue.subtract(prev.marketValue),
                 new ArrayList<>(p)
                 );
@@ -60,7 +67,7 @@ public class PortfolioSummary {
         private final BigDecimal marketValue;
 
         public PositionWithMarketValue(Position p, BigDecimal marketValue) {
-            super(p.getDate(), p.getCode(), p.getSize(), p.getCost());
+            super(p.getDate(), p.getCode(), p.getSize(), p.getCost(), p.getCommission());
             this.marketValue = marketValue;
         }
 

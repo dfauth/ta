@@ -18,24 +18,27 @@ public class AggregatedTrade implements TradingMetrics {
     private Timestamp close;
     private String code;
     private Integer size;
-    private BigDecimal profit;
-    private BigDecimal turnover;
+    private BigDecimal costBasis;
+    private BigDecimal saleValue;
+    private BigDecimal commission;
     private int tradeCount;
 
     public AggregatedTrade(Trade t) {
         this.open = t.getDate();
         this.code = t.getCode();
         this.size = t.getSide().valueOf(t.getSize());
-        this.profit = t.getSide().flip().valueOf(t.getCost()); // we flip to make profit positive and loss negative
-        this.turnover = t.getCost(); // always +ve
+        this.costBasis = t.getSide().isBuy()  ? t.getCost() : BigDecimal.ZERO; // always +ve
+        this.saleValue = t.getSide().isSell() ? t.getSide().flip().valueOf(t.getCost()) : BigDecimal.ZERO; // seel cost is -ve, so we flip
+        this.commission = t.getCommission();
         this.tradeCount = 1;
     }
 
     public AggregatedTrade add(Trade t) {
         assert(this.code == t.getCode());
         this.size += t.getSide().valueOf(t.getSize());
-        this.profit = this.profit.add(t.getSide().flip().valueOf(t.getCost())); // we flip to make profit positive and loss negative
-        this.turnover = this.turnover.add(t.getCost()); // always +ve
+        this.costBasis = t.getSide().isBuy() ? this.costBasis.add(t.getCost()) : this.costBasis; // always +ve
+        this.saleValue = t.getSide().isSell() ? this.saleValue.add(t.getSide().flip().valueOf(t.getCost())) : this.saleValue; // we flip to make profit positive and loss negative
+        this.commission = this.commission.add(t.getCommission());
         if(isClosed()) {
             this.close = t.getDate();
         }
@@ -49,27 +52,37 @@ public class AggregatedTrade implements TradingMetrics {
 
     @Override
     public int getBreakEvenPositions() {
-        return profit.equals(BigDecimal.ZERO) ? 1 : 0;
+        return getProfit().equals(BigDecimal.ZERO) ? 1 : 0;
     }
 
     @Override
     public int getLosingPositions() {
-        return BigDecimalOps.isLessThanZero(profit) ? 1 : 0;
+        return BigDecimalOps.isLessThanZero(getProfit()) ? 1 : 0;
     }
 
     @Override
     public int getWinningPositions() {
-        return BigDecimalOps.isLessThanZero(profit) ? 0 : 1;
+        return BigDecimalOps.isLessThanZero(getProfit()) ? 0 : 1;
+    }
+
+    @Override
+    public BigDecimal getTurnover() {
+        return saleValue.add(costBasis);
     }
 
     @Override
     public BigDecimal getTotalLoss() {
-        return BigDecimalOps.isLessThanZero(profit) ? profit : BigDecimal.ZERO;
+        return BigDecimalOps.isLessThanZero(getProfit()) ? getProfit() : BigDecimal.ZERO;
     }
 
     @Override
     public BigDecimal getTotalGain() {
-        return BigDecimalOps.isLessThanZero(profit) ? BigDecimal.ZERO : profit;
+        return BigDecimalOps.isLessThanZero(getProfit()) ? BigDecimal.ZERO : getProfit();
+    }
+
+    @Override
+    public BigDecimal getProfit() {
+        return saleValue.subtract(costBasis).subtract(commission);
     }
 
     @Override
@@ -94,7 +107,7 @@ public class AggregatedTrade implements TradingMetrics {
     }
 
     public AggregatedTrade closeAt(BigDecimal price) {
-        this.profit = this.profit.add(BigDecimalOps.multiply(price, size));
+        this.saleValue = this.saleValue.add(BigDecimalOps.multiply(price, size));
         this.size = 0;
         this.close = Timestamp.from(Instant.now());
         return this;
