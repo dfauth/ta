@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class AggregatedTrade implements TradingMetrics {
@@ -83,6 +85,12 @@ public class AggregatedTrade implements TradingMetrics {
     @Override
     public long getDuration() {
         return Duration.between(open.toLocalDateTime(), close.toLocalDateTime()).toDays();
+    }
+
+    @Override
+    @JsonIgnore
+    public List<AggregatedTrade> getAggregatedTrades() {
+        return List.of(this);
     }
 
     public AggregatedTrade closeAt(BigDecimal price) {

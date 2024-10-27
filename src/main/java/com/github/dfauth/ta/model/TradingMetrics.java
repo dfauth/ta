@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.model;
 
+import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Maps;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.AllArgsConstructor;
@@ -30,6 +31,7 @@ public interface TradingMetrics {
     LocalDate getStart();
     LocalDate getEnd();
     long getDuration();
+    List<AggregatedTrade> getAggregatedTrades();
 
     default int getTotalPositions() {
         return getWinningPositions() + getLosingPositions() + getBreakEvenPositions();
@@ -69,7 +71,6 @@ public interface TradingMetrics {
 
     default double getRoi() {
         return getExpectancy() / getAvergePositionSize().doubleValue();
-//        return BigDecimalOps.divide(getProfit(),getCostBase()).doubleValue();
     }
 
     default BigDecimal getCostBase() {
@@ -99,7 +100,8 @@ public interface TradingMetrics {
                 getTotalGain().add(tm.getTotalGain()),
                 getStart().isBefore(tm.getStart()) ? getStart() : tm.getStart(),
                 getEnd().isAfter(tm.getStart()) ? getEnd() : tm.getEnd(),
-                getDuration() + tm.getDuration()
+                getDuration() + tm.getDuration(),
+                Lists.add(getAggregatedTrades(), tm.getAggregatedTrades())
         );
     }
 

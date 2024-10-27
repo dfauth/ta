@@ -30,4 +30,7 @@ public interface PositionRepository extends CrudRepository<Position, CodeDateCom
 
     @Query(value = "SELECT * FROM POSITION WHERE SIZE != 0 ORDER BY DATE DESC", nativeQuery = true)
     List<Position> findAllNonZeroPositions();
+
+    @Query(value = "SELECT p from Position p where p.date < ?1")
+    Iterable<Position> findAllPriorTo(Timestamp timestamp);
 }

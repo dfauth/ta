@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.controller;
 
+import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnEntry;
 import com.github.dfauth.ta.repo.TransactionRepository;
 import jakarta.transaction.Transactional;
@@ -26,14 +27,14 @@ public class TransactionController {
     @PostMapping("/txns/sync")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
-    public void txnSync(@RequestBody List<TxnEntry.Payment> txns) {
+    public void txnSync(@RequestBody List<Payment> txns) {
         try {
-            List<TxnEntry.Payment> reconsituted = txns.stream().map(pymnt -> pymnt.getTxnType().<TxnEntry.Payment>blah(pymnt)).collect(Collectors.toList());
+            List<Payment> reconsituted = txns.stream().map(pymnt -> pymnt.getTxnType().<Payment>blah(pymnt)).collect(Collectors.toList());
             log.info("txns/sync: {}",reconsituted);
 //            transactionRepository.saveAll(txns);
             txns.stream().forEach(pymnt -> {
                 try {
-                    TxnEntry.Payment p = transactionRepository.findByDateAndValue(pymnt.getDate(), pymnt.getValue()).map(_p -> {
+                    Payment p = transactionRepository.findByDateAndValue(pymnt.getDate(), pymnt.getValue()).map(_p -> {
                         _p.setBalance(pymnt.getBalance());
                         _p.setCode(pymnt.getCode());
                         _p.setContractNo(pymnt.getContractNo());
@@ -66,20 +67,20 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public Optional<BigDecimal> sumOfDividends(@PathVariable String start, @PathVariable String end) {
-        return transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV).stream().map(TxnEntry.Payment::getValue).reduce(BigDecimal::add);
+        return transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/dividends/{start}/{end}")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
-    public List<TxnEntry.Payment> dividends(@PathVariable String start, @PathVariable String end) {
+    public List<Payment> dividends(@PathVariable String start, @PathVariable String end) {
         return transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV);
     }
 
     @GetMapping("/txns/{start}/{end}/{type}")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
-    public List<TxnEntry.Payment> transactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
+    public List<Payment> transactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
         return transactionRepository.findByDateAndType(s,e, type);
@@ -89,6 +90,6 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public Optional<BigDecimal> sumOfTransactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
-        return transactionsByDateAndType(start,end,type).stream().map(TxnEntry.Payment::getValue).reduce(BigDecimal::add);
+        return transactionsByDateAndType(start,end,type).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 }

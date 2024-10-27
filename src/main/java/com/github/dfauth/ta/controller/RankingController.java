@@ -90,7 +90,7 @@ public class RankingController implements ControllerMixIn {
     public Long syncRank(@PathVariable String list, @RequestBody List<List<String>> o) {
         log.info("syncRank {} {}", list, o);
         int r = Ranking.findByCode(list).map(Ranking::ordinal).orElseThrow();
-        Timestamp sydneyClose = new Timestamp(market.atMarketCloseOn(market.getMarketDate()).toEpochMilli());
+        Timestamp sydneyClose = new Timestamp(market.atMarketCloseOnOrThrow(market.getMarketDate()).toEpochMilli());
         final Iterator<List<String>> finalIt = o.iterator();
         List<RankListDateCodeComposite> codes = IntStream.rangeClosed(1, o.size())
                 .boxed()
@@ -107,7 +107,7 @@ public class RankingController implements ControllerMixIn {
         log.info("syncRankSP500 {} {}", list, o);
         MarketEnum mkt = MarketEnum.NYSE;
         int r = Ranking.findByCode(list).map(Ranking::ordinal).orElseThrow();
-        Timestamp mktClose = new Timestamp(mkt.atMarketCloseOn(mkt.getMarketDate()).toEpochMilli());
+        Timestamp mktClose = new Timestamp(mkt.atMarketCloseOnOrThrow(mkt.getMarketDate()).toEpochMilli());
         final Iterator<List<String>> finalIt = o.iterator();
         List<RankListDateCodeComposite> codes = IntStream.rangeClosed(1, o.size())
                 .boxed()

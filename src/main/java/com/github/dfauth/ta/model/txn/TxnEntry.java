@@ -1,6 +1,5 @@
 package com.github.dfauth.ta.model.txn;
 
-import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -226,43 +225,13 @@ public class TxnEntry {
         return result;
     }
 
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @ToString
-    @EqualsAndHashCode
-    @Data
-    @Entity
-    @Table(name = "PAYMENT")
-    public static class Payment {
-        @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private long id;
-        @Column(name = "TYPE")
-        private TxnType txnType;
-        private LocalDate date;
-        private String detail;
-        private BigDecimal value;
-        private BigDecimal balance;
-        private Side side;
-        private String code;
-        @Column(name = "CONTRACTNO")
-        private String contractNo;
-
-        public Payment(Payment p) {
-            this(0, p.txnType, p.date, p.detail, p.value, p.balance, p.side, p.code, p.contractNo);
-        }
-
-        public boolean isDividendPayment() {
-            return false;
-        }
-    }
-
     @ToString
     @EqualsAndHashCode
     @Getter
     public static class Interest extends Payment {
 
         public Interest(Payment p) {
-            this(p.date, p.detail, p.value, p.balance);
+            this(p.getDate(), p.getDetail(), p.getValue(), p.getBalance());
         }
 
         public Interest(LocalDate date, String detail, BigDecimal value, BigDecimal balance) {
@@ -276,7 +245,7 @@ public class TxnEntry {
     public static class Credit extends Payment {
 
         public Credit(Payment p) {
-            this(p.date, p.detail, p.contractNo, p.value, p.balance);
+            this(p.getDate(), p.getDetail(), p.getContractNo(), p.getValue(), p.getBalance());
         }
 
         public Credit(LocalDate date, String detail, String contractNo, BigDecimal value, BigDecimal balance) {
@@ -290,7 +259,7 @@ public class TxnEntry {
     public static class Other extends Payment {
 
         public Other(Payment p) {
-            this(p.date, p.detail, p.value, p.balance);
+            this(p.getDate(), p.getDetail(), p.getValue(), p.getBalance());
         }
 
         public Other(LocalDate date, String detail, BigDecimal value, BigDecimal balance) {
@@ -304,7 +273,7 @@ public class TxnEntry {
     public static class Deposit extends Payment {
 
         public Deposit(Payment p) {
-            this(p.date, p.detail, p.code, p.contractNo, p.value, p.balance);
+            this(p.getDate(), p.getDetail(), p.getCode(), p.getContractNo(), p.getValue(), p.getBalance());
         }
 
         public Deposit(LocalDate date, String detail, String code, String contractNo, BigDecimal value, BigDecimal balance) {
@@ -318,7 +287,7 @@ public class TxnEntry {
     public static class SecuritiesPurchase extends Payment {
 
         public SecuritiesPurchase(Payment p) {
-            this(p.date, p.detail, p.side, p.code, p.contractNo, p.value, p.balance);
+            this(p.getDate(), p.getDetail(), p.getSide(), p.getCode(), p.getContractNo(), p.getValue(), p.getBalance());
         }
 
         public SecuritiesPurchase(LocalDate date, String detail, Side side, String code, String contractNo, BigDecimal value, BigDecimal balance) {
@@ -332,7 +301,7 @@ public class TxnEntry {
     public static class DividendPayment extends Payment {
 
         public DividendPayment(Payment p) {
-            this(p.date, p.detail, p.code, p.contractNo, p.value, p.balance);
+            this(p.getDate(), p.getDetail(), p.getCode(), p.getContractNo(), p.getValue(), p.getBalance());
         }
 
         public DividendPayment(LocalDate date, String detail, String code, String contractNo, BigDecimal value, BigDecimal balance) {

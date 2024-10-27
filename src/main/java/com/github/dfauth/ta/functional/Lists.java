@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.functional;
 
+import com.github.dfauth.ta.util.StreamOps;
+
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -103,6 +105,12 @@ public class Lists<T> extends ArrayList<T> {
 
     public static <V,T,R> Map<T,R> toMap(List<V> l, Function<V,T> keyMapper, Function<V,R> valueMapper) {
         return l.stream().collect(Collectors.toMap(keyMapper,valueMapper));
+    }
+
+    public static <V,T,R> Map<T,R> toMap1(Iterable<V> l, Function<V,T> keyMapper, Function<V,BiFunction<? super T, ? super R, ? extends R>> valueMapper) {
+        Map<T,R> tmp = new HashMap<>();
+        StreamOps.stream(l).forEach(v -> tmp.compute(keyMapper.apply(v), valueMapper.apply(v)));
+        return tmp;
     }
 
 

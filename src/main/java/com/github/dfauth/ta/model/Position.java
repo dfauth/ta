@@ -47,4 +47,11 @@ public class Position {
         }
         return new Position(t.getDate().toInstant().isAfter(date.toInstant()) ? t.getDate() : date, code, t.getSide().valueOf(t.getSize())+size, t.getSide().valueOf(t.getCost()).add(cost));
     }
+
+    public Position later(Position p) {
+        if(!code.equals(p.getCode())) {
+            throw new IllegalArgumentException("Cant aggregate positions across codes: "+code+" and "+p.getCode());
+        }
+        return date.toLocalDateTime().toLocalDate().isAfter(p.getDate().toLocalDateTime().toLocalDate()) ? this: p;
+    }
 }

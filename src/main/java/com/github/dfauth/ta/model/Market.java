@@ -5,7 +5,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.Optional;
 
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 
@@ -73,18 +73,38 @@ public interface Market {
                         getMarketDate(localDate.minusDays(1).atTime(getMarketOpen()));
     }
 
-    default Instant atMarketOpenOn(LocalDate localDate) {
-        Supplier<Instant> r = () -> {
-            throw new IllegalArgumentException("Market is not open on "+localDate);
-        };
-        return isOpen(localDate) ? localDate.atTime(getMarketOpen()).atZone(getZone()).toInstant() : r.get();
+    default Instant atMarketOpenOnOrThrow(LocalDate localDate) {
+        return atMarketOpenOn(localDate).orElseThrow(() -> new IllegalArgumentException("Market is not open on "+localDate));
     }
 
-    default Instant atMarketCloseOn(LocalDate localDate) {
-        Supplier<Instant> r = () -> {
-            throw new IllegalArgumentException("Market is not open on "+localDate);
-        };
-        return isOpen(localDate) ? localDate.atTime(getMarketClose()).atZone(getZone()).toInstant() : r.get();
+    default Optional<Instant> atMarketOpenOn(LocalDate localDate) {
+        return Optional.ofNullable(localDate)
+                .filter(this::isOpen)
+                .map(d -> d.atTime(getMarketOpen()))
+                .map(d -> d.atZone(getZone()))
+                .map(ZonedDateTime::toInstant);
+    }
+
+    default Instant atMarketCloseOnOrThrow(LocalDate localDate) {
+        return atMarketCloseOn(localDate).orElseThrow(() -> new IllegalArgumentException("Market is not open on "+localDate));
+    }
+
+    default Optional<Instant> atMarketCloseOn(LocalDate localDate) {
+        return Optional.ofNullable(localDate)
+                .filter(this::isOpen)
+                .map(d -> d.atTime(getMarketClose()))
+                .map(d -> d.atZone(getZone()))
+                .map(ZonedDateTime::toInstant);
+    }
+
+    default Instant atMarketCloseOnOrPriorTo(LocalDate date) {
+        LocalDate d = date;
+        Optional<Instant> opt;
+        do {
+            opt = atMarketOpenOn(d);
+            d = d.minusDays(1);
+        } while(opt.isEmpty());
+        return opt.get();
     }
 
     default String withCode(String v) {

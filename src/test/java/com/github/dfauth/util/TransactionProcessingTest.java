@@ -1,6 +1,7 @@
 package com.github.dfauth.util;
 
 import com.github.dfauth.ta.model.txn.CSVReducer;
+import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnEntry;
 import com.github.dfauth.ta.util.CSVReader;
 import com.github.dfauth.ta.util.RestClient;
@@ -30,7 +31,7 @@ public class TransactionProcessingTest {
     @Test
     public void testIt2() throws IOException {
         var tmp = CSVReader.read(new FileInputStream("src/test/resources/Data_export_10082024.csv"), TxnEntry.FieldHandler.values().length);
-        List<TxnEntry.Payment> txns = tmp.map(fieldStream -> fieldStream
+        List<Payment> txns = tmp.map(fieldStream -> fieldStream
                 .collect(new CSVReducer<>(new TxnEntry.Accumulator(),
                         TxnEntry.FieldHandler.values(),
                         TxnEntry.Accumulator::instead)))

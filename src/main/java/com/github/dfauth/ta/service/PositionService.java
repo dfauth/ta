@@ -1,6 +1,8 @@
 package com.github.dfauth.ta.service;
 
+import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.model.CodeDateCompositeKey;
+import com.github.dfauth.ta.model.Market;
 import com.github.dfauth.ta.model.MarketEnum;
 import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.repo.PositionRepository;
@@ -11,8 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -52,7 +58,20 @@ public class PositionService {
     }
 
     public Iterable<Position> findOpenPositions() {
-        return positionRepository.findNonZeroPositions();
+        return findOpenPositions(LocalDate.now());
+    }
+
+    public Iterable<Position> findOpenPositions(LocalDate date) {
+        return findOpenPositions(date, MarketEnum.ASX);
+    }
+
+    public Iterable<Position> findOpenPositions(LocalDate date, Market market) {
+        Instant i = market.atMarketCloseOnOrPriorTo(date);
+        Map<String, Position> map = Lists.toMap1(positionRepository.findAllPriorTo(new Timestamp(i.toEpochMilli())), Position::getCode, p -> (k, v) -> Optional.ofNullable(v)
+                .map(prev -> prev.later(p))
+                .orElse(p));
+        // filter non zero
+        return map.values().stream().filter(p -> p.getSize() > 0).collect(Collectors.toList());
     }
 
     public Optional<Position> getPosition(String code) {
