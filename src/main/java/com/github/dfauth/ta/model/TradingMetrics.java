@@ -1,11 +1,11 @@
 package com.github.dfauth.ta.model;
 
-import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Maps;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -31,7 +31,7 @@ public interface TradingMetrics {
     LocalDate getStart();
     LocalDate getEnd();
     long getDuration();
-    List<AggregatedTrade> getAggregatedTrades();
+    //List<AggregatedTrade> getAggregatedTrades();
 
     default int getTotalPositions() {
         return getWinningPositions() + getLosingPositions() + getBreakEvenPositions();
@@ -57,8 +57,14 @@ public interface TradingMetrics {
         return getAverageGain().doubleValue() / (-1.0 * getAverageLoss().doubleValue());
     }
 
-    default double getExpectancyRatio() {
-        return (getWinRate()/(1-getWinRate()))*getRiskRewardRatio();
+    @Slf4j
+    public static class Logger {}
+    default double getPositiveExpectancy() {
+        double w = getAverageGain().doubleValue();
+        double l = getAverageLoss().doubleValue() * -1d;
+        double p = getWinRate();
+        return l == 0 ? 0.0 :
+                (1 + (w/l)) * p - 1.0d;
     }
 
     default BigDecimal getAvergePositionSize() {
@@ -101,7 +107,7 @@ public interface TradingMetrics {
                 getStart().isBefore(tm.getStart()) ? getStart() : tm.getStart(),
                 getEnd().isAfter(tm.getStart()) ? getEnd() : tm.getEnd(),
                 getDuration() + tm.getDuration(),
-                Lists.add(getAggregatedTrades(), tm.getAggregatedTrades())
+                List.of() //Lists.add(getAggregatedTrades(), tm.getAggregatedTrades())
         );
     }
 

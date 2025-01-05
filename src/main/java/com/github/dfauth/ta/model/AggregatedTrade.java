@@ -100,7 +100,7 @@ public class AggregatedTrade implements TradingMetrics {
         return Duration.between(open.toLocalDateTime(), close.toLocalDateTime()).toDays();
     }
 
-    @Override
+//    @Override
     @JsonIgnore
     public List<AggregatedTrade> getAggregatedTrades() {
         return List.of(this);
