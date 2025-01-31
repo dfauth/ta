@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.function.BinaryOperator;
 
@@ -33,8 +34,17 @@ public class AnalysisService {
         return analyse(Mode.ALL);
     }
 
+    public Optional<TradingMetrics> analyseByDate(LocalDate start, LocalDate end) {
+        return analyse(Mode.ALL, start, end);
+    }
+
     public Optional<TradingMetrics> analyse(Mode mode) {
         Iterable<Trade> trades = tradeRepository.findAll();
+        return analyse(trades, mode);
+    }
+
+    public Optional<TradingMetrics> analyse(Mode mode, LocalDate start, LocalDate end) {
+        Iterable<Trade> trades = tradeRepository.findAllByDate(start, end);
         return analyse(trades, mode);
     }
 

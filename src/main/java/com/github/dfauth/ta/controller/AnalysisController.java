@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.Optional;
+
+import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 
 @RestController
 @Slf4j
@@ -30,6 +33,12 @@ public class AnalysisController {
     @ResponseStatus(HttpStatus.OK)
     public Optional<TradingMetrics> analyse(@PathVariable AnalysisService.Mode mode) {
         return analysisService.analyse(mode);
+    }
+
+    @GetMapping("/analyse/{mode}/{start}/{end}")
+    @ResponseStatus(HttpStatus.OK)
+    public Optional<TradingMetrics> analyseByDate(@PathVariable AnalysisService.Mode mode, @PathVariable String start, @PathVariable String end) {
+        return analysisService.analyse(mode, (LocalDate) YYYYMMDD.parse(start), (LocalDate) YYYYMMDD.parse(end));
     }
 
     @GetMapping("/analyse/theme/{theme}")

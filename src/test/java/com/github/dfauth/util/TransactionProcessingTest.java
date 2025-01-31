@@ -30,7 +30,7 @@ public class TransactionProcessingTest {
 
     @Test
     public void testIt2() throws IOException {
-        var tmp = CSVReader.read(new FileInputStream("src/test/resources/Data_export_10082024.csv"), TxnEntry.FieldHandler.values().length);
+        var tmp = CSVReader.read(new FileInputStream("src/test/resources/Data_export_11012025.csv"), TxnEntry.FieldHandler.values().length);
         List<Payment> txns = tmp.map(fieldStream -> fieldStream
                 .collect(new CSVReducer<>(new TxnEntry.Accumulator(),
                         TxnEntry.FieldHandler.values(),

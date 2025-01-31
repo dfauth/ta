@@ -8,6 +8,9 @@ import com.github.dfauth.ta.util.StreamOps;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +51,16 @@ public interface TradeRepository extends CrudRepository<Trade, String> {
 
     @Query(value = "SELECT t FROM Trade t order by t.date asc")
     Iterable<Trade> findAllByDate();
+
+    @Query(value = "SELECT t FROM Trade t where t.date >= ?1 and t.date < ?2 order by t.date asc")
+    Iterable<Trade> findAllByDate(Timestamp start, Timestamp end);
+
+    default Iterable<Trade> findAllByDate(LocalDate start, LocalDate end) {
+        return findAllByDate(
+                new Timestamp(start.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()),
+                new Timestamp(end.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli())
+        );
+    }
 
     @Query(value = "SELECT t FROM Trade t, Position p where t.code = p.code and p.size > 0 order by t.date", nativeQuery = true)
     Iterable<Trade> findOpenPositionEvents();
