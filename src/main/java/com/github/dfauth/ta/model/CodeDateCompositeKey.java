@@ -1,24 +1,28 @@
 package com.github.dfauth.ta.model;
 
-import lombok.Data;
+import lombok.*;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
-@Data
-public class CodeDateCompositeKey implements Serializable {
+@Getter
+@EqualsAndHashCode
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+public class CodeDateCompositeKey implements Serializable, Comparable<CodeDateCompositeKey> {
 
     private String code;
     private Timestamp date;
 
-    public CodeDateCompositeKey() {
+    public CodeDateCompositeKey(String code, LocalDate date) {
+        this(code, new Timestamp(date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()));
     }
 
-    public CodeDateCompositeKey(String code, Timestamp date) {
-        this.code = code;
-        this.date = date;
+    @Override
+    public int compareTo(CodeDateCompositeKey other) {
+        return code.equals(other.code) ? date.getDate() - other.date.getDate() : code.compareTo(other.code);
     }
-
-
-
 }
