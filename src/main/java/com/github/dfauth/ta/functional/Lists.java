@@ -19,6 +19,14 @@ public class Lists<T> extends ArrayList<T> {
         super(list);
     }
 
+    public static <T> UnaryOperator<Collection<T>> sortBy(Comparator<T> comparator) {
+        return l -> {
+            var tmp = new TreeSet<>(comparator);
+            tmp.addAll(l);
+            return tmp;
+        };
+    }
+
     public static <T,R> Function<List<T>,List<R>> mapList(Function<T,R> f) {
         return l -> new Lists<>(l).map(f);
     }

@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
+import static com.github.dfauth.ta.functional.Lists.sortBy;
 import static com.github.dfauth.ta.util.StreamOps.stream;
 
 @RestController
@@ -27,11 +28,15 @@ public class MktDepthController implements ControllerMixIn {
 
     @PostMapping("/mktDepth/sync/{code}")
     @ResponseStatus(HttpStatus.OK)
-    public void sync(@PathVariable String code,@RequestBody Map<String,Integer[]> body) {
+    public void sync(@PathVariable String code,@RequestBody Map<String,Double> body) {
         log.info("mkt depth {} {}",code, body);
         var builder = MktDepth.builder(code);
-        Optional.ofNullable(body.get("buyers")).map(ints -> builder.buyers(ints[0]).buyerShares(ints[1]));
-        Optional.ofNullable(body.get("sellers")).map(ints -> builder.sellers(ints[0]).sellerShares(ints[1]));
+        Optional.ofNullable(body.get("buyers")).map(d -> builder.buyers((int)d.doubleValue()));
+        Optional.ofNullable(body.get("buyerShares")).map(d -> builder.buyerShares((int)d.doubleValue()));
+        Optional.ofNullable(body.get("sellers")).map(d -> builder.sellers((int)d.doubleValue()));
+        Optional.ofNullable(body.get("sellerShares")).map(d -> builder.sellerShares((int)d.doubleValue()));
+        Optional.ofNullable(body.get("price")).map(builder::price);
+        Optional.ofNullable(body.get("change")).map(builder::change);
         mktDepthService.sync(builder.build());
     }
 
@@ -53,6 +58,12 @@ public class MktDepthController implements ControllerMixIn {
     public Collection<MktDepth> mktDepth(@PathVariable String code) {
         log.info("mkt depth {} {}",code);
         return mktDepthService.findById(code).stream().reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code);
+    }
+
+    @GetMapping("/mktDepth/ratio/{threshold}")
+    @ResponseStatus(HttpStatus.OK)
+    public Collection<MktDepth> mktDepthLatest(@PathVariable Double threshold) {
+        return sortBy(MktDepth.comparator).apply(mktDepthLatest().stream().filter(m -> m.getSharesRatio().map(r -> r >= threshold).orElse(false)).toList());
     }
 
     @GetMapping("/mktDepth/latest")

@@ -6,11 +6,13 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.util.Optionals;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -32,6 +34,8 @@ import static com.github.dfauth.ta.functional.Collectors.oops;
 @IdClass(CodeDateCompositeKey.class)
 public class MktDepth {
 
+    public static Comparator<MktDepth> comparator = (m1, m2) -> Optionals.mapIfAllPresent(m1.getSharesRatio(), m2.getSharesRatio(), (r1, r2) -> (int)(r1 - r2)).orElse(0);
+
     public static MktDepth.MktDepthBuilder builder(String code) {
         return new MktDepthBuilder().code(code).date(new Timestamp(Instant.now().toEpochMilli()));
     }
@@ -44,6 +48,8 @@ public class MktDepth {
     private int buyerShares;
     private int sellers;
     private int sellerShares;
+    private Double price;
+    private Double change;
 
     public MktDepth() {
     }
@@ -94,6 +100,8 @@ public class MktDepth {
                 .buyerShares((buyerShares+mktDepth.getBuyerShares())/2)
                 .sellers((sellers+mktDepth.getSellers())/2)
                 .sellerShares((sellerShares+mktDepth.getSellerShares())/2)
+                .price((price+mktDepth.getPrice())/2)
+                .change((change+ mktDepth.getChange())/2)
                 .build();
     }
 
