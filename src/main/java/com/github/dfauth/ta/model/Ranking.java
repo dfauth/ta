@@ -13,7 +13,15 @@ public enum Ranking {
     MOMENTUM_QUARTERLY("mtm-qtr"),
     ALLORDS_MOMENTUM_QUARTERLY("xao-mtm-qtr"),
     AUS_MOMENTUM_CHARTIST("aus-mtm-chartist"),
-    US_MOMENTUM_CHARTIST("us-mtm-chartist");
+    US_MOMENTUM_CHARTIST("us-mtm-chartist"),
+    BREAKOUT("breakout"),
+    MEAN_REVERSION("mean-reversion"),
+    COMPOUNDERS("compounders"),
+    DIVIDEND("dividends"),
+    EXTREME_VALUE("extreme-value"),
+    CHARTIST("chartist"),
+    BGS("BGS")
+    ;
 
     public static Function<RankListDateCodeComposite, BiFunction<String, Map<LocalDate,Integer>, Map<LocalDate,Integer>>> reMapper = rldc -> (c, r1) -> Optional.ofNullable(r1).map(_r -> {
         _r.put(rldc.getDate().toLocalDateTime().toLocalDate(), rldc.getRank());

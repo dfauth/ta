@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -8,6 +10,8 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.util.Optionals;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,16 +44,24 @@ public class MktDepth {
         return new MktDepthBuilder().code(code).date(new Timestamp(Instant.now().toEpochMilli()));
     }
 
-    @Id
+    @Id @JsonIgnore
     private Timestamp date;
     @Id
     private String code;
+    @JsonProperty("b")
     private int buyers;
+    @JsonProperty("bs")
     private int buyerShares;
+    @JsonProperty("s")
     private int sellers;
+    @JsonProperty("ss")
     private int sellerShares;
+    @JsonProperty("p")
     private Double price;
+    @JsonProperty("c")
     private Double change;
+    @JsonProperty("t")
+    private transient Double trend;
 
     public MktDepth() {
     }
@@ -84,6 +96,7 @@ public class MktDepth {
         };
     }
 
+    @JsonProperty("d")
     public LocalDate getLocalDate() {
         return LocalDate.from(date.toLocalDateTime());
     }
@@ -105,11 +118,31 @@ public class MktDepth {
                 .build();
     }
 
+    @JsonProperty("r")
     public Optional<Double> getSharesRatio() {
-        return sellerShares == 0 ? Optional.empty() : Optional.of(buyerShares/(double)sellerShares);
+        return sellerShares == 0 ? Optional.empty() : Optional.of(BigDecimal.valueOf(buyerShares / (double) sellerShares).setScale(3, RoundingMode.HALF_UP).doubleValue());
     }
 
-    public Optional<Double> trend(MktDepth mktDepth) {
-        return getSharesRatio().flatMap(r -> mktDepth.getSharesRatio().map(r1 -> r/r1));
+    public MktDepth trend(MktDepth mktDepth) {
+        MktDepth current;
+        MktDepth prev;
+        if (date.toLocalDateTime().toLocalDate().isAfter(mktDepth.getLocalDate())) {
+            current = this;
+            prev = mktDepth;
+        } else {
+            prev = this;
+            current = mktDepth;
+        }
+        return new MktDepthBuilder()
+                .code(current.code)
+                .date(new Timestamp(LocalDate.from(current.date.toLocalDateTime()).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()))
+                .buyers(current.buyers)
+                .buyerShares(current.buyerShares)
+                .sellers(current.sellers)
+                .sellerShares(current.sellerShares)
+                .price(current.price)
+                .change(current.change)
+                .trend(((double)(current.buyerShares/ current.sellerShares)) - ((double)(prev.buyerShares/prev.sellerShares)))
+                .build();
     }
 }

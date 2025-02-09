@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functional.Lists.sortBy;
@@ -42,11 +43,11 @@ public class MktDepthController implements ControllerMixIn {
 
     @PostMapping("/mktDepth")
     @ResponseStatus(HttpStatus.OK)
-    public long mktDepth(@RequestBody List<List<String>> codes) {
+    public Map<String, MktDepth> mktDepth(@RequestBody List<List<String>> codes) {
         try {
             log.info("mktDepth/{}",codes);
-            Map<String, Collection<MktDepth>> result = mapCode(codes, code -> mktDepth(code));
-            return result.values().stream().count();
+            Map<String, MktDepth> result = mapCode(codes, code -> mktDepth(code)).entrySet().stream().flatMap(e -> e.getValue().map(v -> Map.entry(e.getKey(), v)).stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            return result;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
@@ -55,9 +56,9 @@ public class MktDepthController implements ControllerMixIn {
 
     @GetMapping("/mktDepth/{code}")
     @ResponseStatus(HttpStatus.OK)
-    public Collection<MktDepth> mktDepth(@PathVariable String code) {
+    public Optional<MktDepth> mktDepth(@PathVariable String code) {
         log.info("mkt depth {} {}",code);
-        return mktDepthService.findById(code).stream().reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code);
+        return mktDepthService.findById(code).stream().reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code).stream().reduce(MktDepth::trend);
     }
 
     @GetMapping("/mktDepth/ratio/{threshold}")

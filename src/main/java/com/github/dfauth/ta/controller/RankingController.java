@@ -22,9 +22,11 @@ import java.util.stream.StreamSupport;
 
 import static com.github.dfauth.ta.model.MarketEnum.ASX;
 import static com.github.dfauth.ta.model.RankListDateCodeComposite.mapToRankEntry;
+import static com.github.dfauth.ta.util.StreamOps.stream;
 
 @RestController
 @Slf4j
+@CrossOrigin(origins = "https://sharetrading.westpac.com.au")
 public class RankingController implements ControllerMixIn {
 
     public static Function<RankListDateCodeComposite,String> keyMapper = rlcd -> rlcd.getDate().toString();
@@ -34,6 +36,22 @@ public class RankingController implements ControllerMixIn {
     @Autowired
     private RankingRepository repository;
     private Market market = ASX;
+
+    @GetMapping("/rank")
+    @ResponseStatus(HttpStatus.OK)
+    public List<String> distinctCodes() {
+        return stream(repository.findAll().iterator())
+                .map(RankListDateCodeComposite::getCode)
+                .filter(c -> c.split(":").length == 2)
+                .filter(c -> "ASX".equals(c.split(":")[0]))
+                .filter(c -> !isNullOrBlank(c.split(":")[1]))
+                .distinct()
+                .toList();
+    }
+
+    private boolean isNullOrBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
 
     @GetMapping("/rank/{list}/current/{code}")
     @ResponseStatus(HttpStatus.OK)
