@@ -38,6 +38,7 @@ public class MktDepthController implements ControllerMixIn {
         Optional.ofNullable(body.get("sellerShares")).map(d -> builder.sellerShares((int)d.doubleValue()));
         Optional.ofNullable(body.get("price")).map(builder::price);
         Optional.ofNullable(body.get("change")).map(builder::change);
+        Optional.ofNullable(body.get("volume")).map(d -> builder.volume((int)d.doubleValue()));
         mktDepthService.sync(builder.build());
     }
 
@@ -57,8 +58,13 @@ public class MktDepthController implements ControllerMixIn {
     @GetMapping("/mktDepth/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<MktDepth> mktDepth(@PathVariable String code) {
-        log.info("mkt depth {} {}",code);
-        return mktDepthService.findById(code).stream().reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code).stream().reduce(MktDepth::trend);
+        try {
+            log.info("mkt depth {} {}",code);
+            return mktDepthService.findById(code).stream().reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code).stream().reduce(MktDepth::trend);
+        } catch (RuntimeException e) {
+            log.error(e.getMessage(), e);
+            return Optional.empty();
+        }
     }
 
     @GetMapping("/mktDepth/ratio/{threshold}")

@@ -29,7 +29,8 @@ chrome.runtime.onMessage.addListener(
         } else {
           quoteWindow.then(w => {
                (async () => {
-                   chrome.tabs.create({windowId: w.id, url: tabUrl}).then(x => sendResponse({complete: tabURL}));
+                   await chrome.tabs.create({windowId: w.id, url: tabUrl});
+                   sendResponse({complete: tabURL});
                })();
           });
         }

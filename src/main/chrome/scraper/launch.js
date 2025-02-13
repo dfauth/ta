@@ -10,9 +10,8 @@ function launch() {
           var msg = {url: "https://sharetrading.westpac.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx?stockCode="+r[1]};
 //          chrome.runtime.sendMessage(msg);
           (async () => {
-            const response = await chrome.runtime.sendMessage(msg);
             // block waiting for the response
-            await response;
+            const response = await chrome.runtime.sendMessage(msg);
           })();
       }
     }

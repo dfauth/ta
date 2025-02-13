@@ -60,6 +60,8 @@ public class MktDepth {
     private Double price;
     @JsonProperty("c")
     private Double change;
+    @JsonProperty("v")
+    private Integer volume;
     @JsonProperty("t")
     private transient Double trend;
 
@@ -114,7 +116,8 @@ public class MktDepth {
                 .sellers((sellers+mktDepth.getSellers())/2)
                 .sellerShares((sellerShares+mktDepth.getSellerShares())/2)
                 .price((price+mktDepth.getPrice())/2)
-                .change((change+ mktDepth.getChange())/2)
+                .change((change+mktDepth.getChange())/2)
+                .volume((volume+mktDepth.getVolume())/2)
                 .build();
     }
 
@@ -142,6 +145,7 @@ public class MktDepth {
                 .sellerShares(current.sellerShares)
                 .price(current.price)
                 .change(current.change)
+                .volume(current.getVolume())
                 .trend(((double)(current.buyerShares/ current.sellerShares)) - ((double)(prev.buyerShares/prev.sellerShares)))
                 .build();
     }
