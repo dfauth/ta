@@ -47,6 +47,18 @@ public class AnalysisController {
         return analysisService.analyseByTheme(theme, AnalysisService.Mode.ALL);
     }
 
+    @GetMapping("/analyse/code/{code}")
+    @ResponseStatus(HttpStatus.OK)
+    public Optional<TradingMetrics> analyseByCode(@PathVariable String code) {
+        return analyseByCode(code, AnalysisService.Mode.ALL);
+    }
+
+    @GetMapping("/analyse/code/{code}/{mode}")
+    @ResponseStatus(HttpStatus.OK)
+    public Optional<TradingMetrics> analyseByCode(@PathVariable String code, @PathVariable AnalysisService.Mode mode) {
+        return analysisService.analyseByCode(code, mode);
+    }
+
     @GetMapping("/analyse/theme/{theme}/{mode}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<TradingMetrics> analyseByTheme(@PathVariable Theme theme, @PathVariable AnalysisService.Mode mode) {

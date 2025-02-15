@@ -10,7 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -56,6 +58,13 @@ public class TransactionController {
         }
     }
 
+    @GetMapping("/txns/dividends/sum")
+    @ResponseStatus(HttpStatus.OK)
+    @Transactional
+    public Optional<BigDecimal> sumOfDividends() {
+        return transactionsByDateAndType(LocalDate.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()), LocalDate.now(), TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+    }
+
     @GetMapping("/txns/dividends/sum/{start}")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
@@ -83,6 +92,10 @@ public class TransactionController {
     public List<Payment> transactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
+        return transactionsByDateAndType(s,e, type);
+    }
+
+    private List<Payment> transactionsByDateAndType(LocalDate s, LocalDate e, TxnEntry.TxnType type) {
         return transactionRepository.findByDateAndType(s,e, type);
     }
 

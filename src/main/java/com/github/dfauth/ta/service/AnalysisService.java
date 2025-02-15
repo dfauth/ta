@@ -57,6 +57,11 @@ public class AnalysisService {
         return analyse(trades, mode);
     }
 
+    public Optional<TradingMetrics> analyseByCode(String code, Mode mode) {
+        List<Trade> trades = tradeRepository.findByCode(code);
+        return analyse(trades, mode);
+    }
+
     public Optional<TradingMetrics> analyse(Iterable<Trade> trades) {
         return analyse(trades, Mode.ALL);
     }

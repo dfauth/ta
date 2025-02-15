@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
@@ -58,9 +59,19 @@ public class MktDepthController implements ControllerMixIn {
     @GetMapping("/mktDepth/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<MktDepth> mktDepth(@PathVariable String code) {
+        return mktDepth(code, m -> true);
+    }
+
+    @GetMapping("/mktDepth/today/{code}")
+    @ResponseStatus(HttpStatus.OK)
+    public Optional<MktDepth> mktDepthToday(@PathVariable String code) {
+        return mktDepth(code, m -> m.getLocalDate().equals(LocalDate.now()));
+    }
+
+    private Optional<MktDepth> mktDepth(@PathVariable String code, @PathVariable Predicate<MktDepth> p) {
         try {
             log.info("mkt depth {} {}",code);
-            return mktDepthService.findById(code).stream().reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code).stream().reduce(MktDepth::trend);
+            return mktDepthService.findById(code).stream().filter(p).reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code).stream().reduce(MktDepth::trend);
         } catch (RuntimeException e) {
             log.error(e.getMessage(), e);
             return Optional.empty();

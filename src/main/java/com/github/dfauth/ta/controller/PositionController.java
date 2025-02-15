@@ -49,7 +49,7 @@ public class PositionController {
         return positionService.getPosition(code,new Timestamp(ts.toInstant().toEpochMilli()));
     }
 
-    @GetMapping("/position/events/{code}")
+    @GetMapping("/positions/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> positionEvents(@PathVariable String code) {
         return positionService.getPositions(code);
@@ -61,13 +61,13 @@ public class PositionController {
         return positionService.sync();
     }
 
-    @GetMapping("/positions")
+    @GetMapping("/positions/all")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions() {
         return getAllPositions(ASX);
     }
 
-    @GetMapping("/positions/{market}")
+    @GetMapping("/positions/all/{market}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions(@PathVariable MarketEnum market) {
         return positionService.getAllPositions(market);
