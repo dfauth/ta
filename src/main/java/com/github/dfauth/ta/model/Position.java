@@ -1,59 +1,144 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+
+import static com.github.dfauth.ta.functional.Collectors.oops;
 
 @Slf4j
 @Entity
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @ToString
 @EqualsAndHashCode
 @IdClass(CodeDateCompositeKey.class)
 public class Position {
 
-    @Id
+    @Id @JsonIgnore
     private Timestamp date;
     @Id
     private String code;
-    private Integer size;
-    private BigDecimal cost;
+    @JsonIgnore
+    private Timestamp last;
+    @JsonIgnore
+    private Integer unitsPurchased;
+    @JsonIgnore
+    private Integer unitsSold;
+    @JsonIgnore
+    private Long weightedHoldingTime;
+    @JsonProperty("pv")
+    private BigDecimal purchaseValue;
+    @JsonProperty("sv")
+    private BigDecimal saleValue;
+    @JsonProperty("c")
     private BigDecimal commission;
 
-    public Position(Trade t) {
-        this(List.of(t));
+    public Position() {
     }
 
-    public Position(List<Trade> t) {
-        this.code = t.stream().map(Trade::getCode).findFirst().orElseThrow();
-        if(t.stream().map(Trade::getCode).count() != t.size()) {
+    public Position(Trade t) {
+        apply(List.of(t));
+    }
+
+    @JsonProperty("s")
+    public LocalDate getOpen() {
+        return date.toLocalDateTime().toLocalDate();
+    }
+
+    @JsonProperty("l")
+    public LocalDate getClose() {
+        return last.toLocalDateTime().toLocalDate();
+    }
+
+    private void apply(List<Trade> t) {
+        List<String> tradeCodes = t.stream().map(Trade::getCode).distinct().toList();
+        if(tradeCodes.size() != 1) {
             throw new IllegalArgumentException("list of trades has inconsistent codes: "+t);
         }
-        this.date = t.stream().map(Trade::getDate).mapToLong(Timestamp::getTime).max().stream().mapToObj(Timestamp::new).findFirst().orElseThrow();
-        this.size = t.stream().mapToInt(_t -> _t.getSide().valueOf(_t.getSize())).sum();
-        this.cost = t.stream().map(_t -> _t.getSide().valueOf(_t.getCost())).reduce(BigDecimal::add).orElseThrow();
-        this.commission = t.stream().map(Trade::getCommission).reduce(BigDecimal::add).orElseThrow();
+        var tradeCode = tradeCodes.get(0);
+        if(this.code != null && !this.code.equals(tradeCode)) {
+            throw new IllegalArgumentException("trade codes: "+tradeCodes+" does not match position code "+this.code);
+        }
+        this.code = tradeCode;
+        this.date = t.stream().map(Trade::getDate).reduce(this.date, (o, _t) -> o == null ? _t : _t.toInstant().isBefore(o.toInstant()) ? _t : o, oops());
+        t.stream().filter(_t -> this.last != null).forEach(_t -> this.weightedHoldingTime =+Duration.between(this.date.toInstant(), this.last.toInstant()).toDays()*this.getSize());
+        this.last = t.stream().map(Trade::getDate).reduce(this.last, (o, _t) -> o == null ? _t : _t.toInstant().isAfter(o.toInstant()) ? _t : o, oops());
+        this.unitsPurchased = t.stream().filter(_t -> _t.getSide().isBuy()).mapToInt(Trade::getSize).reduce(this.unitsPurchased == null ? 0 : this.unitsPurchased, Integer::sum);
+        this.unitsSold = t.stream().filter(_t -> _t.getSide().isSell()).mapToInt(Trade::getSize).reduce(this.unitsSold == null ? 0 : this.unitsSold, Integer::sum);
+        this.purchaseValue = t.stream().filter(_t -> _t.getSide().isBuy()).map(Trade::getCost).reduce(this.purchaseValue, (c, _t) -> c == null ? _t : c.add(_t), oops());
+        this.saleValue = t.stream().filter(_t -> _t.getSide().isSell()).map(Trade::getCost).reduce(this.saleValue, (c, _t) -> c == null ? _t : c.add(_t), oops());
+        this.commission = t.stream().map(Trade::getCommission).reduce(this.commission, (c, _t) -> c == null ? _t : c.add(_t), oops());
     }
 
     public Position onTrade(Trade t) {
-        if(!t.getCode().equals(code)) {
-            throw new IllegalArgumentException("Mismatching codes: cannot aggregate positions: "+code+" with "+t.getCode());
-        }
-        return new Position(t.getDate().toInstant().isAfter(date.toInstant()) ? t.getDate() : date, code, t.getSide().valueOf(t.getSize())+size, t.getSide().valueOf(t.getCost()).add(cost), this.commission.add(t.getCommission()));
+        apply(List.of(t));
+        return this;
     }
 
-    public Position later(Position p) {
-        if(!code.equals(p.getCode())) {
-            throw new IllegalArgumentException("Cant aggregate positions across codes: "+code+" and "+p.getCode());
+    public Position later(Position other) {
+        if(!code.equals(other.getCode())) {
+            throw new IllegalArgumentException("Cant aggregate positions across codes: "+code+" and "+other.getCode());
         }
-        return date.toLocalDateTime().toLocalDate().isAfter(p.getDate().toLocalDateTime().toLocalDate()) ? this: p;
+        return new Position(
+                this.date.toInstant().isBefore(other.date.toInstant()) ? this.date : other.date,
+                this.code,
+                this.last.toInstant().isAfter(other.last.toInstant()) ? this.last : other.last,
+                this.unitsPurchased + other.unitsPurchased,
+                this.unitsSold + other.unitsSold,
+                this.weightedHoldingTime + other.weightedHoldingTime,
+                this.purchaseValue.add(other.purchaseValue),
+                this.saleValue.add(other.saleValue),
+                this.commission.add(other.commission)
+        );
+    }
+
+    @JsonIgnore
+    public boolean isClosed() {
+        return getSize() != null && getSize() == 0;
+    }
+
+    @JsonIgnore
+    public boolean isOpen() {
+        return getSize() != null && !isClosed();
+    }
+
+    @JsonProperty("sz")
+    public Integer getSize() {
+        return unitsPurchased != null ? unitsSold != null ? unitsPurchased - unitsSold : unitsPurchased : null;
+    }
+
+    @JsonProperty("p")
+    public BigDecimal getProfit() {
+        return saleValue != null ? saleValue.subtract(purchaseValue).subtract(commission) : null;
+    }
+
+    @JsonProperty("r")
+    public Optional<Double> getReturn() {
+        return Optional.ofNullable(getProfit()).flatMap(p -> Optional.ofNullable(getPurchaseValue()).filter(pv -> pv.doubleValue() > 0).map(pv  -> p.divide(pv, RoundingMode.HALF_UP).doubleValue()));
+    }
+
+    @JsonProperty("cagr")
+    public Optional<Double> getCagr() {
+        if(isOpen()) {
+            return Optional.empty();
+        }
+        double periods = ((double)weightedHoldingTime)/(getUnitsPurchased() * 365L);
+        return Optional.of(periods).flatMap(p -> getReturn().filter(r -> p>1).map(r -> Math.pow(r, (double) 1 / (p-1))));
     }
 }

@@ -24,9 +24,9 @@ public class PositionController {
     @Autowired
     private PositionService positionService;
 
-    @GetMapping("/position/value/{period}")
+    @GetMapping("/positions")
     @ResponseStatus(HttpStatus.OK)
-    public Iterable<Position> positionValuation(@PathVariable int period) {
+    public Iterable<Position> positionValuation() {
         return positionService.findAll();
     }
 

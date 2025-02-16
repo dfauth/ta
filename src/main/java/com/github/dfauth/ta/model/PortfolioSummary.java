@@ -33,7 +33,7 @@ public class PortfolioSummary {
 
     public PortfolioSummary withPosition(Position p, BigDecimal marketPrice) {
         this.count++;
-        this.cost = this.cost.add(p.getCost());
+        this.cost = this.cost.add(p.getProfit());
         this.commission = this.commission.add(p.getCommission());
         BigDecimal _marketValue = multiply(marketPrice, p.getSize());
         this.positions.add(new PositionWithMarketValue(p, _marketValue));
@@ -67,12 +67,12 @@ public class PortfolioSummary {
         private final BigDecimal marketValue;
 
         public PositionWithMarketValue(Position p, BigDecimal marketValue) {
-            super(p.getDate(), p.getCode(), p.getSize(), p.getCost(), p.getCommission());
+            super(p.getDate(), p.getCode(), p.getLast(), p.getUnitsPurchased(), p.getUnitsSold(), p.getWeightedHoldingTime(),p.getPurchaseValue(), p.getSaleValue(),p.getCommission());
             this.marketValue = marketValue;
         }
 
         public BigDecimal getProfit() {
-            return marketValue.subtract(getCost());
+            return marketValue.subtract(getSaleValue().subtract(getPurchaseValue()));
         }
     }
 }

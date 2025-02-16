@@ -1,10 +1,7 @@
 package com.github.dfauth.ta.service;
 
 import com.github.dfauth.ta.functional.Lists;
-import com.github.dfauth.ta.model.CodeDateCompositeKey;
-import com.github.dfauth.ta.model.Market;
-import com.github.dfauth.ta.model.MarketEnum;
-import com.github.dfauth.ta.model.Position;
+import com.github.dfauth.ta.model.*;
 import com.github.dfauth.ta.repo.PositionRepository;
 import com.github.dfauth.ta.repo.TradeRepository;
 import jakarta.transaction.Transactional;
@@ -15,10 +12,14 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static com.github.dfauth.ta.functional.Collectors.oops;
+import static com.github.dfauth.ta.util.StreamOps.stream;
 
 @Slf4j
 @Service
@@ -31,18 +32,46 @@ public class PositionService {
     private PositionRepository positionRepository;
 
 
-    @Transactional
     public int sync() {
-        List<Position> positions = tradeRepository.derivePositions();
+//        List<Position> positions = tradeRepository.derivePositions();
+        // greoup trades by code, ordered by date
+        Map<String, List<Trade>> tradeByCode = stream(tradeRepository.findAllByDate()).collect(Collectors.groupingBy(Trade::getCode, Collectors.toList()));
+
+        // for each code, reduce to a series of positions
+        List<Position> positions = tradeByCode.entrySet().stream().map(e -> {
+            List<Position> tmp = new ArrayList<>();
+            Position last = e.getValue().stream().reduce(new Position(), (p, t) -> {
+                var p1 = p.onTrade(t);
+                if (p1.isClosed()) {
+                    tmp.add(p1);
+                    return new Position();
+                } else {
+                    return p1;
+                }
+            }, oops());
+            // add open positions
+            if(last.isOpen()) {
+                tmp.add(last);
+            }
+            return tmp;
+        }).flatMap(List::stream).collect(Collectors.toList());
         log.info("processing {} positions", positions.size());
+        return save(positions);
+    }
+
+    @Transactional
+    public int save(List<Position> positions) {
         return positions
                 .stream()
                 .map(p -> {
                     log.info("processing {}",p);
                     return positionRepository.findById(new CodeDateCompositeKey(p.getCode(), p.getDate()))
                             .map(_p -> {
-                                _p.setSize(p.getSize());
-                                _p.setCost(p.getCost());
+                                _p.setUnitsPurchased(p.getUnitsPurchased());
+                                _p.setUnitsSold(p.getUnitsSold());
+                                _p.setWeightedHoldingTime(p.getWeightedHoldingTime());
+                                _p.setPurchaseValue(p.getPurchaseValue());
+                                _p.setSaleValue(p.getSaleValue());
                                 _p.setCommission(p.getCommission());
                                 return _p;
                             }).orElse(p);
