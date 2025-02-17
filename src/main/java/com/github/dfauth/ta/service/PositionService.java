@@ -3,6 +3,7 @@ package com.github.dfauth.ta.service;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.model.*;
 import com.github.dfauth.ta.repo.PositionRepository;
+import com.github.dfauth.ta.repo.PriceRepository;
 import com.github.dfauth.ta.repo.TradeRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.util.StreamOps.stream;
@@ -30,6 +32,9 @@ public class PositionService {
 
     @Autowired
     private PositionRepository positionRepository;
+
+    @Autowired
+    private PriceRepository priceRepository;
 
 
     public int sync() {
@@ -85,6 +90,23 @@ public class PositionService {
 
     public Iterable<Position> findAll() {
         return positionRepository.findAll();
+    }
+
+    public Map<String,PositionSummary> findPositionSummaries() {
+        return findPositionSummaries(stream(positionRepository.findAll()));
+    }
+
+    public Map<String,PositionSummary> findPositionSummaries(String code) {
+        return findPositionSummaries(stream(positionRepository.findByCode(code)));
+    }
+
+    private Map<String,PositionSummary> findPositionSummaries(Stream<Position> stream) {
+        return stream
+                .collect(Collectors.groupingBy(Position::getCode))
+                .entrySet()
+                .stream()
+                .map(e -> Map.entry(e.getKey(), e.getValue().stream().reduce(new PositionSummary(e.getKey(), priceRepository.findLatestByCode(e.getKey()).orElse(null)), PositionSummary::add, oops())))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public Iterable<Position> findOpenPositions() {

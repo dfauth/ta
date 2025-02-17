@@ -2,6 +2,7 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.model.MarketEnum;
 import com.github.dfauth.ta.model.Position;
+import com.github.dfauth.ta.model.PositionSummary;
 import com.github.dfauth.ta.service.PositionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.github.dfauth.ta.model.MarketEnum.ASX;
@@ -28,6 +30,18 @@ public class PositionController {
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> positionValuation() {
         return positionService.findAll();
+    }
+
+    @GetMapping("/positions/summary")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, PositionSummary> positionSummary() {
+        return positionService.findPositionSummaries();
+    }
+
+    @GetMapping("/positions/summary/{code}")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, PositionSummary> positionSummary(@PathVariable String code) {
+        return positionService.findPositionSummaries(code);
     }
 
     @GetMapping("/position/{code}")
