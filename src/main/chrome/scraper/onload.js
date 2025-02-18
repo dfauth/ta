@@ -24,7 +24,7 @@ function extractMktDepth() {
 function decomposeMktDepthString(str) {
   let regex = /[0-9,]+/g;
   var x = str.match(regex);
-  return [ parseInt(x[0]), parseInt(x[1].replace(/,/g, '')) ];
+  return [ parseInt(x[0].replace(/,/g, '')), parseInt(x[1].replace(/,/g, '')) ];
 }
 function sanitiseInt(str) {
   return parseInt(str.replace(/,/g, ''));

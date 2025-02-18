@@ -2,6 +2,7 @@ package com.github.dfauth.ta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.dfauth.ta.functions.CAGR;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -12,6 +13,7 @@ import java.math.RoundingMode;
 import java.util.Optional;
 
 import static com.github.dfauth.ta.functional.Optionals.eitherOrBoth;
+import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 
 @AllArgsConstructor
 @Getter
@@ -88,24 +90,31 @@ public class PositionSummary {
 
     @JsonProperty("op")
     public Optional<BigDecimal> getOpenProfit() {
-        return Optional.ofNullable(openSaleValue != null ? openSaleValue.subtract(openPurchaseValue).subtract(openCommission) : null);
+        Optional<Double> realProfit = Optional.ofNullable(openSaleValue != null ? openSaleValue.subtract(openPurchaseValue).subtract(openCommission).doubleValue() : null);
+        Optional<Double> paperProfit = getOpenSize().map(sz -> (price.getClose().doubleValue() * sz) - openPurchaseValue.doubleValue() - openCommission.doubleValue());
+        return paperProfit.map(p -> realProfit.map(r -> r+p).orElse(p)).map(BigDecimal::new).map(bd -> bd.setScale(3, RoundingMode.HALF_UP));
     }
 
     @JsonProperty("cr")
     public Optional<Double> getClosedReturn() {
-        return getClosedProfit().flatMap(p -> Optional.ofNullable(getClosedPurchaseValue()).filter(pv -> pv.doubleValue() > 0).map(pv  -> p.divide(pv, RoundingMode.HALF_UP).doubleValue()));
+        return getClosedProfit()
+                .flatMap(p -> Optional.ofNullable(getClosedPurchaseValue()).filter(pv -> pv.doubleValue() > 0)
+                        .map(pv  -> p.divide(pv, RoundingMode.HALF_UP).setScale(3, RoundingMode.HALF_UP).doubleValue()));
     }
 
     @JsonProperty("or")
     public Optional<Double> getOpenReturn() {
-        return getOpenProfit().flatMap(p -> Optional.ofNullable(getOpenPurchaseValue()).filter(pv -> pv.doubleValue() > 0).map(pv  -> p.divide(pv, RoundingMode.HALF_UP).doubleValue()));
+        return getOpenProfit()
+                .flatMap(p -> Optional.ofNullable(getOpenPurchaseValue()).filter(pv -> pv.doubleValue() > 0)
+                .map(pv  -> p.divide(pv, RoundingMode.HALF_UP).setScale(3, RoundingMode.HALF_UP).doubleValue()));
     }
 
     @JsonProperty("ccagr")
     public Optional<Double> getClosedCagr() {
         return getClosedSize().flatMap(cs -> {
             Optional<Double> periods = Optional.ofNullable(closedWeightedHoldingTime).map(wht -> wht.doubleValue() / (getClosedUnitsPurchased() * 365L));
-            return periods.flatMap(p -> getClosedReturn().filter(r -> p>1).map(r -> Math.pow(r, (double) 1 / (p-1))));
+//            return periods.flatMap(p -> getClosedReturn().filter(r -> p!=1).map(r -> BigDecimal.valueOf(Math.pow(r, (double) 1 / (p-1))).setScale(3,RoundingMode.HALF_UP).doubleValue()));
+            return periods.flatMap(p -> getOpenReturn().map(r -> CAGR.cagr(r,p,bdMapper(3)).doubleValue()));
         });
     }
 
@@ -113,7 +122,8 @@ public class PositionSummary {
     public Optional<Double> getOpenCagr() {
         return getOpenSize().flatMap(os -> {
             Optional<Double> periods = Optional.ofNullable(openWeightedHoldingTime).map(wht -> wht.doubleValue() / (getOpenUnitsPurchased() * 365L));
-            return periods.flatMap(p -> getOpenReturn().filter(r -> p>1).map(r -> Math.pow(r, (double) 1 / (p-1))));
+//            return periods.flatMap(p -> getOpenReturn().filter(r -> p!=1).map(r -> BigDecimal.valueOf(Math.pow(r, (double) 1 / (p-1))).setScale(3,RoundingMode.HALF_UP).doubleValue()));
+            return periods.flatMap(p -> getOpenReturn().map(r -> CAGR.cagr(r,p,bdMapper(3)).doubleValue()));
         });
     }
 }
