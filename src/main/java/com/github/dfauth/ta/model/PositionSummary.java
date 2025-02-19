@@ -14,6 +14,7 @@ import java.util.Optional;
 
 import static com.github.dfauth.ta.functional.Optionals.eitherOrBoth;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
+import static com.github.dfauth.ta.model.Position.calculateWeightedHoldingTime;
 
 @AllArgsConstructor
 @Getter
@@ -63,13 +64,13 @@ public class PositionSummary {
                 p.isClosed() ? eitherOrBoth(closedUnitsSold, p.getUnitsSold(), Integer::sum) : closedUnitsSold,
                 p.isOpen() ? eitherOrBoth(openUnitsSold, p.getUnitsSold(), Integer::sum) : openUnitsSold,
                 p.isClosed() ? eitherOrBoth(closedWeightedHoldingTime, p.getWeightedHoldingTime(), Long::sum) : closedWeightedHoldingTime,
-                p.isOpen() ? eitherOrBoth(openWeightedHoldingTime, p.getWeightedHoldingTime(), Long::sum) : openWeightedHoldingTime,
-                p.isClosed() ? eitherOrBoth(closedPurchaseValue, p.getPurchaseValue(),(v1,v2) -> v2.add(v1)) : closedPurchaseValue,
-                p.isOpen() ? eitherOrBoth(openPurchaseValue, p.getPurchaseValue(),(v1,v2) -> v2.add(v1)) : openPurchaseValue,
-                p.isClosed() ? eitherOrBoth(closedSaleValue, p.getSaleValue(),(v1,v2) -> v2.add(v1)) : closedSaleValue,
-                p.isOpen() ? eitherOrBoth(openSaleValue, p.getSaleValue(),(v1,v2) -> v2.add(v1)) : openSaleValue,
-                p.isClosed() ? eitherOrBoth(closedCommission, p.getCommission(),(v1,v2) -> v2.add(v1)) : closedCommission,
-                p.isOpen() ? eitherOrBoth(openCommission, p.getCommission(),(v1,v2) -> v2.add(v1)) : openCommission
+                p.isOpen() ? eitherOrBoth(openWeightedHoldingTime, p.getWeightedHoldingTime()+calculateWeightedHoldingTime(p.getLast().toInstant(), p.getSize()), Long::sum) : openWeightedHoldingTime,
+                p.isClosed() ? eitherOrBoth(closedPurchaseValue, p.getPurchaseValue(),BigDecimal::add) : closedPurchaseValue,
+                p.isOpen() ? eitherOrBoth(openPurchaseValue, p.getPurchaseValue(),BigDecimal::add) : openPurchaseValue,
+                p.isClosed() ? eitherOrBoth(closedSaleValue, p.getSaleValue(),BigDecimal::add) : closedSaleValue,
+                p.isOpen() ? eitherOrBoth(openSaleValue, p.getSaleValue(),BigDecimal::add) : openSaleValue,
+                p.isClosed() ? eitherOrBoth(closedCommission, p.getCommission(),BigDecimal::add) : closedCommission,
+                p.isOpen() ? eitherOrBoth(openCommission, p.getCommission(),BigDecimal::add) : openCommission
         );
     }
 
@@ -113,8 +114,7 @@ public class PositionSummary {
     public Optional<Double> getClosedCagr() {
         return getClosedSize().flatMap(cs -> {
             Optional<Double> periods = Optional.ofNullable(closedWeightedHoldingTime).map(wht -> wht.doubleValue() / (getClosedUnitsPurchased() * 365L));
-//            return periods.flatMap(p -> getClosedReturn().filter(r -> p!=1).map(r -> BigDecimal.valueOf(Math.pow(r, (double) 1 / (p-1))).setScale(3,RoundingMode.HALF_UP).doubleValue()));
-            return periods.flatMap(p -> getOpenReturn().map(r -> CAGR.cagr(r,p,bdMapper(3)).doubleValue()));
+            return periods.flatMap(p -> getClosedReturn().flatMap(r -> CAGR.cagr(r,p,bdMapper(3)).map(BigDecimal::doubleValue)));
         });
     }
 
@@ -122,8 +122,7 @@ public class PositionSummary {
     public Optional<Double> getOpenCagr() {
         return getOpenSize().flatMap(os -> {
             Optional<Double> periods = Optional.ofNullable(openWeightedHoldingTime).map(wht -> wht.doubleValue() / (getOpenUnitsPurchased() * 365L));
-//            return periods.flatMap(p -> getOpenReturn().filter(r -> p!=1).map(r -> BigDecimal.valueOf(Math.pow(r, (double) 1 / (p-1))).setScale(3,RoundingMode.HALF_UP).doubleValue()));
-            return periods.flatMap(p -> getOpenReturn().map(r -> CAGR.cagr(r,p,bdMapper(3)).doubleValue()));
+            return periods.flatMap(p -> getOpenReturn().flatMap(r -> CAGR.cagr(r,p,bdMapper(3)).map(BigDecimal::doubleValue)));
         });
     }
 }

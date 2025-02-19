@@ -2,6 +2,8 @@ package com.github.dfauth.ta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.dfauth.ta.functional.Optionals;
+import com.github.dfauth.ta.functions.CAGR;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -15,11 +17,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
+import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 
 @Slf4j
 @Entity
@@ -49,6 +53,14 @@ public class Position {
     @JsonProperty("c")
     private BigDecimal commission;
 
+    public static Long calculateWeightedHoldingTime(Instant start, int size) {
+        return calculateWeightedHoldingTime(start, Instant.now(),size);
+    }
+
+    public static long calculateWeightedHoldingTime(Instant start, Instant end, int size) {
+        return Optionals.bothPresent(start, end, Duration::between).map(Duration::toDays).map(days -> days*size).orElse(0l);
+    }
+
     public Position() {
     }
 
@@ -77,8 +89,8 @@ public class Position {
         }
         this.code = tradeCode;
         this.date = t.stream().map(Trade::getDate).reduce(this.date, (o, _t) -> o == null ? _t : _t.toInstant().isBefore(o.toInstant()) ? _t : o, oops());
-        t.stream().filter(_t -> this.last != null).forEach(_t -> this.weightedHoldingTime =+Duration.between(this.date.toInstant(), this.last.toInstant()).toDays()*this.getSize());
         this.last = t.stream().map(Trade::getDate).reduce(this.last, (o, _t) -> o == null ? _t : _t.toInstant().isAfter(o.toInstant()) ? _t : o, oops());
+        t.stream().filter(_t -> this.last != null).forEach(_t -> this.weightedHoldingTime =+ calculateWeightedHoldingTime(this.date.toInstant(), this.last.toInstant(), Optional.ofNullable(getSize()).orElse(0)));
         this.unitsPurchased = t.stream().filter(_t -> _t.getSide().isBuy()).mapToInt(Trade::getSize).reduce(this.unitsPurchased == null ? 0 : this.unitsPurchased, Integer::sum);
         this.unitsSold = t.stream().filter(_t -> _t.getSide().isSell()).mapToInt(Trade::getSize).reduce(this.unitsSold == null ? 0 : this.unitsSold, Integer::sum);
         this.purchaseValue = t.stream().filter(_t -> _t.getSide().isBuy()).map(Trade::getCost).reduce(this.purchaseValue, (c, _t) -> c == null ? _t : c.add(_t), oops());
@@ -139,6 +151,6 @@ public class Position {
             return Optional.empty();
         }
         double periods = ((double)weightedHoldingTime)/(getUnitsPurchased() * 365L);
-        return Optional.of(periods).flatMap(p -> getReturn().filter(r -> p>1).map(r -> Math.pow(r, (double) 1 / (p-1))));
+        return getReturn().filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
     }
 }
