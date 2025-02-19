@@ -20,6 +20,6 @@ public class CAGR {
     }
 
     public static BiFunction<Double, UnaryOperator<Double>, Optional<BigDecimal>> bdMapper(int scale) {
-        return (d, o) -> Optional.of(d).filter(_d -> Double.isNaN(_d)).map(_d -> BigDecimal.valueOf(o.apply(_d)).setScale(scale, RoundingMode.HALF_UP));
+        return (d, o) -> Optional.of(d).map(o).filter(_d -> !Double.isNaN(_d)).map(_d -> BigDecimal.valueOf(_d).setScale(scale, RoundingMode.HALF_UP));
     }
 }

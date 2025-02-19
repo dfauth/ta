@@ -49,6 +49,8 @@ public class PositionSummary {
     private BigDecimal closedCommission;
     @JsonIgnore
     private BigDecimal openCommission;
+    @JsonProperty("n")
+    private int positions;
 
     public PositionSummary(String code, Price price) {
         this.code = code;
@@ -70,7 +72,8 @@ public class PositionSummary {
                 p.isClosed() ? eitherOrBoth(closedSaleValue, p.getSaleValue(),BigDecimal::add) : closedSaleValue,
                 p.isOpen() ? eitherOrBoth(openSaleValue, p.getSaleValue(),BigDecimal::add) : openSaleValue,
                 p.isClosed() ? eitherOrBoth(closedCommission, p.getCommission(),BigDecimal::add) : closedCommission,
-                p.isOpen() ? eitherOrBoth(openCommission, p.getCommission(),BigDecimal::add) : openCommission
+                p.isOpen() ? eitherOrBoth(openCommission, p.getCommission(),BigDecimal::add) : openCommission,
+                positions + 1
         );
     }
 
