@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Optionals;
 import com.github.dfauth.ta.functions.CAGR;
+import com.github.dfauth.ta.util.BigDecimalOps;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -118,7 +119,7 @@ public class Position {
                 this.unitsSold + other.unitsSold,
                 this.weightedHoldingTime + other.weightedHoldingTime,
                 this.purchaseValue.add(other.purchaseValue),
-                this.saleValue.add(other.saleValue),
+                Optional.ofNullable(other.saleValue).map(sv -> this.saleValue.add(sv)).orElse(this.saleValue),
                 this.commission.add(other.commission),
                 this.trades = Lists.add(this.trades, other.trades)
         );
@@ -144,6 +145,11 @@ public class Position {
         return saleValue != null ? saleValue.subtract(purchaseValue).subtract(commission) : null;
     }
 
+    @JsonIgnore
+    public boolean isProfitable() {
+        return getProfit() != null && BigDecimalOps.isGreaterThanZero(getProfit());
+    }
+
     @JsonProperty("r")
     public Optional<Double> getReturn() {
         return Optional.ofNullable(getProfit()).flatMap(p -> Optional.ofNullable(getPurchaseValue()).filter(pv -> pv.doubleValue() > 0).map(pv  -> p.divide(pv, RoundingMode.HALF_UP).doubleValue()));
@@ -153,5 +159,9 @@ public class Position {
     public Optional<Double> getCagr() {
         double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
         return getReturn().filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
+    }
+
+    public long getDuration() {
+        return Duration.between(this.date.toInstant(), this.last.toInstant()).toDays();
     }
 }

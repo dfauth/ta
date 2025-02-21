@@ -91,7 +91,7 @@ public class PositionService {
     }
 
     public Iterable<Position> findAll() {
-        return positionRepository.findAll();
+        return openPositionStream(positionRepository.findAll()).toList();
     }
 
     public Map<String,PositionSummary> findPositionSummaries() {
@@ -146,5 +146,13 @@ public class PositionService {
 
     private Stream<Position> openPositionStream(Stream<Position> stream) {
         return stream.map(p -> p.isOpen() ? priceRepository.findLatestByCode(p.getCode()).<Position>map(_p -> new OpenPosition(p,_p)).orElse(p) : p);
+    }
+
+    public Iterable<Position> findAllSince(LocalDate date) {
+        return openPositionStream(stream(positionRepository.findStartingOnOrAfter(date))).toList();
+    }
+
+    public Iterable<Position> findAllBetween(LocalDate from, LocalDate to) {
+        return openPositionStream(stream(positionRepository.findBetween(from,to))).toList();
     }
 }

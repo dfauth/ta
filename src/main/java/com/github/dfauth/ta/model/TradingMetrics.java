@@ -1,65 +1,60 @@
 package com.github.dfauth.ta.model;
 
-import com.github.dfauth.ta.functional.Maps;
+import com.github.dfauth.ta.functions.CAGR;
 import com.github.dfauth.ta.util.BigDecimalOps;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
-import static com.github.dfauth.ta.functional.Collectors.oops;
-import static com.github.dfauth.ta.functions.CAGR.cagr;
+import static com.github.dfauth.ta.functional.Optionals.eitherOrBoth;
+import static com.github.dfauth.ta.functions.CAGR.bdMapper;
+import static java.math.BigDecimal.ZERO;
 
-public interface TradingMetrics {
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+@EqualsAndHashCode
+@Getter
+public class TradingMetrics {
 
-    int getTradeCount();
-    int getBreakEvenPositions();
-    int getLosingPositions();
-    int getWinningPositions();
-    BigDecimal getTurnover();
-    BigDecimal getTotalLoss();
-    BigDecimal getTotalGain();
-    LocalDate getStart();
-    LocalDate getEnd();
-    long getDuration();
-    //List<AggregatedTrade> getAggregatedTrades();
+    private int breakEvenPositions;
+    private int losingPositions;
+    private int winningPositions;
+    private BigDecimal purchaseValue;
+    private BigDecimal saleValue;
+    private BigDecimal totalLoss;
+    private BigDecimal totalGain;
+    private LocalDate start;
+    private LocalDate end;
+    private long duration;
+    private int positions;
+    private int trades;
 
-    default int getTotalPositions() {
-        return getWinningPositions() + getLosingPositions() + getBreakEvenPositions();
+    public BigDecimal getAverageLoss() {
+        return BigDecimalOps.divideWithZeroCheck(getTotalLoss(), getLosingPositions()).orElse(ZERO);
     }
 
-    default BigDecimal getAverageLoss() {
-        return BigDecimalOps.divideWithZeroCheck(getTotalLoss(), getLosingPositions()).orElse(BigDecimal.ZERO);
+    public BigDecimal getAverageGain() {
+        return BigDecimalOps.divideWithZeroCheck(getTotalGain(), getWinningPositions()).orElse(ZERO);
     }
 
-    default BigDecimal getAverageGain() {
-        return BigDecimalOps.divideWithZeroCheck(getTotalGain(), getWinningPositions()).orElse(BigDecimal.ZERO);
+    public double getWinRate() {
+        return (double) getWinningPositions() / getPositions();
     }
 
-    default double getWinRate() {
-        return (double) getWinningPositions() / getTotalPositions();
-    }
-
-    default double getExpectancy() {
+    public double getExpectancy() {
         return (getWinRate()*getAverageGain().doubleValue()) - ((1 - getWinRate())*getAverageLoss().doubleValue());
     }
 
-    default double getRiskRewardRatio() {
+    public double getRiskRewardRatio() {
         return getAverageGain().doubleValue() / (-1.0 * getAverageLoss().doubleValue());
     }
 
-    @Slf4j
-    public static class Logger {}
-    default double getPositiveExpectancy() {
+    public double getPositiveExpectancy() {
         double w = getAverageGain().doubleValue();
         double l = getAverageLoss().doubleValue() * -1d;
         double p = getWinRate();
@@ -67,89 +62,72 @@ public interface TradingMetrics {
                 (1 + (w/l)) * p - 1.0d;
     }
 
-    default BigDecimal getAvergePositionSize() {
-        return BigDecimalOps.divide(getCostBase(), getTotalPositions());
+    public BigDecimal getAvergePositionSize() {
+        return BigDecimalOps.divide(getPurchaseValue(), getPositions());
     }
 
-    default BigDecimal getAverageTradeSize() {
-        return BigDecimalOps.divide(getTurnover(), getTradeCount());
+    public BigDecimal getAverageTradeSize() {
+        return BigDecimalOps.divide(getPurchaseValue(), getTrades());
     }
 
-    default double getRoi() {
-        return getExpectancy() / getAvergePositionSize().doubleValue();
+    public double getRoi() {
+        return getProfit().doubleValue()/getPurchaseValue().doubleValue();
     }
 
-    default BigDecimal getCostBase() {
-        return BigDecimalOps.divide(getTurnover().subtract(getProfit()),2);
-    }
-
-    default BigDecimal getProfit() {
+    public BigDecimal getProfit() {
         return getTotalGain().add(getTotalLoss());
     }
 
-    default double getOccupancy() {
-        return (double) getDuration() / (getTotalPositions() * Duration.between(getStart().atStartOfDay(), getEnd().atStartOfDay()).toDays());
+    public BigDecimal getReturn() {
+        return eitherOrBoth(getPurchaseValue(),getSaleValue(), BigDecimal::subtract).divide(getPurchaseValue(), RoundingMode.HALF_UP);
     }
 
-    default double getCagr() {
-        return cagr(getRoi(), (double) getDuration() /(365*getTotalPositions()));
+    public BigDecimal getTurnover() {
+        return eitherOrBoth(getPurchaseValue(), getSaleValue(), BigDecimal::add);
     }
 
-    default TradingMetrics merge(TradingMetrics tm) {
-        return new TradingMetricsImpl(
-                getTradeCount() + tm.getTradeCount(),
-                getBreakEvenPositions() + tm.getBreakEvenPositions(),
-                getLosingPositions() + tm.getLosingPositions(),
-                getWinningPositions() + tm.getWinningPositions(),
-                getTurnover().add(tm.getTurnover()),
-                getTotalLoss().add(tm.getTotalLoss()),
-                getTotalGain().add(tm.getTotalGain()),
-                getStart().isBefore(tm.getStart()) ? getStart() : tm.getStart(),
-                getEnd().isAfter(tm.getStart()) ? getEnd() : tm.getEnd(),
-                getDuration() + tm.getDuration(),
-                List.of() //Lists.add(getAggregatedTrades(), tm.getAggregatedTrades())
+    public double getOccupancy() {
+        return (double) getDuration() / (getPositions() * Duration.between(getStart().atStartOfDay(), getEnd().atStartOfDay()).toDays());
+    }
+
+    public Optional<Double> getCagr() {
+//        double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
+        double periods = ((double)getDuration())/(getPositions() * 365L);
+        return Optional.ofNullable(getReturn()).map(BigDecimal::doubleValue).filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
+    }
+
+    public TradingMetrics add(TradingMetrics other) {
+        return new TradingMetrics(
+                breakEvenPositions + other.breakEvenPositions,
+                losingPositions + other.losingPositions,
+                winningPositions + other.winningPositions,
+                purchaseValue.add(other.purchaseValue),
+                saleValue.add(other.saleValue),
+                totalLoss.add(other.totalLoss),
+                totalGain.add(other.totalGain),
+                start.isBefore(other.start) ? start : other.start,
+                end.isAfter(other.end) ? end : other.end,
+                duration + other.duration,
+                positions + other.positions,
+                trades + other.trades
         );
     }
 
-    static Optional<TradingMetrics> openTradingMetrics(Map<String, TradeAccumulator> positionMap, Function<String, BigDecimal> priceCallback) {
+    public TradingMetrics add(Position p) {
 
-        // step 2a filter open positions
-        Map<String, AggregatedTrade> openPositions = Maps.of(positionMap).mapValues(TradeAccumulator::getOpenTrade).mapValues(t -> t.closeAt(priceCallback.apply(t.getCode())));
-
-        // aggregate across securities
-        return openPositions.values().stream()
-                .map(TradingMetrics.class::cast).reduce(TradingMetrics::merge);
-    }
-
-    static Optional<TradingMetrics> closedTradingMetrics(Map<String, TradeAccumulator> positionMap) {
-
-        // step 2b filter closed positions
-        Map<String, List<AggregatedTrade>> closedPositions = Maps.mapValues(positionMap, TradeAccumulator::getAggregatedTrades);
-
-        // aggregate across securities
-        return closedPositions.values().stream()
-                .flatMap(List::stream).map(TradingMetrics.class::cast).reduce(TradingMetrics::merge);
-    }
-
-    static TradeAccumulator aggregate(List<Trade> values) {
-        return values.stream().reduce(new TradeAccumulator(), TradeAccumulator::add, oops());
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    class TradeAccumulator {
-
-        private List<AggregatedTrade> aggregatedTrades = new ArrayList<>();
-        private AggregatedTrade openTrade = null;
-
-        public TradeAccumulator add(Trade t) {
-            openTrade = Optional.ofNullable(openTrade).map(_t -> _t.add(t)).orElse(new AggregatedTrade(t));
-            if(openTrade.isClosed()) {
-                aggregatedTrades.add(openTrade);
-                openTrade = null;
-            }
-            return this;
-        }
+        return new TradingMetrics(
+                p.getProfit().equals(ZERO) ? breakEvenPositions+1 : breakEvenPositions,
+                p.isProfitable() ? losingPositions : losingPositions + 1,
+                p.isProfitable() ? winningPositions+1 : winningPositions,
+                eitherOrBoth(purchaseValue, p.getPurchaseValue(), BigDecimal::add),
+                eitherOrBoth(saleValue, p.getSaleValue(), BigDecimal::add),
+                p.isProfitable() ? totalLoss : eitherOrBoth(totalLoss, p.getProfit(), BigDecimal::add),
+                p.isProfitable() ? eitherOrBoth(totalGain, p.getProfit(), BigDecimal::add) : totalGain,
+                eitherOrBoth(start, p.getDate().toLocalDateTime().toLocalDate(), (s, d) -> s.isBefore(d) ? s : d),
+                eitherOrBoth(end, p.getLast().toLocalDateTime().toLocalDate(), (s, d) -> s.isAfter(d) ? s : d),
+                duration + p.getDuration(),
+                positions + 1,
+                trades + p.getTrades().size()
+        );
     }
 }

@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +35,16 @@ public interface PositionRepository extends CrudRepository<Position, CodeDateCom
 
     @Query(value = "SELECT p from Position p where p.date < ?1")
     Iterable<Position> findAllPriorTo(Timestamp timestamp);
+
+    default Iterable<Position> findStartingOnOrAfter(LocalDate date) {
+        return findBetween(new Timestamp(date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()), new Timestamp(System.currentTimeMillis()));
+    }
+
+    default Iterable<Position> findBetween(LocalDate from, LocalDate to) {
+        return findBetween(new Timestamp(from.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()),
+                new Timestamp(to.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+    }
+
+    @Query(value = "SELECT p from Position p where p.date >= ?1 and date < ?2")
+    Iterable<Position> findBetween(Timestamp from, Timestamp to);
 }
