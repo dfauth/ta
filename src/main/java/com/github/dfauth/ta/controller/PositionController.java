@@ -38,7 +38,7 @@ public class PositionController {
         return positionService.findPositionSummaries();
     }
 
-    @GetMapping("/positions/summary/{code}")
+    @GetMapping("/position/summary/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Map<String, PositionSummary> positionSummary(@PathVariable String code) {
         return positionService.findPositionSummaries(code);
@@ -46,8 +46,8 @@ public class PositionController {
 
     @GetMapping("/position/{code}")
     @ResponseStatus(HttpStatus.OK)
-    public Optional<Position> position(@PathVariable String code) {
-        return positionService.getPosition(code);
+    public Iterable<Position> position(@PathVariable String code) {
+        return positionService.getPositions(code);
     }
 
     @GetMapping("/position/{code}/{date}")
@@ -63,25 +63,19 @@ public class PositionController {
         return positionService.getPosition(code,new Timestamp(ts.toInstant().toEpochMilli()));
     }
 
-    @GetMapping("/positions/{code}")
-    @ResponseStatus(HttpStatus.OK)
-    public Iterable<Position> positionEvents(@PathVariable String code) {
-        return positionService.getPositions(code);
-    }
-
     @GetMapping("/position/sync")
     @ResponseStatus(HttpStatus.OK)
     public int sync() {
         return positionService.sync();
     }
 
-    @GetMapping("/positions/all")
+    @GetMapping("/position/all")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions() {
         return getAllPositions(ASX);
     }
 
-    @GetMapping("/positions/all/{market}")
+    @GetMapping("/position/all/{market}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions(@PathVariable MarketEnum market) {
         return positionService.getAllPositions(market);

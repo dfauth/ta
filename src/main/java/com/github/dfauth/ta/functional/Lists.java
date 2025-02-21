@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.github.dfauth.ta.functional.Tuple2.tuple2;
+import static java.util.Collections.emptyList;
 import static java.util.function.Predicate.not;
 
 public class Lists<T> extends ArrayList<T> {
@@ -52,7 +53,7 @@ public class Lists<T> extends ArrayList<T> {
     }
 
     public static <T> List<T> tail(List<T> l) {
-        return headAndTail(l).map(Tuple2::_2).orElse(Collections.emptyList());
+        return headAndTail(l).map(Tuple2::_2).orElse(emptyList());
     }
 
     public static <T> Optional<Tuple2<T,List<T>>> headAndTail(List<T> l) {
@@ -62,7 +63,7 @@ public class Lists<T> extends ArrayList<T> {
                         _l.get(0),
                         Optional.of(l)
                                 .filter(__l -> __l.size() > 1)
-                                .map(__l -> __l.subList(1,_l.size()-1)).orElse(Collections.emptyList())));
+                                .map(__l -> __l.subList(1,_l.size()-1)).orElse(emptyList())));
     }
 
     public static <T> List<T> add(List<T> l, T t) {
@@ -72,8 +73,8 @@ public class Lists<T> extends ArrayList<T> {
     }
 
     public static <T> List<T> add(List<T> l1, List<T> l2) {
-        List<T> tmp = new ArrayList<>(l1);
-        tmp.addAll(l2);
+        List<T> tmp = Optional.ofNullable(l1).map(ArrayList::new).orElse(new ArrayList<>());
+        Optional.ofNullable(l2).ifPresent(tmp::addAll);
         return tmp;
     }
 
@@ -92,7 +93,7 @@ public class Lists<T> extends ArrayList<T> {
         return Optional.ofNullable(ts)
                 .filter(_ts -> _ts.size() > position)
                 .map(_ts -> tuple2(_ts.subList(0,position),ts.subList(position,ts.size())))
-                .orElse(tuple2(ts, Collections.emptyList()));
+                .orElse(tuple2(ts, emptyList()));
     }
 
     public static <T> List<T> collect(Stream<T> streamOfT) {

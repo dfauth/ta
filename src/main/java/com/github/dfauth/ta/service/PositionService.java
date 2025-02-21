@@ -72,12 +72,14 @@ public class PositionService {
                     log.info("processing {}",p);
                     return positionRepository.findById(new CodeDateCompositeKey(p.getCode(), p.getDate()))
                             .map(_p -> {
+                                _p.setLast(p.getLast());
                                 _p.setUnitsPurchased(p.getUnitsPurchased());
                                 _p.setUnitsSold(p.getUnitsSold());
                                 _p.setWeightedHoldingTime(p.getWeightedHoldingTime());
                                 _p.setPurchaseValue(p.getPurchaseValue());
                                 _p.setSaleValue(p.getSaleValue());
                                 _p.setCommission(p.getCommission());
+                                _p.setTrades(p.getTrades());
                                 return _p;
                             }).orElse(p);
                 })
@@ -93,11 +95,11 @@ public class PositionService {
     }
 
     public Map<String,PositionSummary> findPositionSummaries() {
-        return findPositionSummaries(stream(positionRepository.findAll()));
+        return findPositionSummaries(openPositionStream(positionRepository.findAll()));
     }
 
     public Map<String,PositionSummary> findPositionSummaries(String code) {
-        return findPositionSummaries(stream(positionRepository.findByCode(code)));
+        return findPositionSummaries(openPositionStream(positionRepository.findByCode(code)));
     }
 
     private Map<String,PositionSummary> findPositionSummaries(Stream<Position> stream) {
@@ -126,10 +128,6 @@ public class PositionService {
         return map.values().stream().filter(p -> p.getSize() > 0).collect(Collectors.toList());
     }
 
-    public Optional<Position> getPosition(String code) {
-        return positionRepository.findByCode(code).stream().findFirst();
-    }
-
     public Optional<Position> getPosition(String code, Timestamp date) {
         return positionRepository.findPositionByCodeAndDate(code, date);
     }
@@ -139,6 +137,14 @@ public class PositionService {
     }
 
     public Iterable<Position> getPositions(String code) {
-        return positionRepository.findByCode(code);
+        return openPositionStream(positionRepository.findByCode(code)).toList();
+    }
+
+    private Stream<Position> openPositionStream(Iterable<Position> iterable) {
+        return openPositionStream(stream(iterable.spliterator()));
+    }
+
+    private Stream<Position> openPositionStream(Stream<Position> stream) {
+        return stream.map(p -> p.isOpen() ? priceRepository.findLatestByCode(p.getCode()).<Position>map(_p -> new OpenPosition(p,_p)).orElse(p) : p);
     }
 }

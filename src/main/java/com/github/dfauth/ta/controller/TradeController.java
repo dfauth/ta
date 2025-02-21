@@ -16,7 +16,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,15 +34,27 @@ public class TradeController {
 
     private DateTimeFormatter dtf = DateTimeFormatter.ISO_DATE_TIME;
 
+    @GetMapping("/trades")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Iterable<Trade> trades() {
+        return tradeService.findAll();
+    }
+
+    @GetMapping("/trades/{code}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Iterable<Trade> trades(@PathVariable String code) {
+        return tradeService.findByCode(code);
+    }
+
     @PostMapping("/sync/trades")
     @ResponseStatus(HttpStatus.CREATED)
-    Integer trades(@RequestBody Object[][] args) {
+    public Integer trades(@RequestBody Object[][] args) {
         return trades("ASX",args);
     }
 
     @PostMapping("/sync/trades/{market}")
     @ResponseStatus(HttpStatus.CREATED)
-    Integer trades(@PathVariable String market, @RequestBody Object[][] args) {
+    public Integer trades(@PathVariable String market, @RequestBody Object[][] args) {
         try {
             log.info("args: ",args);
 
@@ -60,7 +71,7 @@ public class TradeController {
                                 Side side = Side.fromString(arr[5]);
                                 String notes = arr[14].toString();
                                 Theme theme = tryCatch(() -> Theme.valueOf(arr[20].toString()), e -> null);
-                                return  new Trade(0,
+                                return  new Trade(0l,
                                                 confirmationNo,
                                                 date,
                                                 code,
@@ -76,19 +87,7 @@ public class TradeController {
                     .collect(Collectors.toList());
             return tradeService.sync(trades);
         } finally {
-            asynchronously(() -> positionService.sync());
+            positionService.sync();
         }
     }
-
-    private void asynchronously(Runnable runnable) {
-        ForkJoinPool.commonPool().execute(() -> {
-            try {
-                runnable.run();
-            } catch (RuntimeException e) {
-                log.error(e.getMessage(), e);
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
 }

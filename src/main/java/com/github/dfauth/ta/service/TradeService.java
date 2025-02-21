@@ -37,4 +37,12 @@ public class TradeService {
                 .forEach(tradeRepository::save);
         return trades.size();
     }
+
+    public Iterable<Trade> findAll() {
+        return tradeRepository.findAll();
+    }
+
+    public Iterable<Trade> findByCode(String code) {
+        return tradeRepository.findByCode(code);
+    }
 }

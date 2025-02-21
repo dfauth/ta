@@ -67,7 +67,7 @@ public class PortfolioSummary {
         private final BigDecimal marketValue;
 
         public PositionWithMarketValue(Position p, BigDecimal marketValue) {
-            super(p.getDate(), p.getCode(), p.getLast(), p.getUnitsPurchased(), p.getUnitsSold(), p.getWeightedHoldingTime(),p.getPurchaseValue(), p.getSaleValue(),p.getCommission());
+            super(p.getDate(), p.getCode(), p.getLast(), p.getUnitsPurchased(), p.getUnitsSold(), p.getWeightedHoldingTime(),p.getPurchaseValue(), p.getSaleValue(),p.getCommission(), p.getTrades());
             this.marketValue = marketValue;
         }
 

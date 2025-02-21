@@ -1,9 +1,6 @@
 package com.github.dfauth.ta.util;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,5 +30,9 @@ public class StreamOps {
 
     public static <T> Stream<T> stream(Iterator<T> iterator) {
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, 0),false);
+    }
+
+    public static <T> Stream<T> stream(Spliterator<T> spliterator) {
+        return StreamSupport.stream(spliterator,false);
     }
 }

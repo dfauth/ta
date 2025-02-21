@@ -2,15 +2,11 @@ package com.github.dfauth.ta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Optionals;
 import com.github.dfauth.ta.functions.CAGR;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -29,6 +25,7 @@ import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 @Entity
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 @ToString
 @EqualsAndHashCode
 @IdClass(CodeDateCompositeKey.class)
@@ -52,6 +49,9 @@ public class Position {
     private BigDecimal saleValue;
     @JsonProperty("c")
     private BigDecimal commission;
+    @JsonIgnore
+    @OneToMany(targetEntity = Trade.class, orphanRemoval = false)
+    private List<Trade> trades;
 
     public static Long calculateWeightedHoldingTime(Instant start, int size) {
         return calculateWeightedHoldingTime(start, Instant.now(),size);
@@ -59,9 +59,6 @@ public class Position {
 
     public static long calculateWeightedHoldingTime(Instant start, Instant end, int size) {
         return Optionals.bothPresent(start, end, Duration::between).map(Duration::toDays).map(days -> days*size).orElse(0l);
-    }
-
-    public Position() {
     }
 
     public Position(Trade t) {
@@ -76,6 +73,11 @@ public class Position {
     @JsonProperty("l")
     public LocalDate getClose() {
         return last.toLocalDateTime().toLocalDate();
+    }
+
+    @JsonProperty("t")
+    public int getTradeCount() {
+        return Optional.ofNullable(trades).map(List::size).orElse(0);
     }
 
     private void apply(List<Trade> t) {
@@ -96,6 +98,7 @@ public class Position {
         this.purchaseValue = t.stream().filter(_t -> _t.getSide().isBuy()).map(Trade::getCost).reduce(this.purchaseValue, (c, _t) -> c == null ? _t : c.add(_t), oops());
         this.saleValue = t.stream().filter(_t -> _t.getSide().isSell()).map(Trade::getCost).reduce(this.saleValue, (c, _t) -> c == null ? _t : c.add(_t), oops());
         this.commission = t.stream().map(Trade::getCommission).reduce(this.commission, (c, _t) -> c == null ? _t : c.add(_t), oops());
+        this.trades = Lists.add(this.trades, t);
     }
 
     public Position onTrade(Trade t) {
@@ -116,7 +119,8 @@ public class Position {
                 this.weightedHoldingTime + other.weightedHoldingTime,
                 this.purchaseValue.add(other.purchaseValue),
                 this.saleValue.add(other.saleValue),
-                this.commission.add(other.commission)
+                this.commission.add(other.commission),
+                this.trades = Lists.add(this.trades, other.trades)
         );
     }
 
@@ -147,10 +151,7 @@ public class Position {
 
     @JsonProperty("cagr")
     public Optional<Double> getCagr() {
-        if(isOpen()) {
-            return Optional.empty();
-        }
-        double periods = ((double)weightedHoldingTime)/(getUnitsPurchased() * 365L);
+        double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
         return getReturn().filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
     }
 }
