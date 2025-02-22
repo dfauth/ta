@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.Lists.head;
+import static com.github.dfauth.ta.functional.Lists.headOpt;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.RingBufferCollector.ringBufferCollector;
 import static com.github.dfauth.ta.functional.RingBufferProcessor.ringBufferProcessor;
@@ -83,7 +83,7 @@ public class SMAController extends BaseController implements ControllerMixIn {
             Flux.fromStream(prices.stream()).subscribe(p);
             List<PriceAction> tail = Lists.splitAt(tmp, -1 * period)._2();
             return last(tail)
-                    .flatMap(_l -> head(tail)
+                    .flatMap(_l -> headOpt(tail)
                     .map(_h -> _l.subtract(_h)
                             .divide(period)))
                     .map(Controller.OHLC::new);
@@ -114,7 +114,7 @@ public class SMAController extends BaseController implements ControllerMixIn {
                 return EMA.apply(ringBuffer.streamIfFull().collect(Collectors.toList()));
             }).flatMap(Optional::stream).collect(Collectors.toList());
             return last(emas)
-                    .flatMap(_l -> head(emas)
+                    .flatMap(_l -> headOpt(emas)
                             .map(_h -> _l.subtract(_h)
                                     .divide(period)))
                     .map(Controller.OHLC::new);

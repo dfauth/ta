@@ -8,6 +8,9 @@ import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.function.Function;
+
+import static com.github.dfauth.ta.functional.Optionals.allPresent;
 
 @Getter
 @ToString
@@ -35,7 +38,10 @@ public class OpenPosition extends Position {
     @Override
     public BigDecimal getProfit() {
         var marketValue = price.getClose().multiply(BigDecimal.valueOf(getSize()));
-        return Optional.ofNullable(super.getProfit()).map(p -> p.add(marketValue)).orElse(marketValue.subtract(getPurchaseValue()).subtract(getCommission()));
+        Function<BigDecimal, Function<BigDecimal, Function<BigDecimal,BigDecimal>>> paperProfit = pv -> mv -> c -> mv.subtract(pv).subtract(c);
+        return Optional.ofNullable(super.getProfit()).map(p -> p.add(marketValue))
+                .orElse(allPresent(paperProfit, getPurchaseValue(), marketValue, getCommission()).orElse(null));
+//                .orElse(Optional.ofNullable(getPurchaseValue()).map(pv -> marketValue.subtract(pv).subtract(getCommission())).orElse(null));
     }
 
     @Override

@@ -34,21 +34,55 @@ public class MetricsController {
     @GetMapping("/metrics/mode/{mode}")
     @ResponseStatus(HttpStatus.OK)
     public TradingMetrics metrics(@PathVariable Mode mode) {
-        return stream(positionService.findAll()).filter(mode::test).reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
+        return stream(positionService.findAll())
+                .filter(mode)
+                .reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
     }
 
     @GetMapping("/metrics/since/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
     public TradingMetrics metricsSince(@PathVariable String yyyyMMdd) {
-        return stream(positionService.findAllSince((LocalDate) YYYYMMDD.parse(yyyyMMdd))).reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
+        return metricsSince(yyyyMMdd, ALL);
+    }
+
+    @GetMapping("/metrics/since/{yyyyMMdd}/{mode}")
+    @ResponseStatus(HttpStatus.OK)
+    public TradingMetrics metricsSince(@PathVariable String yyyyMMdd, @PathVariable Mode mode) {
+        return stream(positionService.findAllSince((LocalDate) YYYYMMDD.parse(yyyyMMdd)))
+                .filter(mode)
+                .reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
     }
 
     @GetMapping("/metrics/between/{start}/{end}")
     @ResponseStatus(HttpStatus.OK)
     public TradingMetrics metricsBetween(@PathVariable String start, @PathVariable String end) {
+        return metricsBetween(start,end,ALL);
+    }
+
+    @GetMapping("/metrics/between/{start}/{end}/{mode}")
+    @ResponseStatus(HttpStatus.OK)
+    public TradingMetrics metricsBetween(@PathVariable String start, @PathVariable String end, @PathVariable Mode mode) {
         var from = (LocalDate) YYYYMMDD.parse(start);
         var to = (LocalDate) YYYYMMDD.parse(end);
-        return stream(positionService.findAllBetween(from, to)).reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
+        return stream(positionService.findAllBetween(from, to))
+                .filter(mode)
+                .reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
+    }
+
+    @GetMapping("/metrics/year/{year}")
+    @ResponseStatus(HttpStatus.OK)
+    public TradingMetrics metricsAnnual(@PathVariable int year) {
+        return metricsAnnual(year, ALL);
+    }
+
+    @GetMapping("/metrics/year/{year}/{mode}")
+    @ResponseStatus(HttpStatus.OK)
+    public TradingMetrics metricsAnnual(@PathVariable int year, @PathVariable Mode mode) {
+        var from = (LocalDate) YYYYMMDD.parse(year+"0101");
+        var to = (LocalDate) YYYYMMDD.parse(year+1+"0101");
+        return stream(positionService.findAllBetween(from, to))
+                .filter(mode)
+                .reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
     }
 
     enum Mode implements Predicate<Position> {

@@ -48,22 +48,27 @@ public class Lists<T> extends ArrayList<T> {
         return Optional.of(l).filter(_l -> _l.size() >= n).map(_l -> _l.subList(l.size()-n,l.size())).orElse(List.of());
     }
 
-    public static <T> Optional<T> head(List<T> l) {
-        return headAndTail(l).map(Tuple2::_1);
+    public static <T> T head(List<T> l) {
+        return headOpt(l).orElse(null);
+    }
+
+    public static <T> Optional<T> headOpt(List<T> l) {
+        return headAndTail(l).map((h,t) -> Optional.ofNullable(h));
     }
 
     public static <T> List<T> tail(List<T> l) {
-        return headAndTail(l).map(Tuple2::_2).orElse(emptyList());
+        return headAndTail(l).map((h,t) -> t);
     }
 
-    public static <T> Optional<Tuple2<T,List<T>>> headAndTail(List<T> l) {
+    public static <T> Tuple2<T,List<T>> headAndTail(List<T> l) {
         return Optional.of(l)
                 .filter(not(List::isEmpty))
                 .map(_l -> tuple2(
                         _l.get(0),
                         Optional.of(l)
                                 .filter(__l -> __l.size() > 1)
-                                .map(__l -> __l.subList(1,_l.size()-1)).orElse(emptyList())));
+                                .map(__l -> __l.subList(1,_l.size()-1)).orElse(emptyList())))
+                .orElse(tuple2(null, emptyList()));
     }
 
     public static <T> List<T> add(List<T> l, T t) {

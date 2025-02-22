@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Collectors.SMA;
 import static com.github.dfauth.ta.functional.Collectors.oops;
-import static com.github.dfauth.ta.functional.Lists.head;
+import static com.github.dfauth.ta.functional.Lists.headOpt;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.util.BigDecimalOps.divide;
 
@@ -37,7 +37,7 @@ public class Momentum {
             return f.apply(ringBuffer.streamIfFull().collect(Collectors.toList()));
         }).flatMap(Optional::stream).collect(Collectors.toList());
         return last(emas)
-                .flatMap(_l -> head(emas)
+                .flatMap(_l -> headOpt(emas)
                         .map(_h -> _l.subtract(_h)
                                 .divide(period)));
     }

@@ -3,10 +3,12 @@ package com.github.dfauth.ta.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.dfauth.ta.functional.Lists;
-import com.github.dfauth.ta.functional.Optionals;
 import com.github.dfauth.ta.functions.CAGR;
 import com.github.dfauth.ta.util.BigDecimalOps;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.OneToMany;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,8 +20,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
+import static com.github.dfauth.ta.functional.Optionals.allPresent;
+import static com.github.dfauth.ta.functional.Optionals.bothPresent;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 
 @Slf4j
@@ -59,7 +64,7 @@ public class Position {
     }
 
     public static long calculateWeightedHoldingTime(Instant start, Instant end, int size) {
-        return Optionals.bothPresent(start, end, Duration::between).map(Duration::toDays).map(days -> days*size).orElse(0l);
+        return bothPresent(start, end, Duration::between).map(Duration::toDays).map(days -> days*size).orElse(0l);
     }
 
     public Position(Trade t) {
@@ -142,7 +147,9 @@ public class Position {
 
     @JsonProperty("p")
     public BigDecimal getProfit() {
-        return saleValue != null ? saleValue.subtract(purchaseValue).subtract(commission) : null;
+        Function<BigDecimal, Function<BigDecimal, Function<BigDecimal,BigDecimal>>> profit = pv -> sv -> c -> sv.subtract(pv).subtract(commission);
+        return allPresent(profit, purchaseValue, saleValue, commission).orElse(null);
+//        return bothPresent(purchaseValue, saleValue, (pv,sv) -> sv.subtract(pv).subtract(commission)).orElse(null);
     }
 
     @JsonIgnore

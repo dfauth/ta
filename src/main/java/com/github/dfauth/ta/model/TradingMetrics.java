@@ -21,9 +21,10 @@ import static java.math.BigDecimal.ZERO;
 @Getter
 public class TradingMetrics {
 
-    private int breakEvenPositions;
     private int losingPositions;
     private int winningPositions;
+    private long weightedHoldingTime;
+    private int unitsPurchased;
     private BigDecimal purchaseValue;
     private BigDecimal saleValue;
     private BigDecimal totalLoss;
@@ -91,16 +92,17 @@ public class TradingMetrics {
     }
 
     public Optional<Double> getCagr() {
-//        double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
-        double periods = ((double)getDuration())/(getPositions() * 365L);
+        double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
+//        double periods = ((double)getDuration())/(getPositions() * 365L);
         return Optional.ofNullable(getReturn()).map(BigDecimal::doubleValue).filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
     }
 
     public TradingMetrics add(TradingMetrics other) {
         return new TradingMetrics(
-                breakEvenPositions + other.breakEvenPositions,
                 losingPositions + other.losingPositions,
                 winningPositions + other.winningPositions,
+                weightedHoldingTime + other.weightedHoldingTime,
+                unitsPurchased + other.unitsPurchased,
                 purchaseValue.add(other.purchaseValue),
                 saleValue.add(other.saleValue),
                 totalLoss.add(other.totalLoss),
@@ -116,9 +118,10 @@ public class TradingMetrics {
     public TradingMetrics add(Position p) {
 
         return new TradingMetrics(
-                p.getProfit().equals(ZERO) ? breakEvenPositions+1 : breakEvenPositions,
                 p.isProfitable() ? losingPositions : losingPositions + 1,
                 p.isProfitable() ? winningPositions+1 : winningPositions,
+                weightedHoldingTime + p.getWeightedHoldingTime(),
+                unitsPurchased + p.getUnitsPurchased(),
                 eitherOrBoth(purchaseValue, p.getPurchaseValue(), BigDecimal::add),
                 eitherOrBoth(saleValue, p.getSaleValue(), BigDecimal::add),
                 p.isProfitable() ? totalLoss : eitherOrBoth(totalLoss, p.getProfit(), BigDecimal::add),
