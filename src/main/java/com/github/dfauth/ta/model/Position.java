@@ -146,20 +146,19 @@ public class Position {
     }
 
     @JsonProperty("p")
-    public BigDecimal getProfit() {
+    public Optional<BigDecimal> getProfit() {
         Function<BigDecimal, Function<BigDecimal, Function<BigDecimal,BigDecimal>>> profit = pv -> sv -> c -> sv.subtract(pv).subtract(commission);
-        return allPresent(profit, purchaseValue, saleValue, commission).orElse(null);
-//        return bothPresent(purchaseValue, saleValue, (pv,sv) -> sv.subtract(pv).subtract(commission)).orElse(null);
+        return allPresent(profit, purchaseValue, saleValue, commission);
     }
 
     @JsonIgnore
     public boolean isProfitable() {
-        return getProfit() != null && BigDecimalOps.isGreaterThanZero(getProfit());
+        return getProfit().map(BigDecimalOps::isGreaterThanZero).orElse(false);
     }
 
     @JsonProperty("r")
     public Optional<Double> getReturn() {
-        return Optional.ofNullable(getProfit()).flatMap(p -> Optional.ofNullable(getPurchaseValue()).filter(pv -> pv.doubleValue() > 0).map(pv  -> p.divide(pv, RoundingMode.HALF_UP).doubleValue()));
+        return getProfit().flatMap(p -> Optional.ofNullable(getPurchaseValue()).filter(pv -> pv.doubleValue() > 0).map(pv  -> p.divide(pv, RoundingMode.HALF_UP).doubleValue()));
     }
 
     @JsonProperty("cagr")

@@ -45,6 +45,6 @@ public interface PositionRepository extends CrudRepository<Position, CodeDateCom
                 new Timestamp(to.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()));
     }
 
-    @Query(value = "SELECT p from Position p where p.date >= ?1 and date < ?2")
+    @Query(value = "SELECT p from Position p where p.date >= ?1 and date < ?2 and p.last >= ?1 and p.last < ?2")
     Iterable<Position> findBetween(Timestamp from, Timestamp to);
 }

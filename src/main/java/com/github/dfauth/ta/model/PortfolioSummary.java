@@ -6,11 +6,10 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 
+import static com.github.dfauth.ta.functional.Optionals.allPresent;
 import static com.github.dfauth.ta.util.BigDecimalOps.multiply;
 
 @Slf4j
@@ -33,7 +32,7 @@ public class PortfolioSummary {
 
     public PortfolioSummary withPosition(Position p, BigDecimal marketPrice) {
         this.count++;
-        this.cost = this.cost.add(p.getProfit());
+        this.cost = p.getProfit().map(this.cost::add).orElse(this.cost);
         this.commission = this.commission.add(p.getCommission());
         BigDecimal _marketValue = multiply(marketPrice, p.getSize());
         this.positions.add(new PositionWithMarketValue(p, _marketValue));
@@ -71,8 +70,9 @@ public class PortfolioSummary {
             this.marketValue = marketValue;
         }
 
-        public BigDecimal getProfit() {
-            return marketValue.subtract(getSaleValue().subtract(getPurchaseValue()));
+        public Optional<BigDecimal> getProfit() {
+            Function<BigDecimal, Function<BigDecimal, Function<BigDecimal, BigDecimal>>> fn = mv -> sv -> pv -> mv.subtract(sv).subtract(pv);
+            return allPresent(fn,marketValue,getSaleValue(),getPurchaseValue());
         }
     }
 }

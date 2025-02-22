@@ -63,11 +63,7 @@ public class Lists<T> extends ArrayList<T> {
     public static <T> Tuple2<T,List<T>> headAndTail(List<T> l) {
         return Optional.of(l)
                 .filter(not(List::isEmpty))
-                .map(_l -> tuple2(
-                        _l.get(0),
-                        Optional.of(l)
-                                .filter(__l -> __l.size() > 1)
-                                .map(__l -> __l.subList(1,_l.size()-1)).orElse(emptyList())))
+                .map(_l -> tuple2(_l.get(0),_l.subList(1,_l.size())))
                 .orElse(tuple2(null, emptyList()));
     }
 

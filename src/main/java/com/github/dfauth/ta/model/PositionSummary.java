@@ -2,6 +2,7 @@ package com.github.dfauth.ta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.dfauth.ta.functional.Optionals;
 import com.github.dfauth.ta.functions.CAGR;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -60,21 +61,21 @@ public class PositionSummary {
     public PositionSummary add(Position p) {
         return new PositionSummary(
                 code,
-                p.isClosed() ? eitherOrBoth(closedUnitsPurchased, p.getUnitsPurchased(), Integer::sum) : closedUnitsPurchased,
-                p.isOpen() ? eitherOrBoth(openUnitsPurchased, p.getUnitsPurchased(), Integer::sum) : openUnitsPurchased,
-                p.isClosed() ? eitherOrBoth(closedUnitsSold, p.getUnitsSold(), Integer::sum) : closedUnitsSold,
-                p.isOpen() ? eitherOrBoth(openUnitsSold, p.getUnitsSold(), Integer::sum) : openUnitsSold,
-                p.isClosed() ? eitherOrBoth(closedWeightedHoldingTime, p.getWeightedHoldingTime(), Long::sum) : closedWeightedHoldingTime,
-                p.isOpen() ? eitherOrBoth(openWeightedHoldingTime, p.getWeightedHoldingTime(), Long::sum) : openWeightedHoldingTime,
-                p.isClosed() ? eitherOrBoth(closedPurchaseValue, p.getPurchaseValue(),BigDecimal::add) : closedPurchaseValue,
-                p.isOpen() ? eitherOrBoth(openPurchaseValue, p.getPurchaseValue(),BigDecimal::add) : openPurchaseValue,
-                p.isClosed() ? eitherOrBoth(closedSaleValue, p.getSaleValue(),BigDecimal::add) : closedSaleValue,
-                p.isOpen() ? eitherOrBoth(openSaleValue, p.getSaleValue(),BigDecimal::add) : openSaleValue,
-                p.isClosed() ? eitherOrBoth(closedCommission, p.getCommission(),BigDecimal::add) : closedCommission,
-                p.isOpen() ? eitherOrBoth(openCommission, p.getCommission(),BigDecimal::add) : openCommission,
+                p.isClosed() ? eitherOrBoth(closedUnitsPurchased, p.getUnitsPurchased(), Integer::sum).orElse(null) : closedUnitsPurchased,
+                p.isOpen() ? eitherOrBoth(openUnitsPurchased, p.getUnitsPurchased(), Integer::sum).orElse(null) : openUnitsPurchased,
+                p.isClosed() ? eitherOrBoth(closedUnitsSold, p.getUnitsSold(), Integer::sum).orElse(null) : closedUnitsSold,
+                p.isOpen() ? eitherOrBoth(openUnitsSold, p.getUnitsSold(), Integer::sum).orElse(null) : openUnitsSold,
+                p.isClosed() ? eitherOrBoth(closedWeightedHoldingTime, p.getWeightedHoldingTime(), Long::sum).orElse(null) : closedWeightedHoldingTime,
+                p.isOpen() ? eitherOrBoth(openWeightedHoldingTime, p.getWeightedHoldingTime(), Long::sum).orElse(null) : openWeightedHoldingTime,
+                p.isClosed() ? eitherOrBoth(closedPurchaseValue, p.getPurchaseValue(),BigDecimal::add).orElse(null) : closedPurchaseValue,
+                p.isOpen() ? eitherOrBoth(openPurchaseValue, p.getPurchaseValue(),BigDecimal::add).orElse(null) : openPurchaseValue,
+                p.isClosed() ? eitherOrBoth(closedSaleValue, p.getSaleValue(),BigDecimal::add).orElse(null) : closedSaleValue,
+                p.isOpen() ? eitherOrBoth(openSaleValue, p.getSaleValue(),BigDecimal::add).orElse(null) : openSaleValue,
+                p.isClosed() ? eitherOrBoth(closedCommission, p.getCommission(),BigDecimal::add).orElse(null) : closedCommission,
+                p.isOpen() ? eitherOrBoth(openCommission, p.getCommission(),BigDecimal::add).orElse(null) : openCommission,
                 positions + 1,
                 trades + p.getTradeCount(),
-                p.isOpen() ? eitherOrBoth(openProfit, p.getProfit(),BigDecimal::add) : openProfit
+                p.isOpen() ? Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(openProfit), p.getProfit(),BigDecimal::add).orElse(null) : openProfit
         );
     }
 

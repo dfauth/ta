@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.model;
 
+import com.github.dfauth.ta.functional.Optionals;
 import com.github.dfauth.ta.functions.CAGR;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.*;
@@ -9,10 +10,13 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-import static com.github.dfauth.ta.functional.Optionals.eitherOrBoth;
+import static com.github.dfauth.ta.functional.Optionals.*;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
-import static java.math.BigDecimal.ZERO;
+import static com.github.dfauth.ta.util.BigDecimalOps.valueOf;
+import static java.lang.Math.abs;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,6 +24,13 @@ import static java.math.BigDecimal.ZERO;
 @EqualsAndHashCode
 @Getter
 public class TradingMetrics {
+
+    public static final Function<Double, Function<Double, Function<Double, Double>>> profit =  pv -> sv -> c -> sv - pv - c;
+    public static final Function<Double, Function<Double, Function<Double, Double>>> expectancy = winRate -> avgGain -> avgLoss -> (winRate * avgGain) - (1.0d - winRate * avgLoss);
+    public static final BiFunction<Double, Double, Double> riskRewardRatio = (avgGain, avgLoss) -> abs(avgGain / avgLoss);
+    public static final BiFunction<Double, Double, Double> roi = (profit, investment) -> profit / investment;
+    public static final BiFunction<Double, Double, Double> cagr = CAGR::cagr;
+    public static final Function<Double, Function<Double, Function<Double,Double>>> positiveExpectancy = avgWin -> avgLoss -> winRate -> (1 + (avgWin/avgLoss)) * winRate - 1.0d;
 
     private int losingPositions;
     private int winningPositions;
@@ -35,32 +46,31 @@ public class TradingMetrics {
     private int positions;
     private int trades;
 
-    public BigDecimal getAverageLoss() {
-        return BigDecimalOps.divideWithZeroCheck(getTotalLoss(), getLosingPositions()).orElse(ZERO);
+    public Optional<BigDecimal> getAverageLoss() {
+        return bothPresent(getTotalLoss(), getLosingPositions(), (tl,lp) -> tl.divide(valueOf(lp), RoundingMode.HALF_UP));
     }
 
-    public BigDecimal getAverageGain() {
-        return BigDecimalOps.divideWithZeroCheck(getTotalGain(), getWinningPositions()).orElse(ZERO);
+    public Optional<BigDecimal> getAverageGain() {
+        return bothPresent(getTotalGain(), getWinningPositions(), (tg,wp) -> tg.divide(valueOf(wp), RoundingMode.HALF_UP));
     }
 
     public double getWinRate() {
         return (double) getWinningPositions() / getPositions();
     }
 
-    public double getExpectancy() {
-        return (getWinRate()*getAverageGain().doubleValue()) - ((1 - getWinRate())*getAverageLoss().doubleValue());
+    public Optional<Double> getExpectancy() {
+        return allPresent(expectancy, Optional.of(getWinRate()), getAverageGain().map(BigDecimal::doubleValue), getAverageLoss().map(BigDecimal::doubleValue));
     }
 
-    public double getRiskRewardRatio() {
-        return getAverageGain().doubleValue() / (-1.0 * getAverageLoss().doubleValue());
+    public Optional<Double> getRiskRewardRatio() {
+        return bothPresent(getAverageGain().map(BigDecimal::doubleValue), getAverageLoss().map(BigDecimal::doubleValue), riskRewardRatio);
     }
 
-    public double getPositiveExpectancy() {
-        double w = getAverageGain().doubleValue();
-        double l = getAverageLoss().doubleValue() * -1d;
-        double p = getWinRate();
-        return l == 0 ? 0.0 :
-                (1 + (w/l)) * p - 1.0d;
+    public Optional<Double> getPositiveExpectancy() {
+        return allPresent(positiveExpectancy,
+                getAverageGain().map(BigDecimal::doubleValue),
+                getAverageLoss().map(BigDecimal::doubleValue),
+                Optional.of(getWinRate()));
     }
 
     public BigDecimal getAvergePositionSize() {
@@ -71,19 +81,19 @@ public class TradingMetrics {
         return BigDecimalOps.divide(getPurchaseValue(), getTrades());
     }
 
-    public double getRoi() {
-        return getProfit().doubleValue()/getPurchaseValue().doubleValue();
+    public Optional<Double> getRoi() {
+        return getProfit().map(BigDecimal::doubleValue).map(p -> p/getPurchaseValue().doubleValue());
     }
 
-    public BigDecimal getProfit() {
-        return getTotalGain().add(getTotalLoss());
+    public Optional<BigDecimal> getProfit() {
+        return bothPresent(getTotalGain(),getTotalLoss(), BigDecimal::add);
     }
 
-    public BigDecimal getReturn() {
-        return eitherOrBoth(getPurchaseValue(),getSaleValue(), BigDecimal::subtract).divide(getPurchaseValue(), RoundingMode.HALF_UP);
+    public Optional<BigDecimal> getReturn() {
+        return eitherOrBoth(getPurchaseValue(),getSaleValue(), BigDecimal::subtract).map(bd -> bd.divide(getPurchaseValue(), RoundingMode.HALF_UP));
     }
 
-    public BigDecimal getTurnover() {
+    public Optional<BigDecimal> getTurnover() {
         return eitherOrBoth(getPurchaseValue(), getSaleValue(), BigDecimal::add);
     }
 
@@ -93,8 +103,7 @@ public class TradingMetrics {
 
     public Optional<Double> getCagr() {
         double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
-//        double periods = ((double)getDuration())/(getPositions() * 365L);
-        return Optional.ofNullable(getReturn()).map(BigDecimal::doubleValue).filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
+        return getReturn().map(BigDecimal::doubleValue).filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
     }
 
     public TradingMetrics add(TradingMetrics other) {
@@ -122,12 +131,12 @@ public class TradingMetrics {
                 p.isProfitable() ? winningPositions+1 : winningPositions,
                 weightedHoldingTime + p.getWeightedHoldingTime(),
                 unitsPurchased + p.getUnitsPurchased(),
-                eitherOrBoth(purchaseValue, p.getPurchaseValue(), BigDecimal::add),
-                eitherOrBoth(saleValue, p.getSaleValue(), BigDecimal::add),
-                p.isProfitable() ? totalLoss : eitherOrBoth(totalLoss, p.getProfit(), BigDecimal::add),
-                p.isProfitable() ? eitherOrBoth(totalGain, p.getProfit(), BigDecimal::add) : totalGain,
-                eitherOrBoth(start, p.getDate().toLocalDateTime().toLocalDate(), (s, d) -> s.isBefore(d) ? s : d),
-                eitherOrBoth(end, p.getLast().toLocalDateTime().toLocalDate(), (s, d) -> s.isAfter(d) ? s : d),
+                eitherOrBoth(purchaseValue, p.getPurchaseValue(), BigDecimal::add).orElse(null),
+                eitherOrBoth(saleValue, p.getSaleValue(), BigDecimal::add).orElse(null),
+                p.isProfitable() ? totalLoss : Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(totalLoss), p.getProfit(), BigDecimal::add).orElse(null),
+                p.isProfitable() ? Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(totalGain), p.getProfit(), BigDecimal::add).orElse(null) : totalGain,
+                eitherOrBoth(start, p.getDate().toLocalDateTime().toLocalDate(), (s, d) -> s.isBefore(d) ? s : d).orElse(null),
+                eitherOrBoth(end, p.getLast().toLocalDateTime().toLocalDate(), (s, d) -> s.isAfter(d) ? s : d).orElse(null),
                 duration + p.getDuration(),
                 positions + 1,
                 trades + p.getTrades().size()
