@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.github.dfauth.ta.functional.Optionals.allPresent;
-import static java.math.BigDecimal.ZERO;
 
 @Getter
 @ToString
@@ -38,9 +37,11 @@ public class OpenPosition extends Position {
 
     @Override
     public Optional<BigDecimal> getProfit() {
-        BigDecimal marketValue = price.getClose().multiply(BigDecimal.valueOf(getSize()));
-        Function<BigDecimal, Function<BigDecimal, Function<BigDecimal,Function<BigDecimal,BigDecimal>>>> paperProfit = ap -> pv -> mv -> c -> ap.add(mv).subtract(pv).subtract(c);
-        return allPresent(paperProfit, super.getProfit().orElse(ZERO), getPurchaseValue(), marketValue, getCommission());
+        var marketValue = price.getClose().multiply(BigDecimal.valueOf(getSize()));
+        Function<BigDecimal, Function<BigDecimal, Function<BigDecimal, BigDecimal>>> f = mv -> pv -> c -> mv.subtract(pv).subtract(c);
+        return super.getProfit()
+                .map(p -> p.add(marketValue))
+                .or(() -> allPresent(f, marketValue,getPurchaseValue(),getCommission()));
     }
 
     @Override
