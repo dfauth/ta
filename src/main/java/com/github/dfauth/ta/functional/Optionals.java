@@ -35,6 +35,7 @@ public class Optionals {
     public static <T> Optional<T> allPresent(Function<T,?> fn, Optional<T>... ts) {
         return allPresent(fn, Arrays.stream(ts).toList());
     }
+
     public static <T> Optional<T> allPresent(Function<T,?> fn, List<Optional<T>> ts) {
         return headAndTail(ts).map((h,t) -> {
             if(t.isEmpty()) {

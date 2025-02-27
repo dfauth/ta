@@ -85,6 +85,21 @@ public class MetricsController {
                 .reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
     }
 
+    @GetMapping("/metrics/asAt/{yyyyMMdd}")
+    @ResponseStatus(HttpStatus.OK)
+    public TradingMetrics metricsAsAt(@PathVariable String yyyyMMdd) {
+        return metricsAsAt(yyyyMMdd, ALL);
+    }
+
+    @GetMapping("/metrics/asAt/{yyyyMMdd}/{mode}")
+    @ResponseStatus(HttpStatus.OK)
+    public TradingMetrics metricsAsAt(@PathVariable String yyyyMMdd, @PathVariable Mode mode) {
+        var date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
+        return stream(positionService.getPositionAsAt(date))
+                .filter(mode)
+                .reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
+    }
+
     enum Mode implements Predicate<Position> {
         OPEN(Position::isOpen), CLOSE(Position::isClosed), ALL(ignore -> true);
 

@@ -25,7 +25,6 @@ import static java.lang.Math.abs;
 @Getter
 public class TradingMetrics {
 
-    public static final Function<Double, Function<Double, Function<Double, Double>>> profit =  pv -> sv -> c -> sv - pv - c;
     public static final Function<Double, Function<Double, Function<Double, Double>>> expectancy = winRate -> avgGain -> avgLoss -> (winRate * avgGain) - (1.0d - winRate * avgLoss);
     public static final BiFunction<Double, Double, Double> riskRewardRatio = (avgGain, avgLoss) -> abs(avgGain / avgLoss);
     public static final BiFunction<Double, Double, Double> roi = (profit, investment) -> profit / investment;
@@ -69,7 +68,7 @@ public class TradingMetrics {
     public Optional<Double> getPositiveExpectancy() {
         return allPresent(positiveExpectancy,
                 getAverageGain().map(BigDecimal::doubleValue),
-                getAverageLoss().map(BigDecimal::doubleValue),
+                getAverageLoss().map(BigDecimal::doubleValue).map(Math::abs),
                 Optional.of(getWinRate()));
     }
 
@@ -97,8 +96,9 @@ public class TradingMetrics {
         return eitherOrBoth(getPurchaseValue(), getSaleValue(), BigDecimal::add);
     }
 
-    public double getOccupancy() {
-        return (double) getDuration() / (getPositions() * Duration.between(getStart().atStartOfDay(), getEnd().atStartOfDay()).toDays());
+    public Optional<Double> getOccupancy() {
+        return bothPresent(getStart(), getEnd(), (s,e) -> Duration.between(s.atStartOfDay(), e.atStartOfDay()).toDays())
+                .map(elapsed -> (double) getDuration() / (getPositions() * elapsed));
     }
 
     public Optional<Double> getCagr() {

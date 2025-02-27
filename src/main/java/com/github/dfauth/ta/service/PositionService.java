@@ -13,10 +13,8 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -107,7 +105,7 @@ public class PositionService {
                 .collect(Collectors.groupingBy(Position::getCode))
                 .entrySet()
                 .stream()
-                .map(e -> Map.entry(e.getKey(), e.getValue().stream().reduce(new PositionSummary(e.getKey(), priceRepository.findLatestByCode(e.getKey()).orElse(null)), PositionSummary::add, oops())))
+                .map(e -> Map.entry(e.getKey(), e.getValue().stream().reduce(new PositionSummary(), PositionSummary::add, oops())))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -148,11 +146,23 @@ public class PositionService {
         return stream.map(p -> p.isOpen() ? priceRepository.findLatestByCode(p.getCode()).<Position>map(_p -> new OpenPosition(p,_p)).orElse(p) : p);
     }
 
+    private UnaryOperator<Stream<Position>> openPositionStream(LocalDate date) {
+        return stream -> stream.map(p -> p.isOpenAt(date) ? priceRepository.findByCodeAndDate(p.getCode(), date).<Position>map(_p -> new OpenPosition(p,_p)).orElse(p) : p);
+    }
+
     public Iterable<Position> findAllSince(LocalDate date) {
         return openPositionStream(stream(positionRepository.findStartingOnOrAfter(date))).toList();
     }
 
     public Iterable<Position> findAllBetween(LocalDate from, LocalDate to) {
         return openPositionStream(stream(positionRepository.findBetween(from,to))).toList();
+    }
+
+    public Iterable<Position> getPositionAsAt(LocalDate date) {
+        return openPositionStream(date).apply(stream(positionRepository.findAllPriorTo(date))).toList();
+    }
+
+    public Optional<Position> getPositionAsAt(String code, LocalDate date) {
+        return openPositionStream(date).apply(positionRepository.findPositionByCodeAndDate(code, date).stream()).findFirst();
     }
 }

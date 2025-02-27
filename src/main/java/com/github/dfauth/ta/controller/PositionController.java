@@ -13,11 +13,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.github.dfauth.ta.model.MarketEnum.ASX;
+import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 
 @RestController
 @Slf4j
@@ -79,5 +81,19 @@ public class PositionController {
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions(@PathVariable MarketEnum market) {
         return positionService.getAllPositions(market);
+    }
+
+    @GetMapping("/positions/asAt/{yyyyMMdd}")
+    @ResponseStatus(HttpStatus.OK)
+    public Iterable<Position> getPositionAsAt(@PathVariable String yyyyMMdd) {
+        LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
+        return positionService.getPositionAsAt(date);
+    }
+
+    @GetMapping("/position/{code}/asAt/{yyyyMMdd}")
+    @ResponseStatus(HttpStatus.OK)
+    public Optional<Position> getPositionCodeAsAt(@PathVariable String code, @PathVariable String yyyyMMdd) {
+        LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
+        return positionService.getPositionAsAt(code, date);
     }
 }

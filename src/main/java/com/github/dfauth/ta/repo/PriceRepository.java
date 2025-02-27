@@ -14,6 +14,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import static com.github.dfauth.ta.util.DateTimeUtils.toTimestamp;
+
 public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey> {
 
     default List<Price> findByCode(String _code, int limit) {
@@ -21,6 +23,13 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
         Collections.reverse(l);
         return l;
     }
+
+    default Optional<Price> findByCodeAndDate(String code, LocalDate date) {
+        return findByCodeAndDate(code, toTimestamp(date)).stream().findFirst();
+    }
+
+    @Query(value = "SELECT * FROM Price p WHERE p.code = ?1 and p.date >= ?2 order by p.date asc LIMIT 1", nativeQuery = true)
+    List<Price> findByCodeAndDate(String code, Timestamp date);
 
     default List<Price> findByCodeAndDate(String _code, Timestamp marketDate, int limit) {
         List<Price> l = findLatestByDate(_code, marketDate, limit);

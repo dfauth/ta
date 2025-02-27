@@ -21,5 +21,7 @@ public class CAGR {
 
     public static BiFunction<Double, UnaryOperator<Double>, Optional<BigDecimal>> bdMapper(int scale) {
         return (d, o) -> Optional.of(d).map(o).filter(_d -> !Double.isNaN(_d)).map(_d -> BigDecimal.valueOf(_d).setScale(scale, RoundingMode.HALF_UP));
+//        return (d, o) -> tryWith(() -> o.apply(d))
+//                .map(_t -> BigDecimal.valueOf(_t).setScale(scale, RoundingMode.HALF_UP));
     }
 }

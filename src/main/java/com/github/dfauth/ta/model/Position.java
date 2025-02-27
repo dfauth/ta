@@ -19,13 +19,19 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functional.Optionals.allPresent;
 import static com.github.dfauth.ta.functional.Optionals.bothPresent;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
+import static java.math.BigDecimal.ZERO;
+import static java.util.Optional.empty;
 
 @Slf4j
 @Entity
@@ -37,6 +43,15 @@ import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 @IdClass(CodeDateCompositeKey.class)
 public class Position {
 
+    public static Predicate<Double> nonNaN = d -> !Double.isNaN(d);
+    public static Predicate<Double> nonZero = d -> d != 0;
+    public static Optional<Double> nonZero(double d) {
+        return d == 0 ? empty() : Optional.of(d);
+    };
+    public static final Function<BigDecimal, Function<BigDecimal, Function<BigDecimal, BigDecimal>>> profit =  pv -> sv -> c -> sv.subtract(pv).subtract(c);
+    public static final BiFunction<Long, Integer, Optional<Double>> periods = (wht, up) -> nonZero(((double)wht)/(up * 365L));
+    public static final BiFunction<Double, Double, Optional<Double>> cagr = (r,p) -> CAGR.cagr(r,p,bdMapper(3)).map(BigDecimal::doubleValue);
+
     @Id @JsonIgnore
     private Timestamp date;
     @Id
@@ -44,20 +59,20 @@ public class Position {
     @JsonIgnore
     private Timestamp last;
     @JsonIgnore
-    private Integer unitsPurchased;
+    private int unitsPurchased;
     @JsonIgnore
-    private Integer unitsSold;
+    private int unitsSold;
     @JsonIgnore
-    private Long weightedHoldingTime;
+    private long weightedHoldingTime;
     @JsonProperty("pv")
-    private BigDecimal purchaseValue;
+    private BigDecimal purchaseValue = ZERO;
     @JsonProperty("sv")
-    private BigDecimal saleValue;
+    private BigDecimal saleValue = ZERO;
     @JsonProperty("c")
-    private BigDecimal commission;
+    private BigDecimal commission = ZERO;
     @JsonIgnore
     @OneToMany(targetEntity = Trade.class, orphanRemoval = false)
-    private List<Trade> trades;
+    protected List<Trade> trades;
 
     public static Long calculateWeightedHoldingTime(Instant start, int size) {
         return calculateWeightedHoldingTime(start, Instant.now(),size);
@@ -86,7 +101,7 @@ public class Position {
         return Optional.ofNullable(trades).map(List::size).orElse(0);
     }
 
-    private void apply(List<Trade> t) {
+    private Position apply(List<Trade> t) {
         List<String> tradeCodes = t.stream().map(Trade::getCode).distinct().toList();
         if(tradeCodes.size() != 1) {
             throw new IllegalArgumentException("list of trades has inconsistent codes: "+t);
@@ -99,17 +114,28 @@ public class Position {
         this.date = t.stream().map(Trade::getDate).reduce(this.date, (o, _t) -> o == null ? _t : _t.toInstant().isBefore(o.toInstant()) ? _t : o, oops());
         this.last = t.stream().map(Trade::getDate).reduce(this.last, (o, _t) -> o == null ? _t : _t.toInstant().isAfter(o.toInstant()) ? _t : o, oops());
         t.stream().filter(_t -> this.last != null).forEach(_t -> this.weightedHoldingTime =+ calculateWeightedHoldingTime(this.date.toInstant(), this.last.toInstant(), Optional.ofNullable(getSize()).orElse(0)));
-        this.unitsPurchased = t.stream().filter(_t -> _t.getSide().isBuy()).mapToInt(Trade::getSize).reduce(this.unitsPurchased == null ? 0 : this.unitsPurchased, Integer::sum);
-        this.unitsSold = t.stream().filter(_t -> _t.getSide().isSell()).mapToInt(Trade::getSize).reduce(this.unitsSold == null ? 0 : this.unitsSold, Integer::sum);
+        this.unitsPurchased = t.stream().filter(_t -> _t.getSide().isBuy()).mapToInt(Trade::getSize).reduce(this.unitsPurchased, Integer::sum);
+        this.unitsSold = t.stream().filter(_t -> _t.getSide().isSell()).mapToInt(Trade::getSize).reduce(this.unitsSold, Integer::sum);
         this.purchaseValue = t.stream().filter(_t -> _t.getSide().isBuy()).map(Trade::getCost).reduce(this.purchaseValue, (c, _t) -> c == null ? _t : c.add(_t), oops());
         this.saleValue = t.stream().filter(_t -> _t.getSide().isSell()).map(Trade::getCost).reduce(this.saleValue, (c, _t) -> c == null ? _t : c.add(_t), oops());
         this.commission = t.stream().map(Trade::getCommission).reduce(this.commission, (c, _t) -> c == null ? _t : c.add(_t), oops());
         this.trades = Lists.add(this.trades, t);
+        return this;
     }
 
     public Position onTrade(Trade t) {
-        apply(List.of(t));
-        return this;
+        return new Position(
+                this.date,
+                this.code,
+                this.last,
+                this.unitsPurchased,
+                this.unitsSold,
+                this.weightedHoldingTime,
+                this.purchaseValue,
+                this.saleValue,
+                this.commission,
+                this.trades
+        ).apply(List.of(t));
     }
 
     public Position later(Position other) {
@@ -132,22 +158,21 @@ public class Position {
 
     @JsonIgnore
     public boolean isClosed() {
-        return getSize() != null && getSize() == 0;
+        return getSize() == 0;
     }
 
     @JsonIgnore
     public boolean isOpen() {
-        return getSize() != null && !isClosed();
+        return !isClosed();
     }
 
     @JsonProperty("sz")
-    public Integer getSize() {
-        return unitsPurchased != null ? unitsSold != null ? unitsPurchased - unitsSold : unitsPurchased : null;
+    public int getSize() {
+        return unitsPurchased - unitsSold;
     }
 
     @JsonProperty("p")
     public Optional<BigDecimal> getProfit() {
-        Function<BigDecimal, Function<BigDecimal, Function<BigDecimal,BigDecimal>>> profit = pv -> sv -> c -> sv.subtract(pv).subtract(commission);
         return allPresent(profit, purchaseValue, saleValue, commission);
     }
 
@@ -163,11 +188,37 @@ public class Position {
 
     @JsonProperty("cagr")
     public Optional<Double> getCagr() {
-        double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
-        return getReturn().filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
+        Optional<Double> p = periods.apply(getWeightedHoldingTime(), getUnitsPurchased());
+        return p.flatMap(_p -> getReturn()
+                .flatMap(_r -> cagr.apply(_r,_p)));
     }
 
     public long getDuration() {
-        return Duration.between(this.date.toInstant(), this.last.toInstant()).toDays();
+        return daysBetween(this.date.toInstant(), this.last.toInstant());
+    }
+
+    public static long daysBetween(Instant from, Instant to) {
+        return Duration.between(from, to).toDays();
+    }
+
+    public boolean isOpenAt(LocalDate date) {
+        return onLoad(trades).floorEntry(date).getValue().isOpen();
+    }
+
+    public static TreeMap<LocalDate, Position> onLoad(List<Trade> trades) {
+        return trades.stream()
+                .reduce(new TreeMap<>(),
+                        (m,t) -> {
+                            m.compute(t.getLocalDate(),
+                                    (k,v) -> Optional.ofNullable(v)
+                                        .map(p -> p.onTrade(t))
+                                        .orElseGet(() -> Optional.ofNullable(m.lastEntry())
+                                                .map(Map.Entry::getValue)
+                                                .map(p -> p.onTrade(t))
+                                                .orElseGet(() -> new Position(t)))
+                            );
+                            return m;
+                        },
+                        oops());
     }
 }
