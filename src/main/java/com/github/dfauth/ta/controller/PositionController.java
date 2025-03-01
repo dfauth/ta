@@ -3,14 +3,12 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.model.MarketEnum;
 import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.PositionSummary;
+import com.github.dfauth.ta.model.Theme;
 import com.github.dfauth.ta.service.PositionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -36,14 +34,14 @@ public class PositionController {
 
     @GetMapping("/positions/summary")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, PositionSummary> positionSummary() {
-        return positionService.findPositionSummaries();
+    public Map<String, PositionSummary> positionSummary(@RequestParam("theme") Optional<Theme> theme) {
+        return theme.map(t -> positionService.findPositionSummaries(t)).orElseGet(() -> positionService.findPositionSummaries());
     }
 
     @GetMapping("/position/summary/{code}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, PositionSummary> positionSummary(@PathVariable String code) {
-        return positionService.findPositionSummaries(code);
+    public Optional<PositionSummary> positionSummary(@PathVariable String code, @RequestParam("theme") Optional<Theme> theme) {
+        return theme.map(t -> positionService.findPositionSummaries(code, t)).orElse(positionService.findPositionSummaries(code));
     }
 
     @GetMapping("/position/{code}")

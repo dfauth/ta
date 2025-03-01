@@ -96,8 +96,16 @@ public class PositionService {
         return findPositionSummaries(openPositionStream(positionRepository.findAll()));
     }
 
-    public Map<String,PositionSummary> findPositionSummaries(String code) {
-        return findPositionSummaries(openPositionStream(positionRepository.findByCode(code)));
+    public Map<String,PositionSummary> findPositionSummaries(Theme theme) {
+        return findPositionSummaries(openPositionStream(positionRepository.findAll()).filter(theme));
+    }
+
+    public Optional<PositionSummary> findPositionSummaries(String code) {
+        return findPositionSummaries(openPositionStream(positionRepository.findByCode(code))).values().stream().findFirst();
+    }
+
+    public Optional<PositionSummary> findPositionSummaries(String code, Theme theme) {
+        return findPositionSummaries(openPositionStream(positionRepository.findByCode(code).stream().filter(theme))).values().stream().findFirst();
     }
 
     private Map<String,PositionSummary> findPositionSummaries(Stream<Position> stream) {

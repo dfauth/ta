@@ -1,8 +1,16 @@
 package com.github.dfauth.ta.model;
 
-public enum Theme {
+import java.util.function.Predicate;
+
+public enum Theme implements Predicate<Position> {
+
     MOMENTUM,
     MEAN_REVERSION,
     COMPOUNDER,
-    DIVIDEND
+    DIVIDEND;
+
+    @Override
+    public boolean test(Position position) {
+        return position.getTrades().stream().map(Trade::getTheme).allMatch(this::equals);
+    }
 }
