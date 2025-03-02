@@ -20,7 +20,7 @@ public interface TransactionRepository extends CrudRepository<Payment, Integer> 
         return Optional.of(_findByDateAndValue(date, value).iterator()).filter(Iterator::hasNext).map(Iterator::next);
     }
 
-    @Query(value = "SELECT * FROM Payment p WHERE date >= ?1 AND date <= ?2 AND type = ?3", nativeQuery = true)
+    @Query(value = "SELECT * FROM Payment p WHERE date >= ?1 AND date < ?2 AND type = ?3", nativeQuery = true)
     List<Payment> findByDateAndType(LocalDate start, LocalDate end, TxnEntry.TxnType t);
 
     @Query(value = "SELECT balance FROM Payment p WHERE date = ?1")

@@ -3,6 +3,7 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnEntry;
 import com.github.dfauth.ta.repo.TransactionRepository;
+import com.github.dfauth.ta.service.TransactionService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class TransactionController {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private TransactionService transactionService;
 
     @PostMapping("/txns/sync")
     @ResponseStatus(HttpStatus.OK)
@@ -62,7 +66,7 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public Optional<BigDecimal> sumOfDividends() {
-        return transactionsByDateAndType(LocalDate.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()), LocalDate.now(), TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        return transactionService.transactionsByDateAndType(LocalDate.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()), LocalDate.now(), TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/dividends/sum/{start}")
@@ -76,14 +80,27 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public Optional<BigDecimal> sumOfDividends(@PathVariable String start, @PathVariable String end) {
-        return transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        LocalDate s = (LocalDate) YYYYMMDD.parse(start);
+        LocalDate e = (LocalDate) YYYYMMDD.parse(end);
+        return transactionService.transactionsByDateAndType(s, e, TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/dividends/{start}/{end}")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public List<Payment> dividends(@PathVariable String start, @PathVariable String end) {
-        return transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV);
+        LocalDate s = (LocalDate) YYYYMMDD.parse(start);
+        LocalDate e = (LocalDate) YYYYMMDD.parse(end);
+        return transactionService.transactionsByDateAndType(s, e, TxnEntry.TxnType.DIV);
+    }
+
+    @GetMapping("/dividends/year/{year}")
+    @ResponseStatus(HttpStatus.OK)
+    @Transactional
+    public Optional<BigDecimal> dividendsByYear(@PathVariable int year) {
+        LocalDate start = LocalDate.of(2000, 12, 31);
+        LocalDate end = LocalDate.of(year, 12, 31);
+        return transactionService.transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/{start}/{end}/{type}")
@@ -92,17 +109,15 @@ public class TransactionController {
     public List<Payment> transactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
-        return transactionsByDateAndType(s,e, type);
-    }
-
-    private List<Payment> transactionsByDateAndType(LocalDate s, LocalDate e, TxnEntry.TxnType type) {
-        return transactionRepository.findByDateAndType(s,e, type);
+        return transactionService.transactionsByDateAndType(s,e, type);
     }
 
     @GetMapping("/txns/sum/{start}/{end}/{type}")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public Optional<BigDecimal> sumOfTransactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
-        return transactionsByDateAndType(start,end,type).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        LocalDate s = (LocalDate) YYYYMMDD.parse(start);
+        LocalDate e = (LocalDate) YYYYMMDD.parse(end);
+        return transactionService.transactionsByDateAndType(s,e,type).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 }

@@ -13,7 +13,7 @@ import static java.math.BigDecimal.ZERO;
 @NoArgsConstructor
 @ToString
 @EqualsAndHashCode
-@Getter
+@Data
 public class PortfolioMetrics {
 
     private int losingPositions;
@@ -23,6 +23,7 @@ public class PortfolioMetrics {
     private BigDecimal purchaseValue = ZERO;
     private BigDecimal saleValue = ZERO;
     private BigDecimal closedProfit = ZERO;
+    private BigDecimal dividendIncome = ZERO;
     private int closedPositions;
 
 
@@ -35,6 +36,7 @@ public class PortfolioMetrics {
                 purchaseValue.add(other.purchaseValue),
                 saleValue.add(other.saleValue),
                 closedProfit.add(other.closedProfit),
+                dividendIncome.add(other.dividendIncome),
                 closedPositions + other.closedPositions
         );
     }
@@ -52,6 +54,7 @@ public class PortfolioMetrics {
                 purchaseValue,
                 saleValue,
                 p.getProfit().map(closedProfit::add).orElse(closedProfit),
+                dividendIncome,
                 closedPositions + 1
         );
     }
@@ -65,12 +68,13 @@ public class PortfolioMetrics {
                 purchaseValue.add(p.getPurchaseValue()),
                 saleValue.add(p.getSaleValue()),
                 closedProfit,
+                ZERO,
                 closedPositions
         );
     }
 
     public BigDecimal getProfit() {
-        return getOpenProfit().add(getClosedProfit());
+        return getOpenProfit().add(getClosedProfit()).add(getDividendIncome());
     }
 
     public BigDecimal getOpenProfit() {
@@ -78,7 +82,7 @@ public class PortfolioMetrics {
     }
 
     public Optional<BigDecimal> getReturn() {
-        return tryWith(() -> getOpenProfit().divide(getPurchaseValue(), RoundingMode.HALF_UP)).toOptional();
+        return tryWith(() -> getProfit().divide(getPurchaseValue(), RoundingMode.HALF_UP)).toOptional();
     }
 
     public int getOpenPositions() {
