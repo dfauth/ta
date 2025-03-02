@@ -43,6 +43,7 @@ public class TradingMetrics {
     private LocalDate end;
     private long duration;
     private int positions;
+    private int openPositions;
     private int trades;
 
     public Optional<BigDecimal> getAverageLoss() {
@@ -72,12 +73,12 @@ public class TradingMetrics {
                 Optional.of(getWinRate()));
     }
 
-    public BigDecimal getAvergePositionSize() {
-        return BigDecimalOps.divide(getPurchaseValue(), getPositions());
+    public Optional<BigDecimal> getAvergePositionSize() {
+        return bothPresent(getPurchaseValue(), getPositions(), BigDecimalOps::divide);
     }
 
-    public BigDecimal getAverageTradeSize() {
-        return BigDecimalOps.divide(getPurchaseValue(), getTrades());
+    public Optional<BigDecimal> getAverageTradeSize() {
+        return bothPresent(getPurchaseValue(), getTrades(), BigDecimalOps::divide);
     }
 
     public Optional<Double> getRoi() {
@@ -94,6 +95,10 @@ public class TradingMetrics {
 
     public Optional<BigDecimal> getTurnover() {
         return eitherOrBoth(getPurchaseValue(), getSaleValue(), BigDecimal::add);
+    }
+
+    public int getClosedPositions() {
+        return positions - openPositions;
     }
 
     public Optional<Double> getOccupancy() {
@@ -120,6 +125,7 @@ public class TradingMetrics {
                 end.isAfter(other.end) ? end : other.end,
                 duration + other.duration,
                 positions + other.positions,
+                openPositions + other.openPositions,
                 trades + other.trades
         );
     }
@@ -139,6 +145,7 @@ public class TradingMetrics {
                 eitherOrBoth(end, p.getLast().toLocalDateTime().toLocalDate(), (s, d) -> s.isAfter(d) ? s : d).orElse(null),
                 duration + p.getDuration(),
                 positions + 1,
+                p.isOpen() ? openPositions + 1 : openPositions,
                 trades + p.getTrades().size()
         );
     }

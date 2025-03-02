@@ -155,7 +155,11 @@ public class PositionService {
     }
 
     private UnaryOperator<Stream<Position>> openPositionStream(LocalDate date) {
-        return stream -> stream.map(p -> p.isOpenAt(date) ? priceRepository.findByCodeAndDate(p.getCode(), date).<Position>map(_p -> new OpenPosition(p,_p)).orElse(p) : p);
+        return stream -> stream.map(p -> p.isOpenAt(date) ?
+                priceRepository.findByCodeAndDate(p.getCode(), date).
+                        <Position>map(_p -> new OpenPosition(p,_p))
+                        .orElse(p) :
+                p);
     }
 
     public Iterable<Position> findAllSince(LocalDate date) {

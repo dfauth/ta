@@ -57,7 +57,7 @@ public class PositionSummary {
 
     public PositionSummary add(Position p) {
         return new PositionSummary(
-                code,
+                p.getCode(),
                 p.isClosed() ? closedUnitsPurchased + p.getUnitsPurchased() : closedUnitsPurchased,
                 p.isOpen() ? openUnitsPurchased + p.getUnitsPurchased() : openUnitsPurchased,
                 p.isClosed() ? closedUnitsSold + p.getUnitsSold() : closedUnitsSold,

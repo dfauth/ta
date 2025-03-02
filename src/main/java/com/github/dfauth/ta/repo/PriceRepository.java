@@ -28,7 +28,7 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
         return findByCodeAndDate(code, toTimestamp(date)).stream().findFirst();
     }
 
-    @Query(value = "SELECT * FROM Price p WHERE p.code = ?1 and p.date >= ?2 order by p.date asc LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM Price p WHERE p.code = ?1 and p.date <= ?2 order by p.date desc LIMIT 1", nativeQuery = true)
     List<Price> findByCodeAndDate(String code, Timestamp date);
 
     default List<Price> findByCodeAndDate(String _code, Timestamp marketDate, int limit) {

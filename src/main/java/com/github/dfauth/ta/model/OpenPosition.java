@@ -41,11 +41,10 @@ public class OpenPosition extends Position {
 
     @Override
     public Optional<BigDecimal> getProfit() {
-        var marketValue = price.getClose().multiply(BigDecimal.valueOf(getSize()));
         Function<BigDecimal, Function<BigDecimal, Function<BigDecimal, BigDecimal>>> f = mv -> pv -> c -> mv.subtract(pv).subtract(c);
         return super.getProfit()
-                .map(p -> p.add(marketValue))
-                .or(() -> allPresent(f, marketValue,getPurchaseValue(),getCommission()));
+                .map(p -> p.add(getMarketValue()))
+                .or(() -> allPresent(f,getMarketValue(),getPurchaseValue(),getCommission()));
     }
 
     @Override
@@ -93,7 +92,19 @@ public class OpenPosition extends Position {
         return getT(Position::getTradeCount).orElseThrow();
     }
 
+    @Override
+    public Optional<Double> getCagr() {
+        long openWeightedHoldingTime = calculateWeightedHoldingTime(getLast().toInstant(), getSize());
+        Optional<Double> p = periods.apply(getWeightedHoldingTime() + openWeightedHoldingTime, getUnitsPurchased()).or(() -> Optional.of(((double)openWeightedHoldingTime) / getUnitsPurchased()));
+        return p.flatMap(_p -> getReturn()
+                .flatMap(_r -> cagr.apply(_r,_p)));
+    }
+
     private <T> Optional<T> getT(Function<Position,T> f) {
         return Optional.ofNullable(progression.floorEntry(price.getDate())).map(Map.Entry::getValue).map(f);
+    }
+
+    public BigDecimal getMarketValue() {
+        return price.getClose().multiply(BigDecimal.valueOf(getSize()));
     }
 }
