@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functions.CAGR;
+import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -73,6 +74,9 @@ public class Position {
     @JsonIgnore
     @OneToMany(targetEntity = Trade.class, orphanRemoval = false)
     protected List<Trade> trades;
+    @JsonIgnore
+    @OneToMany(targetEntity = Payment.class, orphanRemoval = false)
+    protected List<Payment> payments;
 
     public static Long calculateWeightedHoldingTime(Instant start, int size) {
         return calculateWeightedHoldingTime(start, Instant.now(),size);
@@ -99,6 +103,11 @@ public class Position {
     @JsonProperty("t")
     public int getTradeCount() {
         return Optional.ofNullable(trades).map(List::size).orElse(0);
+    }
+
+    @JsonProperty("d")
+    public Optional<BigDecimal> getDividends() {
+        return payments.stream().filter(payment -> payment.getTxnType().isDividend()).map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     private Position apply(List<Trade> t) {
@@ -134,7 +143,8 @@ public class Position {
                 this.purchaseValue,
                 this.saleValue,
                 this.commission,
-                this.trades
+                this.trades,
+                List.of()
         ).apply(List.of(t));
     }
 
@@ -152,7 +162,8 @@ public class Position {
                 this.purchaseValue.add(other.purchaseValue),
                 Optional.ofNullable(other.saleValue).map(sv -> this.saleValue.add(sv)).orElse(this.saleValue),
                 this.commission.add(other.commission),
-                this.trades = Lists.add(this.trades, other.trades)
+                this.trades = Lists.add(this.trades, other.trades),
+                this.payments = Lists.add(this.payments, other.payments)
         );
     }
 

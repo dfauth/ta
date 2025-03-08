@@ -1,21 +1,15 @@
 package com.github.dfauth.ta.repo;
 
-import com.github.dfauth.ta.functional.Lists;
-import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.Theme;
 import com.github.dfauth.ta.model.Trade;
-import com.github.dfauth.ta.util.StreamOps;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 
@@ -35,19 +29,6 @@ public interface TradeRepository extends CrudRepository<Trade, String> {
 
     @Query(value = "SELECT t.code, sum(t.side*t.cost) as COST,sum(t.size*t.side) as SIZE FROM Trade t GROUP by t.CODE", nativeQuery = true)
     List<Map<String,Object>> aggregateTrades();
-
-    default List<Position> derivePositions() {
-        Map<String, List<Position>> map = new HashMap<>();
-        StreamOps.stream(findAllByDate()).forEach(t -> map.compute(
-                t.getCode(),
-                (k, v) -> Optional.ofNullable(v)
-                        .map(l -> {
-                            return Lists.add(l, Lists.last(l).map(p -> p.onTrade(t)).orElseThrow());
-                        })
-                        .orElseGet(() -> List.of(new Position(t)))
-        ));
-        return map.values().stream().flatMap(List::stream).collect(Collectors.toList());
-    }
 
     @Query(value = "SELECT t FROM Trade t order by t.date asc")
     Iterable<Trade> findAllByDate();

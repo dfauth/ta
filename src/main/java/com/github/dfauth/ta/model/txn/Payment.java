@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.model.txn;
 
+import com.github.dfauth.ta.model.Side;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,7 +13,6 @@ import java.time.LocalDate;
 @EqualsAndHashCode
 @Data
 @Entity
-@Table(name = "PAYMENT")
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +23,7 @@ public class Payment {
     private String detail;
     private BigDecimal value;
     private BigDecimal balance;
-    private TxnEntry.Side side;
+    private Side side;
     private String code;
     @Column(name = "CONTRACTNO")
     private String contractNo;

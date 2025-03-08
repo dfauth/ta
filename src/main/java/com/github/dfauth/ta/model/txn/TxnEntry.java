@@ -1,6 +1,10 @@
 package com.github.dfauth.ta.model.txn;
 
-import lombok.*;
+import com.github.dfauth.ta.model.Side;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -151,6 +155,10 @@ public class TxnEntry {
         public <T extends Payment> T blah(Payment pymnt) {
             return (T) f2.apply(pymnt);
         }
+
+        public boolean isDividend() {
+            return this == DIV;
+        }
     }
 
     private static Payment parseInterestString(TxnEntry e) {
@@ -216,7 +224,7 @@ public class TxnEntry {
                 result = new Payment(0, TxnType.PAYMENT, e.date,e.detail, e.debit.get(), e.balance.get(), null, null, null);
             } else {
                 String[] strings = tmp.split(" ");
-                Side side = Side.valueOf(strings[0]);
+                Side side = Side.fromString(strings[0]);
                 String code = strings[1];
                 String contractNo = strings[2].split("\\-")[0];
                 result = new SecuritiesPurchase(e.date, e.detail, side, "ASX:"+code, contractNo, e.debit.get(), e.balance.get());
@@ -312,9 +320,5 @@ public class TxnEntry {
         public boolean isDividendPayment() {
             return true;
         }
-    }
-
-    enum Side {
-        B, S;
     }
 }

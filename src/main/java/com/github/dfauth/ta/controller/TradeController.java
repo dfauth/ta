@@ -65,7 +65,7 @@ public class TradeController {
                                 String confirmationNo = arr[18].toString();
                                 Timestamp date = new Timestamp(LocalDate.parse((String) arr[0], dtf).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli());
                                 String code = market+":"+(String)arr[1];
-                                int size =(Integer)arr[2];
+                                int size = (Integer)arr[2];
                                 BigDecimal price = toBigDecimal(arr[3]);
                                 BigDecimal cost = toBigDecimal(arr[4]);
                                 Side side = Side.fromString(arr[5]);
@@ -79,7 +79,6 @@ public class TradeController {
                                                 price,
                                                 cost,
                                                 side,
-                                                side.getMultiplier(),
                                                 notes,
                                                 theme);
                             }

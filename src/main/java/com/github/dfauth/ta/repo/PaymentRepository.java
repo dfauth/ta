@@ -1,9 +1,11 @@
 package com.github.dfauth.ta.repo;
 
+import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnEntry;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,7 +13,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-public interface TransactionRepository extends CrudRepository<Payment, Integer> {
+public interface PaymentRepository extends CrudRepository<Payment, Integer> {
+
+    @Query(value = "SELECT p from Payment p where p.code = :#{#position.code} AND p.date >= :#{#position.open} and p.date < :#{#position.close}")
+    List<Payment> findByPosition(@Param("position") Position position);
+
+    @Query(value = "SELECT p from Payment p where p.code = ?1 AND p.date >= ?2 and p.date < ?3")
+    List<Payment> findByCodeAndOpenAndClose(String code, LocalDate open, LocalDate close);
 
     @Query(value = "SELECT * FROM Payment p WHERE date = ?1 AND value = ?2", nativeQuery = true)
     List<Payment> _findByDateAndValue(LocalDate date, BigDecimal value);

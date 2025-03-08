@@ -34,7 +34,8 @@ public class OpenPosition extends Position {
             position.getPurchaseValue(),
             position.getSaleValue(),
             position.getCommission(),
-            position.getTrades());
+            position.getTrades(),
+            position.getPayments());
         this.price = price;
         this.progression = onLoad(trades);
     }

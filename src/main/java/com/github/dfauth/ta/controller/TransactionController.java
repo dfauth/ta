@@ -2,7 +2,7 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnEntry;
-import com.github.dfauth.ta.repo.TransactionRepository;
+import com.github.dfauth.ta.repo.PaymentRepository;
 import com.github.dfauth.ta.service.TransactionService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 public class TransactionController {
 
     @Autowired
-    private TransactionRepository transactionRepository;
+    private PaymentRepository paymentRepository;
 
     @Autowired
     private TransactionService transactionService;
@@ -40,7 +40,7 @@ public class TransactionController {
 //            transactionRepository.saveAll(txns);
             txns.stream().forEach(pymnt -> {
                 try {
-                    Payment p = transactionRepository.findByDateAndValue(pymnt.getDate(), pymnt.getValue()).map(_p -> {
+                    Payment p = paymentRepository.findByDateAndValue(pymnt.getDate(), pymnt.getValue()).map(_p -> {
                         _p.setBalance(pymnt.getBalance());
                         _p.setCode(pymnt.getCode());
                         _p.setContractNo(pymnt.getContractNo());
@@ -49,7 +49,7 @@ public class TransactionController {
                         _p.setSide(pymnt.getSide());
                         return _p;
                     }).orElse(pymnt);
-                    transactionRepository.save(p);
+                    paymentRepository.save(p);
                 } catch (Exception e) {
                     // log to get the affected record
                     log.error(e.getMessage(), e);

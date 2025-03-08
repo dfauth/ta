@@ -2,6 +2,8 @@ package com.github.dfauth.ta.service;
 
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.model.*;
+import com.github.dfauth.ta.model.txn.Payment;
+import com.github.dfauth.ta.repo.PaymentRepository;
 import com.github.dfauth.ta.repo.PositionRepository;
 import com.github.dfauth.ta.repo.PriceRepository;
 import com.github.dfauth.ta.repo.TradeRepository;
@@ -13,7 +15,10 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +38,9 @@ public class PositionService {
 
     @Autowired
     private PriceRepository priceRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
 
     public int sync() {
@@ -68,6 +76,9 @@ public class PositionService {
                 .stream()
                 .map(p -> {
                     log.info("processing {}",p);
+                    // lookup payments
+                    List<Payment> payments = paymentRepository.findByPosition(p);
+                    p.setPayments(payments);
                     return positionRepository.findById(new CodeDateCompositeKey(p.getCode(), p.getDate()))
                             .map(_p -> {
                                 _p.setLast(p.getLast());
@@ -78,6 +89,7 @@ public class PositionService {
                                 _p.setSaleValue(p.getSaleValue());
                                 _p.setCommission(p.getCommission());
                                 _p.setTrades(p.getTrades());
+                                _p.setPayments(p.getPayments());
                                 return _p;
                             }).orElse(p);
                 })

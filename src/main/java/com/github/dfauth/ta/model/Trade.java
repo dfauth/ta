@@ -28,27 +28,9 @@ public class Trade {
     private Integer size;
     private BigDecimal price;
     private BigDecimal cost;
-    @Transient
     private Side side;
-    @Basic
-    @Column(name = "SIDE")
-    private int persistedSide;
     private String notes;
     private Theme theme;
-
-    @PostLoad
-    void loadSide() {
-        if (persistedSide != 0) {
-            this.side = Side.fromMultiplier(persistedSide);
-        }
-    }
-
-    @PrePersist
-    void persistSide() {
-        if (side != null) {
-            this.persistedSide = side.getMultiplier();
-        }
-    }
 
     public BigDecimal getCommission() {
         return cost.subtract(multiply(price, size)).abs();
