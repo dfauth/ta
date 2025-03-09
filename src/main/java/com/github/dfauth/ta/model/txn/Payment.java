@@ -18,7 +18,7 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
     @Column(name = "TYPE")
-    private TxnEntry.TxnType txnType;
+    private TxnType txnType;
     private LocalDate date;
     private String detail;
     private BigDecimal value;
@@ -41,7 +41,7 @@ public class Payment {
     }
     @Builder
     public static class PaymentFactory {
-        public TxnEntry.TxnType txnType;
+        public TxnType txnType;
         public LocalDate date;
         public String detail;
         public BigDecimal debit;

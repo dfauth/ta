@@ -1,7 +1,7 @@
 package com.github.dfauth.ta.service;
 
 import com.github.dfauth.ta.model.txn.Payment;
-import com.github.dfauth.ta.model.txn.TxnEntry;
+import com.github.dfauth.ta.model.txn.TxnType;
 import com.github.dfauth.ta.repo.PaymentRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ public class TransactionService {
     @Autowired
     private PaymentRepository paymentRepository;
 
-    public List<Payment> transactionsByDateAndType(LocalDate s, LocalDate e, TxnEntry.TxnType type) {
+    public List<Payment> transactionsByDateAndType(LocalDate s, LocalDate e, TxnType type) {
         return paymentRepository.findByDateAndType(s,e, type);
     }
 

@@ -2,7 +2,7 @@ package com.github.dfauth.ta.repo;
 
 import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.txn.Payment;
-import com.github.dfauth.ta.model.txn.TxnEntry;
+import com.github.dfauth.ta.model.txn.TxnType;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -32,7 +32,7 @@ public interface PaymentRepository extends CrudRepository<Payment, Integer> {
     }
 
     @Query(value = "SELECT * FROM Payment p WHERE date >= ?1 AND date < ?2 AND type = ?3", nativeQuery = true)
-    List<Payment> findByDateAndType(LocalDate start, LocalDate end, TxnEntry.TxnType t);
+    List<Payment> findByDateAndType(LocalDate start, LocalDate end, TxnType t);
 
     @Query(value = "SELECT balance FROM Payment p WHERE date = ?1")
     List<BigDecimal> getBalance(LocalDate d);

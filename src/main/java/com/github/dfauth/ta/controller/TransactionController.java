@@ -1,7 +1,7 @@
 package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.model.txn.Payment;
-import com.github.dfauth.ta.model.txn.TxnEntry;
+import com.github.dfauth.ta.model.txn.TxnType;
 import com.github.dfauth.ta.repo.PaymentRepository;
 import com.github.dfauth.ta.service.TransactionService;
 import com.github.dfauth.ta.util.DateTimeUtils;
@@ -50,7 +50,7 @@ public class TransactionController {
             // 5 - balance
             var balance = Optional.ofNullable(t.get(5)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
             // 6 - category
-            var txnType = TxnEntry.TxnType.valueOf(t.get(6));
+            var txnType = TxnType.valueOf(t.get(6));
             // 7 - serial
             var contractNo = t.get(7);
             return Payment.builder()
@@ -62,36 +62,14 @@ public class TransactionController {
                     .balance(balance)
                     .contractNo(contractNo)
                     .build().toPayment();
-
-//            category.blah(new Payment())
-//            var txnEntry = TxnEntry.builder()
-//                    .accountId(accountId)
-//                    .date(date)
-//                    .detail(narrative)
-//                    .debit(Optional.ofNullable(debit))
-//                    .credit(Optional.ofNullable(credit))
-//                    .balance(Optional.ofNullable(balance))
-//                    .txnType(category)
-//                    .serial(Optional.ofNullable(serial))
-//                    .build();
-//            txnEntry.
         }).toList());
     }
-
-    /**
-
-     Bank Account	Date	Narrative	Debit Amount	Credit Amount	Balance	Categories	Serial
-     32099621742	11/10/2024	DEPOSIT WESTPAC SECURITI        S IEL 43181808-00		159.64	120472.2	DEP
-     */
 
     @PostMapping("/txns/sync")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public void txnSync(@RequestBody List<Payment> txns) {
         try {
-//            List<Payment> reconsituted = txns.stream().map(pymnt -> pymnt.getTxnType().<Payment>blah(pymnt)).collect(Collectors.toList());
-//            log.info("txns/sync: {}",reconsituted);
-//            transactionRepository.saveAll(txns);
             txns.stream().forEach(pymnt -> {
                 try {
                     Payment p = paymentRepository.findByDateAndValue(pymnt.getDate(), pymnt.getValue()).map(_p -> {
@@ -106,7 +84,7 @@ public class TransactionController {
                     paymentRepository.save(p);
                 } catch (Exception e) {
                     // log to get the affected record
-                    log.error(e.getMessage(), e);
+                    log.error("cannot persist payment: "+pymnt+" error: "+e.getMessage(), e);
                     throw new RuntimeException(e);
                 }
             });
@@ -120,7 +98,7 @@ public class TransactionController {
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public Optional<BigDecimal> sumOfDividends() {
-        return transactionService.transactionsByDateAndType(LocalDate.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()), LocalDate.now(), TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        return transactionService.transactionsByDateAndType(LocalDate.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()), LocalDate.now(), TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/dividends/sum/{start}")
@@ -136,7 +114,7 @@ public class TransactionController {
     public Optional<BigDecimal> sumOfDividends(@PathVariable String start, @PathVariable String end) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
-        return transactionService.transactionsByDateAndType(s, e, TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        return transactionService.transactionsByDateAndType(s, e, TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/dividends/{start}/{end}")
@@ -145,7 +123,7 @@ public class TransactionController {
     public List<Payment> dividends(@PathVariable String start, @PathVariable String end) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
-        return transactionService.transactionsByDateAndType(s, e, TxnEntry.TxnType.DIV);
+        return transactionService.transactionsByDateAndType(s, e, TxnType.DIV);
     }
 
     @GetMapping("/dividends/year/{year}")
@@ -154,13 +132,13 @@ public class TransactionController {
     public Optional<BigDecimal> dividendsByYear(@PathVariable int year) {
         LocalDate start = LocalDate.of(2000, 12, 31);
         LocalDate end = LocalDate.of(year, 12, 31);
-        return transactionService.transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        return transactionService.transactionsByDateAndType(start, end, TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/{start}/{end}/{type}")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
-    public List<Payment> transactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
+    public List<Payment> transactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnType type) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
         return transactionService.transactionsByDateAndType(s,e, type);
@@ -169,7 +147,7 @@ public class TransactionController {
     @GetMapping("/txns/sum/{start}/{end}/{type}")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
-    public Optional<BigDecimal> sumOfTransactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnEntry.TxnType type) {
+    public Optional<BigDecimal> sumOfTransactionsByDateAndType(@PathVariable String start, @PathVariable String end, @PathVariable TxnType type) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
         return transactionService.transactionsByDateAndType(s,e,type).stream().map(Payment::getValue).reduce(BigDecimal::add);
