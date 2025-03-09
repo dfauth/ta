@@ -7,11 +7,30 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.Temporal;
+import java.util.Locale;
 import java.util.function.Function;
 
 public class DateTimeUtils {
 
     private static DateTimeFormatter yyyyMMdd = DateTimeFormatter.ofPattern("yyyyMMdd");
+    public static DateTimeFormatter spreadsheetDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH);
+//            new DateTimeFormatterBuilder()
+//                    .parseCaseInsensitive()
+//                    .appendValue(YEAR, 4)
+//                    .appendLiteral('-')
+//                    .appendValue(MONTH_OF_YEAR, 2)
+//                    .appendLiteral('-')
+//                    .appendValue(DAY_OF_MONTH, 2)
+//                    .appendLiteral("T")
+//                    .appendValue(HOUR_OF_DAY, 2)
+//                    .appendLiteral(':')
+//                    .appendValue(MINUTE_OF_HOUR, 2)
+//                    .appendLiteral(':')
+//                    .appendValue(SECOND_OF_MINUTE, 2)
+//                    .appendLiteral('.')
+//                    .appendValue(ChronoField.MILLI_OF_SECOND, 3)
+//                    .appendLiteral("Z")
+//                    .toFormatter();
 
     public static LocalDate toLocalDate(Timestamp date) {
         return toLocalDate(ZoneId.systemDefault()).apply(date.toInstant());
@@ -35,7 +54,6 @@ public class DateTimeUtils {
 
     public enum Format {
         YYYYMMDD(str -> LocalDate.parse(str, yyyyMMdd), ld -> yyyyMMdd.format(ld));
-
         private Function<String, Temporal> parser;
         private Function<Temporal,String> formatter;
 

@@ -77,7 +77,7 @@ public class PositionService {
                 .map(p -> {
                     log.info("processing {}",p);
                     // lookup payments
-                    List<Payment> payments = paymentRepository.findByPosition(p);
+                    List<Payment> payments = p.isOpen() ? paymentRepository.findByOpenPosition(p) : paymentRepository.findByClosedPosition(p);
                     p.setPayments(payments);
                     return positionRepository.findById(new CodeDateCompositeKey(p.getCode(), p.getDate()))
                             .map(_p -> {

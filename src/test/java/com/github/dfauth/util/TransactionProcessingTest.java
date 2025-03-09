@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatusCode;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class TransactionProcessingTest {
@@ -35,7 +34,7 @@ public class TransactionProcessingTest {
                 .collect(new CSVReducer<>(new TxnEntry.Accumulator(),
                         TxnEntry.FieldHandler.values(),
                         TxnEntry.Accumulator::instead)))
-                .collect(Collectors.toList());
+                .toList();
         txns.stream()
                         .forEach(e -> {
                             log.info("read: "+e);

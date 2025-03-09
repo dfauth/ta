@@ -54,7 +54,7 @@ public class PortfolioMetrics {
                 purchaseValue,
                 saleValue,
                 p.getProfit().map(closedProfit::add).orElse(closedProfit),
-                dividendIncome,
+                p.getDividends().map(d -> dividendIncome.add(d)).orElse(dividendIncome),
                 closedPositions + 1
         );
     }
@@ -68,7 +68,7 @@ public class PortfolioMetrics {
                 purchaseValue.add(p.getPurchaseValue()),
                 saleValue.add(p.getSaleValue()),
                 closedProfit,
-                ZERO,
+                p.getDividends().map(d -> dividendIncome.add(d)).orElse(dividendIncome),
                 closedPositions
         );
     }

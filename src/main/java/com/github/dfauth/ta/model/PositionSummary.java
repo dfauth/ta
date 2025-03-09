@@ -48,6 +48,8 @@ public class PositionSummary {
     private BigDecimal closedCommission = ZERO;
     @JsonIgnore
     private BigDecimal openCommission = ZERO;
+    @JsonProperty("d")
+    private BigDecimal dividends = ZERO;
     @JsonProperty("n")
     private int positions;
     @JsonProperty("t")
@@ -70,6 +72,7 @@ public class PositionSummary {
                 p.isOpen() ? openSaleValue.add(p.getSaleValue()) : openSaleValue,
                 p.isClosed() ? closedCommission.add(p.getCommission()) : closedCommission,
                 p.isOpen() ? openCommission.add(p.getCommission()) : openCommission,
+                p.getDividends().map(dividends::add).orElse(dividends),
                 positions + 1,
                 trades + p.getTradeCount(),
                 p.isOpen() ? Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(openProfit), p.getProfit(),BigDecimal::add).orElse(null) : openProfit

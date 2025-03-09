@@ -1,8 +1,6 @@
 package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.model.PortfolioMetrics;
-import com.github.dfauth.ta.model.txn.Payment;
-import com.github.dfauth.ta.model.txn.TxnEntry;
 import com.github.dfauth.ta.service.PositionService;
 import com.github.dfauth.ta.service.TransactionService;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Optional;
 
 import static com.github.dfauth.ta.util.StreamOps.stream;
 
@@ -41,9 +37,7 @@ public class PortfolioController {
         LocalDate yearEnding = LocalDate.of(year, 12,31);
         LocalDate start = LocalDate.of(2000, 12, 31);
         LocalDate end = LocalDate.of(year, 12, 31);
-        Optional<BigDecimal> dividendIncome = transactionService.transactionsByDateAndType(start, end, TxnEntry.TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
         PortfolioMetrics metrics = stream(positionService.getPositionAsAt(yearEnding)).reduce(new PortfolioMetrics(), PortfolioMetrics::add, PortfolioMetrics::add);
-        dividendIncome.ifPresent(metrics::setDividendIncome);
         return metrics;
     }
 

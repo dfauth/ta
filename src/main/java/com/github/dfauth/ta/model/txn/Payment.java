@@ -35,4 +35,22 @@ public class Payment {
     public boolean isDividendPayment() {
         return false;
     }
+
+    public static PaymentFactory.PaymentFactoryBuilder builder() {
+        return PaymentFactory.builder();
+    }
+    @Builder
+    public static class PaymentFactory {
+        public TxnEntry.TxnType txnType;
+        public LocalDate date;
+        public String detail;
+        public BigDecimal debit;
+        public BigDecimal credit;
+        public BigDecimal balance;
+        public String contractNo;
+
+        public Payment toPayment() {
+            return txnType.toJson(this);
+        }
+    }
 }

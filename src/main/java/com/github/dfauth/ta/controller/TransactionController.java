@@ -4,6 +4,7 @@ import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnEntry;
 import com.github.dfauth.ta.repo.PaymentRepository;
 import com.github.dfauth.ta.service.TransactionService;
+import com.github.dfauth.ta.util.DateTimeUtils;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +14,13 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
+import static java.util.function.Predicate.not;
 
 @RestController
 @Slf4j
@@ -30,13 +32,65 @@ public class TransactionController {
     @Autowired
     private TransactionService transactionService;
 
+    @PostMapping("/txns/sync/raw")
+    @ResponseStatus(HttpStatus.OK)
+    @Transactional
+    public void txnSyncRaw(@RequestBody List<List<String>> txns) {
+
+        txnSync(txns.stream().map(t -> {
+            // 0 : account id - ignore
+            // 1 = date 2024-10-10T16:00:00.000Z
+            LocalDateTime date = LocalDateTime.parse(t.get(1), DateTimeUtils.spreadsheetDateTime);
+            // 2 - narrative
+            var detail = (String) t.get(2);
+            // 3 - debit
+            var debit = Optional.ofNullable(t.get(3)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
+            // 4 - credit
+            var credit = Optional.ofNullable(t.get(4)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
+            // 5 - balance
+            var balance = Optional.ofNullable(t.get(5)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
+            // 6 - category
+            var txnType = TxnEntry.TxnType.valueOf(t.get(6));
+            // 7 - serial
+            var contractNo = t.get(7);
+            return Payment.builder()
+                    .txnType(txnType)
+                    .date(date.toLocalDate())
+                    .detail(detail)
+                    .debit(debit)
+                    .credit(credit)
+                    .balance(balance)
+                    .contractNo(contractNo)
+                    .build().toPayment();
+
+//            category.blah(new Payment())
+//            var txnEntry = TxnEntry.builder()
+//                    .accountId(accountId)
+//                    .date(date)
+//                    .detail(narrative)
+//                    .debit(Optional.ofNullable(debit))
+//                    .credit(Optional.ofNullable(credit))
+//                    .balance(Optional.ofNullable(balance))
+//                    .txnType(category)
+//                    .serial(Optional.ofNullable(serial))
+//                    .build();
+//            txnEntry.
+        }).toList());
+    }
+
+    /**
+
+     Bank Account	Date	Narrative	Debit Amount	Credit Amount	Balance	Categories	Serial
+     32099621742	11/10/2024	DEPOSIT WESTPAC SECURITI        S IEL 43181808-00		159.64	120472.2	DEP
+     */
+
     @PostMapping("/txns/sync")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
     public void txnSync(@RequestBody List<Payment> txns) {
         try {
-            List<Payment> reconsituted = txns.stream().map(pymnt -> pymnt.getTxnType().<Payment>blah(pymnt)).collect(Collectors.toList());
-            log.info("txns/sync: {}",reconsituted);
+//            List<Payment> reconsituted = txns.stream().map(pymnt -> pymnt.getTxnType().<Payment>blah(pymnt)).collect(Collectors.toList());
+//            log.info("txns/sync: {}",reconsituted);
 //            transactionRepository.saveAll(txns);
             txns.stream().forEach(pymnt -> {
                 try {

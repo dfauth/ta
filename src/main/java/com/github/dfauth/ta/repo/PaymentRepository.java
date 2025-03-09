@@ -15,8 +15,11 @@ import java.util.Optional;
 
 public interface PaymentRepository extends CrudRepository<Payment, Integer> {
 
+    @Query(value = "SELECT p from Payment p where p.code = :#{#position.code} AND p.date >= :#{#position.open}")
+    List<Payment> findByOpenPosition(@Param("position") Position position);
+
     @Query(value = "SELECT p from Payment p where p.code = :#{#position.code} AND p.date >= :#{#position.open} and p.date < :#{#position.close}")
-    List<Payment> findByPosition(@Param("position") Position position);
+    List<Payment> findByClosedPosition(@Param("position") Position position);
 
     @Query(value = "SELECT p from Payment p where p.code = ?1 AND p.date >= ?2 and p.date < ?3")
     List<Payment> findByCodeAndOpenAndClose(String code, LocalDate open, LocalDate close);
