@@ -118,4 +118,9 @@ public class PositionSummary {
         Function<Double,Optional<Double>> cagr = r -> periods.flatMap(p -> CAGR.cagr(r, p, bdMapper(3))).map(BigDecimal::doubleValue);
         return periods.flatMap(p -> getOpenReturn().flatMap(cagr));
     }
+
+    @JsonProperty("y")
+    public double getYield() {
+        return 0.0;
+    }
 }

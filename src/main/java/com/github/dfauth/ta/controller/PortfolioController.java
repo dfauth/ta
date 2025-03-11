@@ -35,10 +35,7 @@ public class PortfolioController {
     @ResponseStatus(HttpStatus.OK)
     public PortfolioMetrics portfolioMetricsByYear(@PathVariable int year) {
         LocalDate yearEnding = LocalDate.of(year, 12,31);
-        LocalDate start = LocalDate.of(2000, 12, 31);
-        LocalDate end = LocalDate.of(year, 12, 31);
-        PortfolioMetrics metrics = stream(positionService.getPositionAsAt(yearEnding)).reduce(new PortfolioMetrics(), PortfolioMetrics::add, PortfolioMetrics::add);
-        return metrics;
+        return stream(positionService.getPositionAsAt(yearEnding)).reduce(new PortfolioMetrics(), PortfolioMetrics::add, PortfolioMetrics::add);
     }
 
 }

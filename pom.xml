@@ -24,6 +24,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>technology.tabula</groupId>
+            <artifactId>tabula</artifactId>
+            <version>1.0.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
             <version>3.1.0</version>

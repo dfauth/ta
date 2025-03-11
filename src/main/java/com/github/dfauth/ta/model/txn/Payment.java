@@ -52,5 +52,19 @@ public class Payment {
         public Payment toPayment() {
             return txnType.toJson(this);
         }
+
+        public PaymentFactory guessTxnType() {
+            if(detail.startsWith("Payment")) {
+                txnType = TxnType.PAYMENT;
+                credit = null;
+            } else if(detail.startsWith("Deposit")) {
+                txnType = TxnType.DEP;
+                debit = null;
+            } else if(detail.startsWith("Gross Int")) {
+                txnType = TxnType.INT;
+                debit = null;
+            }
+            return this;
+        }
     }
 }

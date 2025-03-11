@@ -51,14 +51,14 @@ public enum TxnType {
             String side = strings[0];
             code = strings[1];
             contractNo = strings[strings.length-1];
-            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code, contractNo);
+            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code.toUpperCase(), contractNo);
         } else if(e.detail.startsWith("DEPOSIT ")) {
             // DEPOSIT ALTIUM LIMITED        SOA24/0080705
             String tmp = e.detail.substring("DEPOSIT ".length());
             String[] strings = tmp.split(" ");
             code = strings[0];
             contractNo = strings[strings.length-1];
-            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code, contractNo);
+            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code.toUpperCase(), contractNo);
         } else {
             return new Payment(0, PAYMENT, e.date, e.detail, e.credit, e.balance, null, null, null);
         }
@@ -75,7 +75,7 @@ public enum TxnType {
         String[] strings = tmp.split(" ");
         String code = strings[0];
         String contractNo = strings[strings.length-1];
-        return new Payment(0l, DIV, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code, contractNo);
+        return new Payment(0l, DIV, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code.toUpperCase(), contractNo);
     }
 
     public static Payment parsePaymentString(Payment.PaymentFactory e) {
@@ -94,9 +94,17 @@ public enum TxnType {
                 Side side = Side.fromString(strings[0]);
                 String code = strings[1];
                 String contractNo = strings[2].split("\\-")[0];
-                result = new Payment(0l, PAYMENT, e.date, e.detail, e.debit, e.balance,side, "ASX:"+code, contractNo);
+                result = new Payment(0l, PAYMENT, e.date, e.detail, e.debit, e.balance,side, "ASX:"+code.toUpperCase(), contractNo);
             }
         }
         return result;
+    }
+
+    public boolean isCredit() {
+        return !isDebit();
+    }
+
+    public boolean isDebit() {
+        return this == PAYMENT || this == OTHER;
     }
 }
