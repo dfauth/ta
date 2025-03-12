@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
@@ -27,7 +28,6 @@ import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functional.Tuple2.tuple2;
-import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static io.github.dfauth.trycatch.Try.tryWith;
 
 @Slf4j
@@ -47,11 +47,18 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
 
 
             registerEventProcessor(e -> tryWith(() -> Integer.valueOf(e.trim())).toOptional().isPresent(), (text, ctx) -> {
-                ctx.setYear(Integer.parseInt(text.trim()));
+                if(ctx.getTextSize() == 1) {
+                    ctx.setYear(Integer.parseInt(text.trim()));
+                }
             });
 
             registerEventProcessor(e -> e.contains("STATEMENT OPENING BALANCE"), (text, ctx) -> {
-                ctx.setYear(Integer.parseInt(text.split(" ")[0]));
+                var arr = text.split(" ");
+                // prior to nov 2016 this was a year: 2015
+                ctx.setYear(tryWith(() -> Integer.parseInt(arr[0])).toOptional().orElseGet(() -> {
+                    // after nov 2016 it was a date: 30/11/16
+                    return LocalDate.parse(arr[0], DateTimeFormatter.ofPattern("dd/MM/yy")).getYear();
+                }));
             });
 
             registerEventProcessor(e -> e.contains("........................................................................................................................................................................................................................."),
@@ -68,36 +75,48 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
                         }
                     });
 
+            registerEventProcessor(e -> e.contains("Debit Credit Balance"),
+                    (text, ctx) -> {
+                        // end of header
+                        // discard
+                        ctx.removeText();
+                        textBuffer.add(""); // this is cheating
+                    });
+
             Arrays.stream(new File("C:\\Users\\dfaut\\Downloads\\txns\\2015\\").listFiles())
-                    .map(f -> tryCatch(() -> new FileInputStream(f)))
-                    .forEach(in -> {
-                                try (PDDocument document = PDDocument.load(in)) {
-                                    var sea = new BasicExtractionAlgorithm();
-                                    PageIterator pi = new ObjectExtractor(document).extract();
-                                    while (pi.hasNext()) {
-                                        // iterate over the pages of the document
-                                        Page page = pi.next();
-                                        List<Table> table = sea.extract(page);
-                                        // iterate over the tables of the page
-                                        for (Table tables : table) {
-                                            List<List<RectangularTextContainer>> rows = tables.getRows();
-                                            // iterate over the rows of the table
-                                            for (List<RectangularTextContainer> cells : rows) {
-                                                // print all column-cells of the row plus linefeed
-                                                for (RectangularTextContainer content : cells) {
-                                                    // Note: Cell.getText() uses \r to concat text chunks
-                                                    String text = content.getText().replace("\r", " ");
-                                                    onEvent(text, this);
-                                                }
+                    .forEach(f -> {
+                        log.info("processing file {}",f);
+                        try (FileInputStream in = new FileInputStream(f)) {
+                            try (PDDocument document = PDDocument.load(in)) {
+                                var sea = new BasicExtractionAlgorithm();
+                                PageIterator pi = new ObjectExtractor(document).extract();
+                                while (pi.hasNext()) {
+                                    // iterate over the pages of the document
+                                    Page page = pi.next();
+                                    List<Table> table = sea.extract(page);
+                                    // iterate over the tables of the page
+                                    for (Table tables : table) {
+                                        List<List<RectangularTextContainer>> rows = tables.getRows();
+                                        // iterate over the rows of the table
+                                        for (List<RectangularTextContainer> cells : rows) {
+                                            // print all column-cells of the row plus linefeed
+                                            for (RectangularTextContainer content : cells) {
+                                                // Note: Cell.getText() uses \r to concat text chunks
+                                                String text = content.getText().replace("\r", " ");
+                                                onEvent(text, this);
                                             }
                                         }
                                     }
-                                } catch (IOException e) {
-                                    log.error(e.getMessage(), e);
-                                    throw new RuntimeException(e);
                                 }
                             }
-                    );
+                        } catch (FileNotFoundException e) {
+                            log.error(e.getMessage(), e);
+                            throw new RuntimeException(e);
+                        } catch (IOException e) {
+                            log.error(e.getMessage(), e);
+                            throw new RuntimeException(e);
+                        }
+                    });
         }
     }
 
@@ -129,6 +148,7 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
 
     @Override
     public Payment[] getCells() {
+        AtomicBoolean isMultiLineEntry = new AtomicBoolean();
         return removeText(s -> s.collect(statefulCollector(
                 () -> tuple2(this, Payment.PaymentFactory.builder()),
                 l -> l.stream().map(t2 -> t2._2().build().guessTxnType().toPayment()).toArray(Payment[]::new),
@@ -137,22 +157,40 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
                 },
                 (t2, _s) -> {
                     var arr = _s.split(" ");
-                    t2._2().date(LocalDate.of(t2._1().year, monthValueOf(arr[1]), Integer.parseInt(arr[0])));
-                    t2._2().detail(Arrays.stream(Arrays.copyOfRange(arr, 2, arr.length)).collect(Collectors.joining(" ")));
-                },
-                (t2, _s) -> {
-                    assert(_s.trim().isEmpty());
-                },
-                (t2, _s) -> {
-                    t2._2().detail(t2._2().build().detail+" "+_s);
+                    isMultiLineEntry.set(arr.length > 1);
+                    if(isMultiLineEntry.get()) {
+                        t2._2().date(LocalDate.of(t2._1().year, monthValueOf(arr[1]), Integer.parseInt(arr[0])));
+                        t2._2().detail(Arrays.stream(Arrays.copyOfRange(arr, 2, arr.length)).collect(Collectors.joining(" ")));
+                    }
                 },
                 (t2, _s) -> {
                     var arr = _s.split(" ");
-                    var value = new BigDecimal(arr[0].replace(",",""));
-                    var balance = new BigDecimal(arr[1].replace(",",""));
-                    t2._2().credit(value);
-                    t2._2().debit(value);
-                    t2._2().balance(balance);
+                    if(arr.length > 1) {
+                        t2._2().date(LocalDate.of(t2._1().year, monthValueOf(arr[1]), Integer.parseInt(arr[0])));
+                        t2._2().detail(Arrays.stream(Arrays.copyOfRange(arr, 2, arr.length)).collect(Collectors.joining(" ")));
+                    }
+                },
+                (t2, _s) -> {
+                    if(isMultiLineEntry.get()) {
+                        t2._2().detail(t2._2().build().detail+" "+_s);
+                    } else {
+                        var value = new BigDecimal(_s.trim().replace(",",""));
+                        t2._2().credit(value);
+                        t2._2().debit(value);
+                    }
+                },
+                (t2, _s) -> {
+                    var arr = _s.split(" ");
+                    if(isMultiLineEntry.get()) {
+                        var value = new BigDecimal(arr[0].replace(",",""));
+                        var balance = new BigDecimal(arr[1].replace(",",""));
+                        t2._2().credit(value);
+                        t2._2().debit(value);
+                        t2._2().balance(balance);
+                    } else {
+                        var balance = new BigDecimal(arr[0].replace(",",""));
+                        t2._2().balance(balance);
+                    }
                 }
 
         )));

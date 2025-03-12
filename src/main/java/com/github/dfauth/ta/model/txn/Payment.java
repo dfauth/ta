@@ -57,12 +57,17 @@ public class Payment {
             if(detail.startsWith("Payment")) {
                 txnType = TxnType.PAYMENT;
                 credit = null;
+            } else if(detail.startsWith("Deposit Dividend")) {
+                txnType = TxnType.DIV;
+                debit = null;
             } else if(detail.startsWith("Deposit")) {
                 txnType = TxnType.DEP;
                 debit = null;
             } else if(detail.startsWith("Gross Int")) {
                 txnType = TxnType.INT;
                 debit = null;
+            } else {
+                throw new IllegalArgumentException("Unsupported payment type: "+detail);
             }
             return this;
         }
