@@ -12,42 +12,45 @@ import technology.tabula.extractors.BasicExtractionAlgorithm;
 import java.io.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.Month;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
-import static com.github.dfauth.ta.functional.Tuple2.tuple2;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static io.github.dfauth.trycatch.Try.tryWith;
 
 @Slf4j
 @Data
-public class TabulaJavaTest  implements PDFContext<Payment[]> {
+public class TabulaJavaTest  implements PDFContext<Payment> {
 
     private List<EventProcessor> eventProcessors = new ArrayList<>();
     private int year;
     private List<String> textBuffer = new ArrayList<>();
+    private Locale en_AU = new Locale.Builder().setLanguageTag("en-AU").build();
+    private Pattern AUD = Pattern.compile("^((([1-9]\\d{0,10}(,\\d{3})*)|(([1-9]\\d*)?\\d))(\\.\\d\\d))$");
+//    private Pattern AUD = Pattern.compile("^(([1-9]\\d{0,10}(,\\d{3})*)|(([1-9]\\d*)?\\d))(\\.\\d\\d)?$");
 
 
     @Test
     public void testIt() throws IOException {
+
+        List<Payment> payments = new ArrayList<>();
 
         try(PrintWriter pw = new PrintWriter(new FileOutputStream("out.csv"))) {
             pw.println("Bank Account,Date,Narrative,Debit Amount,Credit Amount,Balance,Categories,Serial");
 
 
             registerEventProcessor(e -> tryWith(() -> Integer.valueOf(e.trim())).toOptional().isPresent(), (text, ctx) -> {
-                if(ctx.getTextSize() == 1) {
+                if(text.trim().length() == 4) {
                     ctx.setYear(Integer.parseInt(text.trim()));
                 }
             });
@@ -61,26 +64,16 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
                 }));
             });
 
-            registerEventProcessor(e -> e.contains("........................................................................................................................................................................................................................."),
+            registerEventProcessor(e -> true,
                     (text, ctx) -> {
-                        // end of cell
-                        if (ctx.isTableData()) {
-                            Arrays.stream(ctx.getCells()).forEach(p -> {
+                        // try to get a ledger entry from the last 3 , 4 or 5 text events
+                        IntStream.of(2,3,4,5,6).forEach(i -> {
+                            Optional.ofNullable(ctx.getCells(i)).ifPresent(p -> {
                                 // Bank Account	Date	Narrative	Debit Amount	Credit Amount	Balance	Categories	Serial
                                 pw.println("32099621742," + p.getDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "," + p.getDetail() + "," + (p.getTxnType().isDebit() ? p.getValue() : "") + "," + (p.getTxnType().isCredit() ? p.getValue() : "") + "," + p.getBalance() + "," + p.getTxnType() + ",");
+                                payments.add(p);
                             });
-                        } else {
-                            // discard
-                            ctx.removeText();
-                        }
-                    });
-
-            registerEventProcessor(e -> e.contains("Debit Credit Balance"),
-                    (text, ctx) -> {
-                        // end of header
-                        // discard
-                        ctx.removeText();
-                        textBuffer.add(""); // this is cheating
+                        });
                     });
 
             Arrays.stream(new File("C:\\Users\\dfaut\\Downloads\\txns\\2015\\").listFiles())
@@ -118,26 +111,38 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
                         }
                     });
         }
+
+        // validate
+        payments.stream().reduce((l,r) -> l.validate(r));
     }
 
-    private void registerEventProcessor(Predicate<String> p, BiConsumer<String,PDFContext<Payment[]>> c2) {
+    private void registerEventProcessor(Predicate<String> p, BiConsumer<String,PDFContext<Payment>> c2) {
         eventProcessors.add(new EventProcessor(p, c2));
     }
 
-    private void onEvent(String text, PDFContext ctx) {
-        eventProcessors.stream().filter(ep -> ep.test(text)).findFirst().ifPresentOrElse(ep -> ep.accept(text, ctx), () -> textBuffer.add(text));
+    private void onEvent(String text, PDFContext<Payment> ctx) {
+        textBuffer.add(text);
+        eventProcessors.stream()
+                .filter(ep -> ep.test(text))
+                .findFirst()
+                .ifPresent(
+                        ep -> ep.accept(text, ctx)
+                );
     }
 
     @Override
-    public String removeText() {
-        return removeText(s -> s.collect(Collectors.joining("|")));
+    public String removeText(int n) {
+        return removeText(n, s -> s.collect(Collectors.joining("|")));
     }
 
-    public <T> T removeText(Function<Stream<String>, T> f) {
+    public <T> T removeText(int n, Function<Stream<String>, T> f) {
         try {
-            return f.apply(textBuffer.stream());
-        } finally {
+            var t = f.apply(textBuffer.subList(textBuffer.size()-n, textBuffer.size()).stream());
             textBuffer.clear();
+            return t;
+        } catch(RuntimeException e) {
+            log.error(e.getMessage(), e);
+            return null;
         }
     }
 
@@ -147,64 +152,55 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
     }
 
     @Override
-    public Payment[] getCells() {
-        AtomicBoolean isMultiLineEntry = new AtomicBoolean();
-        return removeText(s -> s.collect(statefulCollector(
-                () -> tuple2(this, Payment.PaymentFactory.builder()),
-                l -> l.stream().map(t2 -> t2._2().build().guessTxnType().toPayment()).toArray(Payment[]::new),
-                (t2, _s) -> {
-                    assert(_s.trim().isEmpty());
-                },
-                (t2, _s) -> {
-                    var arr = _s.split(" ");
-                    isMultiLineEntry.set(arr.length > 1);
-                    if(isMultiLineEntry.get()) {
-                        t2._2().date(LocalDate.of(t2._1().year, monthValueOf(arr[1]), Integer.parseInt(arr[0])));
-                        t2._2().detail(Arrays.stream(Arrays.copyOfRange(arr, 2, arr.length)).collect(Collectors.joining(" ")));
-                    }
-                },
-                (t2, _s) -> {
-                    var arr = _s.split(" ");
-                    if(arr.length > 1) {
-                        t2._2().date(LocalDate.of(t2._1().year, monthValueOf(arr[1]), Integer.parseInt(arr[0])));
-                        t2._2().detail(Arrays.stream(Arrays.copyOfRange(arr, 2, arr.length)).collect(Collectors.joining(" ")));
-                    }
-                },
-                (t2, _s) -> {
-                    if(isMultiLineEntry.get()) {
-                        t2._2().detail(t2._2().build().detail+" "+_s);
-                    } else {
-                        var value = new BigDecimal(_s.trim().replace(",",""));
-                        t2._2().credit(value);
-                        t2._2().debit(value);
-                    }
-                },
-                (t2, _s) -> {
-                    var arr = _s.split(" ");
-                    if(isMultiLineEntry.get()) {
-                        var value = new BigDecimal(arr[0].replace(",",""));
-                        var balance = new BigDecimal(arr[1].replace(",",""));
-                        t2._2().credit(value);
-                        t2._2().debit(value);
-                        t2._2().balance(balance);
-                    } else {
-                        var balance = new BigDecimal(arr[0].replace(",",""));
-                        t2._2().balance(balance);
-                    }
-                }
-
-        )));
+    public Payment getCells(int n) {
+        return removeText(n, s -> parsePayment(s.collect(Collectors.joining(" ")), this));
     }
 
-    private int monthValueOf(String s) {
-        return Arrays.stream(Month.values()).filter(m -> m.name().substring(0,3).equalsIgnoreCase(s)).findFirst().map(m -> m.ordinal()+1).orElseThrow();
+    private Payment parsePayment(String str, PDFContext<Payment> ctx) {
+
+        var arr = str.trim().split(" ");
+
+        // expecting at least 4 fields
+        if(arr.length < 4) {
+            throw new IllegalStateException("oops");
+        }
+
+        var builder = Payment.PaymentFactory.builder();
+
+        AtomicInteger detailOffset = new AtomicInteger(2);
+
+        // start with a date in the for 2 Dec
+        tryCatch(() -> builder.date(LocalDate.parse(String.format("%s %s %d", arr[0], arr[1], ctx.getYear()), DateTimeFormatter.ofPattern("dd MMM yyyy"))), e -> {
+            // if this fails try for format 30/11/16 as this was the format after this date
+            var result = builder.date(LocalDate.parse(arr[0], DateTimeFormatter.ofPattern("dd/MM/yy")));
+            detailOffset.set(1);
+            return result;
+        });
+
+        // finish with 2 decimal values
+        int lastIdx = arr.length-1;
+        var balance = Optional.of(AUD.matcher(arr[lastIdx].trim())).filter(Matcher::find).map(m -> m.group(1).replace(",","")).map(BigDecimal::new).orElseThrow();
+        builder.balance(balance);
+
+        var value = Optional.of(AUD.matcher(arr[lastIdx-1].trim())).filter(Matcher::find).map(m -> m.group(1).replace(",","")).map(BigDecimal::new).orElseThrow();
+//        var value = new BigDecimal(arr[lastIdx-1].trim().replace(",",""));
+        builder.debit(value);
+        builder.credit(value);
+
+        // if we got this far, it's probably valid, the rest is the description
+        builder.detail(IntStream.range(detailOffset.get(), lastIdx-1).mapToObj(i -> arr[i]).collect(Collectors.joining(" ")));
+
+        var factory = builder.build();
+        factory.guessTxnType();
+
+        return factory.toPayment().sanityCheck();
     }
 
     @AllArgsConstructor
-    private static class EventProcessor implements Predicate<String>, BiConsumer<String, PDFContext<Payment[]>> {
+    private static class EventProcessor implements Predicate<String>, BiConsumer<String, PDFContext<Payment>> {
 
         private Predicate<String> p;
-        private BiConsumer<String,PDFContext<Payment[]>> consumer;
+        private BiConsumer<String,PDFContext<Payment>> consumer;
 
         @Override
         public boolean test(String s) {
@@ -212,7 +208,7 @@ public class TabulaJavaTest  implements PDFContext<Payment[]> {
         }
 
         @Override
-        public void accept(String text, PDFContext<Payment[]> pdfContext) {
+        public void accept(String text, PDFContext<Payment> pdfContext) {
             consumer.accept(text, pdfContext);
         }
     }
@@ -264,7 +260,7 @@ interface PDFContext<R> {
     void setYear(int yr);
     int getYear();
 
-    String removeText();
+    String removeText(int n);
 
     int getTextSize();
 
@@ -272,6 +268,10 @@ interface PDFContext<R> {
         return getTextSize() == 5;
     }
 
-    R getCells();
+    default R getCells() {
+        return getCells(getTextSize());
+    }
+
+    R getCells(int n);
 }
 

@@ -38,30 +38,35 @@ public class TransactionController {
     public void txnSyncRaw(@RequestBody List<List<String>> txns) {
 
         txnSync(txns.stream().map(t -> {
-            // 0 : account id - ignore
-            // 1 = date 2024-10-10T16:00:00.000Z
-            LocalDateTime date = LocalDateTime.parse(t.get(1), DateTimeUtils.spreadsheetDateTime);
-            // 2 - narrative
-            var detail = (String) t.get(2);
-            // 3 - debit
-            var debit = Optional.ofNullable(t.get(3)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
-            // 4 - credit
-            var credit = Optional.ofNullable(t.get(4)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
-            // 5 - balance
-            var balance = Optional.ofNullable(t.get(5)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
-            // 6 - category
-            var txnType = TxnType.valueOf(t.get(6));
-            // 7 - serial
-            var contractNo = t.get(7);
-            return Payment.builder()
-                    .txnType(txnType)
-                    .date(date.toLocalDate())
-                    .detail(detail)
-                    .debit(debit)
-                    .credit(credit)
-                    .balance(balance)
-                    .contractNo(contractNo)
-                    .build().toPayment();
+            try {
+                // 0 : account id - ignore
+                // 1 = date 2024-10-10T16:00:00.000Z
+                LocalDateTime date = LocalDateTime.parse(t.get(1), DateTimeUtils.spreadsheetDateTime);
+                // 2 - narrative
+                var detail = (String) t.get(2);
+                // 3 - debit
+                var debit = Optional.ofNullable(t.get(3)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
+                // 4 - credit
+                var credit = Optional.ofNullable(t.get(4)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
+                // 5 - balance
+                var balance = Optional.ofNullable(t.get(5)).filter(not(""::equals)).map(BigDecimal::new).orElse(BigDecimal.ZERO);
+                // 6 - category
+                var txnType = TxnType.valueOf(t.get(6));
+                // 7 - serial
+                var contractNo = t.get(7);
+                return Payment.builder()
+                        .txnType(txnType)
+                        .date(date.toLocalDate())
+                        .detail(detail)
+                        .debit(debit)
+                        .credit(credit)
+                        .balance(balance)
+                        .contractNo(contractNo)
+                        .build().toPayment();
+            } catch (RuntimeException e) {
+                log.error("exception when processing transaction "+t+" exception message: "+e.getMessage(), e);
+                throw e;
+            }
         }).toList());
     }
 

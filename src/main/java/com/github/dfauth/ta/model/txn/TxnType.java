@@ -2,9 +2,14 @@ package com.github.dfauth.ta.model.txn;
 
 import com.github.dfauth.ta.model.Side;
 
+import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public enum TxnType {
+public enum TxnType implements UnaryOperator<BigDecimal> {
     PAYMENT(TxnType::parsePaymentString), // payment
     DEP(TxnType::parseDepositString),  // deposit
     CREDIT(TxnType::parseCreditString),  // credit
@@ -12,6 +17,13 @@ public enum TxnType {
     DIV(TxnType::parseDividendString), // dividend
     OTHER(TxnType::parseOtherString);
 
+    private static Pattern ASXCODE = Pattern.compile("^ASX:([A-Z0-9]\\d{3,3})$");
+
+    public static String validateCode(String asxcode) {
+        return Optional.ofNullable(asxcode).map(ASXCODE::matcher).filter(Matcher::matches).map(ignored -> asxcode).orElseThrow(() -> new IllegalArgumentException("Invalid ASX code: "+asxcode));
+    }
+
+    private static final BigDecimal MINUS_ONE = BigDecimal.valueOf(-1);
     private Function<Payment.PaymentFactory, Payment> f;
 
     TxnType(Function<Payment.PaymentFactory, Payment> f) {
@@ -51,14 +63,14 @@ public enum TxnType {
             String side = strings[0];
             code = strings[1];
             contractNo = strings[strings.length-1];
-            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code.toUpperCase(), contractNo);
-        } else if(e.detail.startsWith("DEPOSIT ")) {
+            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, validateCode("ASX:"+code.toUpperCase()), contractNo);
+        } else if(e.detail.toUpperCase().startsWith("DEPOSIT ")) {
             // DEPOSIT ALTIUM LIMITED        SOA24/0080705
             String tmp = e.detail.substring("DEPOSIT ".length());
             String[] strings = tmp.split(" ");
             code = strings[0];
             contractNo = strings[strings.length-1];
-            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code.toUpperCase(), contractNo);
+            return new Payment(0l, DEP, e.date, e.detail, e.credit, e.balance, null, validateCode("ASX:"+code.toUpperCase()), contractNo);
         } else {
             return new Payment(0, PAYMENT, e.date, e.detail, e.credit, e.balance, null, null, null);
         }
@@ -75,7 +87,7 @@ public enum TxnType {
         String[] strings = tmp.split(" ");
         String code = strings[0];
         String contractNo = strings[strings.length-1];
-        return new Payment(0l, DIV, e.date, e.detail, e.credit, e.balance, null, "ASX:"+code.toUpperCase(), contractNo);
+        return new Payment(0l, DIV, e.date, e.detail, e.credit, e.balance, null, validateCode("ASX:"+code.toUpperCase()), contractNo);
     }
 
     public static Payment parsePaymentString(Payment.PaymentFactory e) {
@@ -94,7 +106,7 @@ public enum TxnType {
                 Side side = Side.fromString(strings[0]);
                 String code = strings[1];
                 String contractNo = strings[2].split("\\-")[0];
-                result = new Payment(0l, PAYMENT, e.date, e.detail, e.debit, e.balance,side, "ASX:"+code.toUpperCase(), contractNo);
+                result = new Payment(0l, PAYMENT, e.date, e.detail, e.debit, e.balance,side, validateCode("ASX:"+code.toUpperCase()), contractNo);
             }
         }
         return result;
@@ -106,5 +118,14 @@ public enum TxnType {
 
     public boolean isDebit() {
         return this == PAYMENT || this == OTHER;
+    }
+
+    public boolean isPayment() {
+        return this == PAYMENT;
+    }
+
+    @Override
+    public BigDecimal apply(BigDecimal bd) {
+        return isCredit() ? bd : bd.multiply(MINUS_ONE);
     }
 }
