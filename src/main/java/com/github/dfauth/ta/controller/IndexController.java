@@ -25,13 +25,13 @@ import static java.util.function.Predicate.not;
 public class IndexController implements ControllerMixIn {
 
     @Autowired
-    private IndexRepository repository;
+    private IndexRepository indexRepository;
 
     @GetMapping("/index/{idx}/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Boolean isInIndex(@PathVariable String idx,@PathVariable String code) {
         log.info("is in index {} {}",idx, code);
-        return repository.findCurrentByCode(code).isPresent();
+        return indexRepository.findCurrentByCode(code).isPresent();
     }
 
     @PostMapping("/index/{idx}")
@@ -48,7 +48,7 @@ public class IndexController implements ControllerMixIn {
         LocalDateTime dt = LocalDateTime.of(LocalDate.of(_date / 10000, _date/100 % 100, 1), LocalTime.of(0,0));
         Timestamp timestamp = new Timestamp(dt.toInstant(ZoneOffset.UTC).toEpochMilli());
         List<Indx> codes = o.stream().flatMap(Collection::stream).filter(not(""::equals)).map(c -> new Indx(idx,timestamp, c)).collect(Collectors.toList());
-        Iterable<Indx> it = repository.saveAll(codes);
+        Iterable<Indx> it = indexRepository.saveAll(codes);
         return StreamSupport.stream(it.spliterator(), false).count();
     }
 }

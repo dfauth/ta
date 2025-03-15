@@ -37,7 +37,6 @@ public class TabulaJavaTest  implements PDFContext<Payment> {
     private List<String> textBuffer = new ArrayList<>();
     private Locale en_AU = new Locale.Builder().setLanguageTag("en-AU").build();
     private Pattern AUD = Pattern.compile("^((([1-9]\\d{0,10}(,\\d{3})*)|(([1-9]\\d*)?\\d))(\\.\\d\\d))$");
-//    private Pattern AUD = Pattern.compile("^(([1-9]\\d{0,10}(,\\d{3})*)|(([1-9]\\d*)?\\d))(\\.\\d\\d)?$");
 
 
     @Test
@@ -46,7 +45,7 @@ public class TabulaJavaTest  implements PDFContext<Payment> {
         List<Payment> payments = new ArrayList<>();
 
         try(PrintWriter pw = new PrintWriter(new FileOutputStream("out.csv"))) {
-            pw.println("Bank Account,Date,Narrative,Debit Amount,Credit Amount,Balance,Categories,Serial");
+            pw.println("Bank Account,Date,Narrative,Debit Amount,Credit Amount,Balance,Categories,Serial,ASX Code");
 
 
             registerEventProcessor(e -> tryWith(() -> Integer.valueOf(e.trim())).toOptional().isPresent(), (text, ctx) -> {
@@ -70,7 +69,7 @@ public class TabulaJavaTest  implements PDFContext<Payment> {
                         IntStream.of(2,3,4,5,6).forEach(i -> {
                             Optional.ofNullable(ctx.getCells(i)).ifPresent(p -> {
                                 // Bank Account	Date	Narrative	Debit Amount	Credit Amount	Balance	Categories	Serial
-                                pw.println("32099621742," + p.getDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "," + p.getDetail() + "," + (p.getTxnType().isDebit() ? p.getValue() : "") + "," + (p.getTxnType().isCredit() ? p.getValue() : "") + "," + p.getBalance() + "," + p.getTxnType() + ",");
+                                pw.println("32099621742," + p.getDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + "," + p.getDetail() + "," + (p.getTxnType().isDebit() ? p.getValue() : "") + "," + (p.getTxnType().isCredit() ? p.getValue() : "") + "," + p.getBalance() + "," + p.getTxnType() + ",,"+Optional.ofNullable(p.getCode()).orElse(""));
                                 payments.add(p);
                             });
                         });

@@ -7,6 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static com.github.dfauth.ta.model.txn.TxnType.validateCode;
 import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 
 @AllArgsConstructor
@@ -54,6 +55,9 @@ public class Payment {
 //                assert(code.length() == 7);
 //                assert(contractNo != null);
             }
+            if(code != null) {
+                assert(validateCode(code));
+            }
             return this;
         },e -> this);
     }
@@ -75,6 +79,7 @@ public class Payment {
         public BigDecimal credit;
         public BigDecimal balance;
         public String contractNo;
+        public String code;
 
         public Payment toPayment() {
             return txnType.toJson(this);
@@ -84,10 +89,29 @@ public class Payment {
             if(detail.startsWith("Payment")) {
                 txnType = TxnType.PAYMENT;
                 credit = null;
-            } else if(detail.startsWith("Deposit Dividend") || detail.startsWith("Deposit-Debenture/Note")) {
+            } else if(detail.startsWith("Deposit Dividend") || (detail.toUpperCase().startsWith("DEPOSIT") && detail.toUpperCase().contains("DIVIDEND")) || detail.startsWith("Deposit-Debenture/Note")
+                    || detail.startsWith("Deposit G8 Education Lim")   // special cases
+                    || detail.startsWith("Deposit Bigair Group Ltd")
+                    || detail.startsWith("Deposit Jbh Payment")
+                    || detail.startsWith("Deposit Intecq Limited")
+                    || detail.startsWith("Deposit Bwx Ret Prem")
+                    || detail.startsWith("Deposit Byron Bay NSW")
+                    || detail.startsWith("Deposit Zenitas Healthca")
+                    || detail.startsWith("Deposit Onemarket Ltd")
+                    || detail.startsWith("Deposit Aurelia Metals")
+                    || detail.startsWith("Deposit Freedom Ins")
+                    || detail.startsWith("Deposit Org Ret Premium"))
+            {
                 txnType = TxnType.DIV;
                 debit = null;
-            } else if(detail.startsWith("Deposit")) {
+            } else if(detail.toUpperCase().startsWith("DEPOSIT") && detail.toUpperCase().contains("ONLINE")) {
+                txnType = TxnType.CREDIT;
+                debit = null;
+            } else if(detail.startsWith("Deposit Westpac Securiti")
+                    || detail.startsWith("Deposit Warringah Mall")
+                    || detail.startsWith("Deposit Slcsoa")
+                    || detail.startsWith("Deposit Westfield Corp")
+            ) {
                 txnType = TxnType.DEP;
                 debit = null;
             } else if(detail.startsWith("Gross Int") || detail.startsWith("Interest Paid")) {

@@ -54,6 +54,8 @@ public class TransactionController {
                 var txnType = TxnType.valueOf(t.get(6));
                 // 7 - serial
                 var contractNo = t.get(7);
+                // 6 - code
+                var code = Optional.ofNullable(t.get(8)).filter(not(""::equals)).orElse(null);
                 return Payment.builder()
                         .txnType(txnType)
                         .date(date.toLocalDate())
@@ -62,6 +64,7 @@ public class TransactionController {
                         .credit(credit)
                         .balance(balance)
                         .contractNo(contractNo)
+                        .code(code)
                         .build().toPayment();
             } catch (RuntimeException e) {
                 log.error("exception when processing transaction "+t+" exception message: "+e.getMessage(), e);
