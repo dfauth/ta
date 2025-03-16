@@ -7,11 +7,17 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.Temporal;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.Function;
 
 public class DateTimeUtils {
 
+    public static Comparator<LocalDate> localDateComparator = (l,r) -> Math.toIntExact(l.toEpochDay() - r.toEpochDay());
+
+    public static <T> Comparator<T> localDateComparator(Function<T,LocalDate> extractor) {
+        return (l,r) -> localDateComparator.compare(extractor.apply(l), extractor.apply(r));
+    }
     private static DateTimeFormatter yyyyMMdd = DateTimeFormatter.ofPattern("yyyyMMdd");
     public static DateTimeFormatter spreadsheetDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH);
 //            new DateTimeFormatterBuilder()

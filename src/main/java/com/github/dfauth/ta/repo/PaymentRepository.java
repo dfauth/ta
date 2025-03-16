@@ -37,10 +37,22 @@ public interface PaymentRepository extends CrudRepository<Payment, Integer> {
     @Query(value = "SELECT balance FROM Payment p WHERE date = ?1")
     List<BigDecimal> getBalance(LocalDate d);
 
+    @Query(value = "SELECT balance FROM Payment p WHERE date <= ?1 order by date desc")
+    List<BigDecimal> getBalancesFrom(LocalDate date);
+
     default Optional<BigDecimal> getBalanceAsAt(LocalDate date) {
-        return getMostRecent(date).stream().flatMap(d -> getBalance(d).stream()).reduce((prev, next) -> next);
+        return getBalancesFrom(date).stream().findFirst();
     }
 
     @Query(value = "SELECT MAX(date) FROM Payment p WHERE date <= ?1")
     List<LocalDate> getMostRecent(LocalDate date);
+
+    @Query(value = "SELECT * FROM Payment p WHERE type = ?1", nativeQuery = true)
+    List<Payment> findByType(TxnType type);
+
+    @Query(value = "SELECT * FROM Payment p WHERE date <= ?1 order by date asc", nativeQuery = true)
+    Iterable<Payment> findByDate(LocalDate date);
+
+    @Query(value = "SELECT * FROM Payment p order by Date asc", nativeQuery = true)
+    Iterable<Payment> findAllOrderByDate();
 }

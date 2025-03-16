@@ -26,7 +26,9 @@ public class ForceIndex {
 
         List<BigDecimal> result = priceAction
                 .stream()
-                .collect(consecutive(forceIndex));
+                .collect(consecutive(acc -> (l,r) -> {
+                    acc.add(forceIndex.apply(l,r));
+                }));
         Optional<BigDecimal> sma = result.stream()
                 .collect(ringBufferCollector(new BigDecimal[smaPeriod], BigDecimalOps.sma()));
         Optional<BigDecimal> ema = result.stream()

@@ -9,7 +9,6 @@ import java.util.stream.Collector;
 
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.Lists.nonEmpty;
-import static com.github.dfauth.ta.functional.Consecutive.swappable;
 import static com.github.dfauth.ta.functional.Tuple2.tuple2;
 import static com.github.dfauth.ta.util.BigDecimalOps.ONE3;
 import static com.github.dfauth.ta.util.BigDecimalOps.divide;
@@ -83,35 +82,18 @@ public class Collectors {
         };
     }
 
-    public static <T,R> Collector<T, Consecutive<T,R>,List<R>> consecutive(BiFunction<T,T,R> f2) {
+    public static <T,R> Collector<T, ?,List<R>> consecutive(BiFunction<T,T,R> f2) {
+        return consecutive(acc -> (l,r) -> {
+            acc.add(f2.apply(l,r));
+        });
+    }
 
-        List<R> tmp = new ArrayList<>();
-        return new Collector<>() {
-            @Override
-            public Supplier<Consecutive<T,R>> supplier() {
-                return () -> swappable(f2);
-            }
-
-            @Override
-            public BiConsumer<Consecutive<T,R>, T> accumulator() {
-                return (consecutive, curr) -> consecutive.swap(curr).ifPresent(tmp::add);
-            }
-
-            @Override
-            public BinaryOperator<Consecutive<T,R>> combiner() {
-                return oops();
-            }
-
-            @Override
-            public Function<Consecutive<T,R>, List<R>> finisher() {
-                return ignored -> tmp;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return Set.of();
-            }
-        };
+    public static <T,R> Collector<T, ?,List<R>> consecutive(Function<List<R>, BiConsumer<T,T>> f2) {
+        List<R> list = new ArrayList<>();
+        return Consecutive.consecutive(list, l -> (left,right) -> {
+            f2.apply(l).accept(left, right);
+            return l;
+        });
     }
     public static <U> BinaryOperator<U> oops() {
         return (t1,t2) -> {
