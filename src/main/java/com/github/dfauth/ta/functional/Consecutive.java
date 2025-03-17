@@ -18,6 +18,17 @@ public class Consecutive<T,R> implements Collector<T,Consecutive<T,R>,R> {
         return new Consecutive<>(r, f2);
     }
 
+    static <T,R> Consecutive<T,R> consecutive(R r, BiConsumer<T,T> consumer) {
+        return new Consecutive<>(r, consumer);
+    }
+
+    public Consecutive(R r, BiConsumer<T,T> consumer) {
+        this(r, ignored -> (left,right) -> {
+            consumer.accept(left,right);
+            return r;
+        });
+    }
+
     public Consecutive(R r, Function<R, BiFunction<T,T,R>> f2) {
         ref = new AtomicReference<>(tuple2(r, null));
         this.f2 = f2;

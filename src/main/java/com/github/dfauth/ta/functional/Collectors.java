@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.stream.Collector;
 
@@ -18,6 +19,49 @@ import static java.util.function.Predicate.not;
 
 @Slf4j
 public class Collectors {
+
+    public static <T,K,V> Collector<T,?,Map<K,V>> toTreeMap(Comparator<? super K> c, BiConsumer<Map<K,V>,T> consumer) {
+        Map<K,V> initial = new TreeMap<>(c);
+        BiFunction<Map<K, V>, T, Map<K, V>> accumulator = (m,t) -> {
+            consumer.accept(m,t);
+            return m;
+        };
+        return reducer(initial, accumulator, oops());
+    }
+
+    public static <T,U> Collector<T,?,U> reducer(U initial, BiFunction<U,T,U> accumulator, BinaryOperator<U> combiner) {
+
+        AtomicReference<U> ref = new AtomicReference<>(initial);
+        return new Collector<T, AtomicReference<U>, U>() {
+            @Override
+            public Supplier<AtomicReference<U>> supplier() {
+                return () -> ref;
+            }
+
+            @Override
+            public BiConsumer<AtomicReference<U>, T> accumulator() {
+                return (r,t) -> ref.set(accumulator.apply(r.get(), t));
+            }
+
+            @Override
+            public BinaryOperator<AtomicReference<U>> combiner() {
+                return (l,r) -> {
+                    ref.set(combiner.apply(l.get(), r.get()));
+                    return ref;
+                };
+            }
+
+            @Override
+            public Function<AtomicReference<U>, U> finisher() {
+                return AtomicReference::get;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return Set.of();
+            }
+        };
+    }
 
     public static <K,V> Collector<Map.Entry<K,V>,?,Map<K,V>> toMapEntry() {
         return toMapEntry(Map::entry);

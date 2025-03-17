@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.controller;
 
+import com.github.dfauth.ta.functional.Consecutive;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Reduction;
 import com.github.dfauth.ta.model.txn.Payment;
@@ -20,14 +21,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.Collectors.oops;
+import static com.github.dfauth.ta.functional.Collectors.toTreeMap;
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
+import static com.github.dfauth.ta.util.DateTimeUtils.localDateComparator;
 import static com.github.dfauth.ta.util.StreamOps.stream;
 import static java.math.BigDecimal.ZERO;
 import static java.util.function.Predicate.not;
@@ -128,18 +131,12 @@ public class TransactionController {
 
     @GetMapping("/txns/asAt/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
-    public List<Payment> txnsAsAt(@PathVariable String yyyyMMdd, @RequestParam Optional<TxnType> txnType) {
-        return stream(txnsAsAt(yyyyMMdd))
-                .filter(txnType.map(Predicate.class::cast)
-                        .orElse(ignore -> true))
-                .toList();
-    }
-
-    @GetMapping("/txns/asAt/{yyyyMMdd}/sum")
-    @ResponseStatus(HttpStatus.OK)
     public Object txnsAsAt(@PathVariable String yyyyMMdd, @RequestParam Optional<TxnType> txnType, @RequestParam Optional<Reduction> reduction) {
-        return stream(txnsAsAt(yyyyMMdd)).filter(txnType.map(Predicate.class::cast)
-                .orElse(ignore -> true)).collect(reduction.map(Reduction::get).map(Collector.class::cast).orElse(Collectors.toList()));
+        Predicate<Payment> p = txnType.map(Predicate.class::cast).orElse(ignore -> true);
+        Collector<Payment,?,?> c = reduction.map(Reduction::get).map(Collector.class::cast).orElse(Collectors.toList());
+        return stream(txnsAsAt(yyyyMMdd))
+                .filter(p)
+                .collect(c);
     }
 
     @GetMapping("/txns/dividends/sum")
@@ -222,25 +219,27 @@ public class TransactionController {
     @GetMapping("/txns/reconcile")
     @ResponseStatus(HttpStatus.OK)
     public List<Payment> reconcile() {
-        return stream(transactionService.findAll())                                 // findAll
-                .reduce(new TreeMap<LocalDate, List<Payment>>(),(m,p) -> {
-                    m.compute(p.getDate(), (k,v) -> Optional.ofNullable(v)
-                            .map(_v -> Lists.add(_v,p))
-                            .orElse(List.of(p)));
-                    return m;
-                }, oops())                                      // aggregate by date
+        BiConsumer<Map<LocalDate, List<Payment>>, Payment> aggregateByDate = (m, p) ->
+                m.compute(p.getDate(), (k,v) -> Optional.ofNullable(v)
+                        .map(_v -> Lists.add(_v,p))
+                        .orElse(List.of(p)));
+        List<Payment> discrepencies = new ArrayList<>();
+        return stream(transactionService.findAll())                                     // findAll
+                .collect(toTreeMap(localDateComparator, aggregateByDate))               // aggregate by date
                 .values()
                 .stream()
-                .flatMap(l -> reorderSameDayPayments(l).stream())
-                .collect(com.github.dfauth.ta.functional.Collectors.consecutive(l -> (previousPayment,currentPayment) -> {
-                    BigDecimal txnValue = currentPayment.getTxnType().apply(currentPayment.getValue());
-                    var previousBalance = previousPayment.getBalance();
-                    var currentBalance = currentPayment.getBalance();
-                    var discrepency = previousBalance.add(txnValue).subtract(currentBalance);
-                    if(discrepency.doubleValue() != 0) {
-                        l.add(currentPayment);
-                    }
-                }));
+                .flatMap(l -> reorderSameDayPayments(l).stream())                      // reorder same day payments
+                .collect(new Consecutive<>(discrepencies,                              // collect by processing consecutive entities
+                        (previousPayment, currentPayment) -> {
+                            BigDecimal txnValue = currentPayment.getTxnType().apply(currentPayment.getValue());
+                            var previousBalance = previousPayment.getBalance();
+                            var currentBalance = currentPayment.getBalance();
+                            var discrepency = previousBalance.add(txnValue).subtract(currentBalance);
+                            if(discrepency.doubleValue() != 0) {
+                                discrepencies.add(currentPayment);
+                            }
+                        })
+                );
     }
 
     private List<Payment> reorderSameDayPayments(List<Payment> currentPayments) {
