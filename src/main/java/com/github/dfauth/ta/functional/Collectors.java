@@ -20,13 +20,26 @@ import static java.util.function.Predicate.not;
 @Slf4j
 public class Collectors {
 
+    public static <K,V> BiConsumer<Map<K,List<V>>, V> aggregate(Function<V,K> keyMapper) {
+        return aggregate(keyMapper, identity());
+    }
+
+    public static <T,K,V> BiConsumer<Map<K,List<V>>, T> aggregate(Function<T,K> keyMapper, Function<T,V> valueMapper) {
+        return (m,t) -> m.compute(keyMapper.apply(t), (k,v) -> Optional.ofNullable(v)
+                                .map(_v -> Lists.add(_v,valueMapper.apply(t)))
+                                .orElse(List.of(valueMapper.apply(t))));
+    }
+
     public static <T,K,V> Collector<T,?,Map<K,V>> toTreeMap(Comparator<? super K> c, BiConsumer<Map<K,V>,T> consumer) {
-        Map<K,V> initial = new TreeMap<>(c);
+        return toMap(new TreeMap<>(c), consumer);
+    }
+
+    public static <T,K,V> Collector<T,?,Map<K,V>> toMap(Map<K,V> initial, BiConsumer<Map<K,V>,T> consumer) {
         BiFunction<Map<K, V>, T, Map<K, V>> accumulator = (m,t) -> {
             consumer.accept(m,t);
             return m;
         };
-        return reducer(initial, accumulator, oops());
+        return reducer(initial, accumulator, Maps::merge);
     }
 
     public static <T,U> Collector<T,?,U> reducer(U initial, BiFunction<U,T,U> accumulator, BinaryOperator<U> combiner) {
@@ -140,8 +153,12 @@ public class Collectors {
         });
     }
     public static <U> BinaryOperator<U> oops() {
+        return oops("Oops. Parallel operations not supported");
+    }
+
+    public static <U> BinaryOperator<U> oops(String message) {
         return (t1,t2) -> {
-            throw new IllegalStateException("Oops. Parallel operations not supported");
+            throw new IllegalStateException(message);
         };
     }
 

@@ -4,6 +4,7 @@ import com.github.dfauth.ta.model.MarketEnum;
 import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.PositionSummary;
 import com.github.dfauth.ta.model.Theme;
+import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.service.PositionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +14,14 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.github.dfauth.ta.model.MarketEnum.ASX;
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
+import static com.github.dfauth.ta.util.StreamOps.stream;
 
 @RestController
 @Slf4j
@@ -93,5 +97,17 @@ public class PositionController {
     public Optional<Position> getPositionCodeAsAt(@PathVariable String code, @PathVariable String yyyyMMdd) {
         LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
         return positionService.getPositionAsAt(code, date);
+    }
+
+    @GetMapping("/position/unassigned/payments")
+    @ResponseStatus(HttpStatus.OK)
+    public Set<Payment> unAssignedPayments() {
+        return positionService.findUnAssignedPayments();
+    }
+
+    @GetMapping("/position/find/payments/{code}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Payment> findPayments(@PathVariable String code) {
+        return stream(positionService.getPositions(code)).flatMap(p -> positionService.findPaymentsByPosition(p).stream()).toList();
     }
 }

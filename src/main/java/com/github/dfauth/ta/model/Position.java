@@ -24,11 +24,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
-import static com.github.dfauth.ta.functional.Optionals.allPresent;
 import static com.github.dfauth.ta.functional.Optionals.bothPresent;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 import static java.math.BigDecimal.ZERO;
@@ -49,7 +47,7 @@ public class Position {
     public static Optional<Double> nonZero(double d) {
         return d == 0 ? empty() : Optional.of(d);
     };
-    public static final Function<BigDecimal, Function<BigDecimal, Function<BigDecimal, BigDecimal>>> profit =  pv -> sv -> c -> sv.subtract(pv).subtract(c);
+    public static final BiFunction<BigDecimal, BigDecimal, BigDecimal> profit =  (pv, sv) -> sv.subtract(pv);
     public static final BiFunction<Long, Integer, Optional<Double>> periods = (wht, up) -> nonZero(((double)wht)/(up * 365L));
     public static final BiFunction<Double, Double, Optional<Double>> cagr = (r,p) -> CAGR.cagr(r,p,bdMapper(3)).map(BigDecimal::doubleValue);
 
@@ -184,7 +182,7 @@ public class Position {
 
     @JsonProperty("p")
     public Optional<BigDecimal> getProfit() {
-        return allPresent(profit, purchaseValue, saleValue, commission);
+        return bothPresent(purchaseValue, saleValue, profit);
     }
 
     @JsonIgnore
@@ -213,7 +211,7 @@ public class Position {
     }
 
     public boolean isOpenAt(LocalDate date) {
-        return onLoad(trades).floorEntry(date).getValue().isOpen();
+        return Optional.ofNullable(onLoad(trades).floorEntry(date)).map(Map.Entry::getValue).filter(Position::isOpen).isPresent();
     }
 
     public static TreeMap<LocalDate, Position> onLoad(List<Trade> trades) {

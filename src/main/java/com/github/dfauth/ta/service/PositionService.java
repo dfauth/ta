@@ -15,15 +15,13 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
+import static com.github.dfauth.ta.model.txn.TxnType.DIV;
 import static com.github.dfauth.ta.util.StreamOps.stream;
 
 @Slf4j
@@ -44,8 +42,8 @@ public class PositionService {
 
 
     public int sync() {
-//        List<Position> positions = tradeRepository.derivePositions();
-        // greoup trades by code, ordered by date
+
+        // group trades by code, ordered by date
         Map<String, List<Trade>> tradeByCode = stream(tradeRepository.findAllByDate()).collect(Collectors.groupingBy(Trade::getCode, Collectors.toList()));
 
         // for each code, reduce to a series of positions
@@ -188,5 +186,17 @@ public class PositionService {
 
     public Optional<Position> getPositionAsAt(String code, LocalDate date) {
         return openPositionStream(date).apply(positionRepository.findPositionByCodeAndDate(code, date).stream()).findFirst();
+    }
+
+    public Set<Payment> findUnAssignedPayments() {
+        var tmp = stream(positionRepository.findAll()).flatMap(p -> p.getPayments().stream()).toList();
+        var tmp1 = stream(paymentRepository.findAll()).filter(DIV).toList();
+        var s1 = new HashSet<>(tmp1);
+        s1.removeAll(tmp);
+        return s1;
+    }
+
+    public List<Payment> findPaymentsByPosition(Position p) {
+        return p.isOpen() ? paymentRepository.findByOpenPosition(p) : paymentRepository.findByClosedPosition(p);
     }
 }

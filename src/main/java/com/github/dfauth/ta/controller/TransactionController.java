@@ -15,24 +15,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import static com.github.dfauth.ta.functional.Collectors.aggregate;
 import static com.github.dfauth.ta.functional.Collectors.toTreeMap;
+import static com.github.dfauth.ta.functional.Reduction.SUM_PAYMENTS;
+import static com.github.dfauth.ta.model.txn.TxnType.DIV;
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 import static com.github.dfauth.ta.util.DateTimeUtils.localDateComparator;
 import static com.github.dfauth.ta.util.StreamOps.stream;
 import static java.math.BigDecimal.ZERO;
+import static java.time.LocalDate.now;
 import static java.util.function.Predicate.not;
 
 @RestController
@@ -69,6 +69,8 @@ public class TransactionController {
                 var contractNo = t.get(7);
                 // 6 - code
                 var code = Optional.ofNullable(t.get(8)).filter(not(""::equals)).orElse(null);
+                // 7 - ex-dividend date
+                var exDividendDate = Optional.ofNullable(t.get(9)).filter(not(""::equals)).map(str -> LocalDateTime.parse(str, DateTimeUtils.spreadsheetDateTime).toLocalDate()).orElse(null);
                 return Payment.builder()
                         .txnType(txnType)
                         .date(date.toLocalDate())
@@ -78,6 +80,7 @@ public class TransactionController {
                         .balance(balance)
                         .contractNo(contractNo)
                         .code(code)
+                        .exDividendDate(exDividendDate)
                         .build().toPayment();
             } catch (RuntimeException e) {
                 log.error("exception when processing transaction "+t+" exception message: "+e.getMessage(), e);
@@ -101,6 +104,7 @@ public class TransactionController {
                         _p.setDetail(pymnt.getDetail());
                         _p.setTxnType(pymnt.getTxnType());
                         _p.setSide(pymnt.getSide());
+                        _p.setExDividendDate(pymnt.getExDividendDate());
                         return _p;
                     }).orElse(pymnt);
                     paymentRepository.save(p);
@@ -132,23 +136,26 @@ public class TransactionController {
     @GetMapping("/txns/asAt/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
     public Object txnsAsAt(@PathVariable String yyyyMMdd, @RequestParam Optional<TxnType> txnType, @RequestParam Optional<Reduction> reduction) {
+        LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
         Predicate<Payment> p = txnType.map(Predicate.class::cast).orElse(ignore -> true);
         Collector<Payment,?,?> c = reduction.map(Reduction::get).map(Collector.class::cast).orElse(Collectors.toList());
-        return stream(txnsAsAt(yyyyMMdd))
-                .filter(p)
-                .collect(c);
+        return txnsAsAt(date, p, c);
     }
 
-    @GetMapping("/txns/dividends/sum")
+    private <T> T txnsAsAt(LocalDate date, Predicate<Payment> p, Collector<Payment,?,T> collector) {
+        return stream(transactionService.findByDate(date)).filter(p).collect(collector);
+    }
+
+    @GetMapping("/dividends/sum")
     @ResponseStatus(HttpStatus.OK)
-    public Optional<BigDecimal> sumOfDividends() {
-        return transactionService.transactionsByDateAndType(LocalDate.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()), LocalDate.now(), TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+    public BigDecimal sumOfDividends() {
+        return (BigDecimal) txnsAsAt(LocalDate.now(),DIV,(Collector<Payment, ?, ? extends Object>) SUM_PAYMENTS.get());
     }
 
     @GetMapping("/txns/dividends/sum/{start}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<BigDecimal> sumOfDividends(@PathVariable String start) {
-        return sumOfDividends(start, YYYYMMDD.format(LocalDate.now()));
+        return sumOfDividends(start, YYYYMMDD.format(now()));
     }
 
     @GetMapping("/txns/dividends/sum/{start}/{end}")
@@ -156,7 +163,7 @@ public class TransactionController {
     public Optional<BigDecimal> sumOfDividends(@PathVariable String start, @PathVariable String end) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
-        return transactionService.transactionsByDateAndType(s, e, TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        return transactionService.transactionsByDateAndType(s, e, DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/dividends/{start}/{end}")
@@ -164,7 +171,7 @@ public class TransactionController {
     public List<Payment> dividends(@PathVariable String start, @PathVariable String end) {
         LocalDate s = (LocalDate) YYYYMMDD.parse(start);
         LocalDate e = (LocalDate) YYYYMMDD.parse(end);
-        return transactionService.transactionsByDateAndType(s, e, TxnType.DIV);
+        return transactionService.transactionsByDateAndType(s, e, DIV);
     }
 
     @GetMapping("/dividends/year/{year}")
@@ -172,7 +179,7 @@ public class TransactionController {
     public Optional<BigDecimal> dividendsByYear(@PathVariable int year) {
         LocalDate start = LocalDate.of(2000, 12, 31);
         LocalDate end = LocalDate.of(year, 12, 31);
-        return transactionService.transactionsByDateAndType(start, end, TxnType.DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        return transactionService.transactionsByDateAndType(start, end, DIV).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
     @GetMapping("/txns/{start}/{end}/{type}")
@@ -203,6 +210,13 @@ public class TransactionController {
         return transactionService.transactionsByType(txnType).stream().map(Payment::getValue).reduce(BigDecimal::add);
     }
 
+    @GetMapping("/txns/{code}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Payment> txnsByCode(@PathVariable String code, @RequestParam Optional<TxnType> txnType) {
+        Predicate<Payment> p = txnType.map(Predicate.class::cast).orElse(ignore -> true);
+        return stream(transactionService.findByCode(code)).filter(p).toList();
+    }
+
     @GetMapping("/cash/asAt/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<BigDecimal> cashAsAt(@PathVariable String yyyyMMdd) {
@@ -213,23 +227,19 @@ public class TransactionController {
     @GetMapping("/cash")
     @ResponseStatus(HttpStatus.OK)
     public Optional<BigDecimal> cash() {
-        return transactionService.cashAsAt(LocalDate.now());
+        return transactionService.cashAsAt(now());
     }
 
     @GetMapping("/txns/reconcile")
     @ResponseStatus(HttpStatus.OK)
     public List<Payment> reconcile() {
-        BiConsumer<Map<LocalDate, List<Payment>>, Payment> aggregateByDate = (m, p) ->
-                m.compute(p.getDate(), (k,v) -> Optional.ofNullable(v)
-                        .map(_v -> Lists.add(_v,p))
-                        .orElse(List.of(p)));
         List<Payment> discrepencies = new ArrayList<>();
-        return stream(transactionService.findAll())                                     // findAll
-                .collect(toTreeMap(localDateComparator, aggregateByDate))               // aggregate by date
+        return stream(transactionService.findAll())                                          // findAll
+                .collect(toTreeMap(localDateComparator, aggregate(Payment::getDate)))        // aggregate to a map of lists sorted by date
                 .values()
                 .stream()
-                .flatMap(l -> reorderSameDayPayments(l).stream())                      // reorder same day payments
-                .collect(new Consecutive<>(discrepencies,                              // collect by processing consecutive entities
+                .flatMap(l -> reorderSameDayPayments(l).stream())                           // reorder same day payments
+                .collect(new Consecutive<>(discrepencies,                                   // collect by processing consecutive entities
                         (previousPayment, currentPayment) -> {
                             BigDecimal txnValue = currentPayment.getTxnType().apply(currentPayment.getValue());
                             var previousBalance = previousPayment.getBalance();

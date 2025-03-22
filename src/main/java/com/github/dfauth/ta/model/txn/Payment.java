@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.model.txn;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.dfauth.ta.model.Side;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,10 +30,12 @@ public class Payment {
     private Side side;
     private String code;
     @Column(name = "CONTRACTNO")
+    @JsonIgnore
     private String contractNo;
+    private LocalDate exDividendDate;
 
     public Payment(Payment p) {
-        this(0, p.txnType, p.date, p.detail, p.value, p.balance, p.side, p.code, p.contractNo);
+        this(0, p.txnType, p.date, p.detail, p.value, p.balance, p.side, p.code, p.contractNo, p.exDividendDate);
     }
 
     public boolean isDividendPayment() {
@@ -80,6 +83,7 @@ public class Payment {
         public BigDecimal balance;
         public String contractNo;
         public String code;
+        public LocalDate exDividendDate;
 
         public Payment toPayment() {
             return txnType.toJson(this);

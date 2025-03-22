@@ -38,4 +38,8 @@ public class TransactionService {
     public Iterable<Payment> findByDate(LocalDate date) {
         return paymentRepository.findByDate(date);
     }
+
+    public List<Payment> findByCode(String code) {
+        return paymentRepository.findByCode(code);
+    }
 }

@@ -13,6 +13,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 import static com.github.dfauth.ta.functional.Optionals.allPresent;
+import static java.math.BigDecimal.ZERO;
 
 @Getter
 @ToString
@@ -50,7 +51,7 @@ public class OpenPosition extends Position {
 
     @Override
     public long getWeightedHoldingTime() {
-        return getT(Position::getWeightedHoldingTime).orElseThrow();
+        return getT(Position::getWeightedHoldingTime).orElse(0l);
     }
 
     @Override
@@ -60,37 +61,37 @@ public class OpenPosition extends Position {
 
     @Override
     public int getSize() {
-        return getT(Position::getSize).orElseThrow();
+        return getT(Position::getSize).orElse(0);
     }
 
     @Override
     public int getUnitsPurchased() {
-        return getT(Position::getUnitsPurchased).orElseThrow();
+        return getT(Position::getUnitsPurchased).orElse(0);
     }
 
     @Override
     public int getUnitsSold() {
-        return getT(Position::getUnitsSold).orElseThrow();
+        return getT(Position::getUnitsSold).orElse(0);
     }
 
     @Override
     public BigDecimal getPurchaseValue() {
-        return getT(Position::getPurchaseValue).orElseThrow();
+        return getT(Position::getPurchaseValue).orElse(ZERO);
     }
 
     @Override
     public BigDecimal getSaleValue() {
-        return getT(Position::getSaleValue).orElseThrow();
+        return getT(Position::getSaleValue).orElse(ZERO);
     }
 
     @Override
     public BigDecimal getCommission() {
-        return getT(Position::getCommission).orElseThrow();
+        return getT(Position::getCommission).orElse(ZERO);
     }
 
     @Override
     public int getTradeCount() {
-        return getT(Position::getTradeCount).orElseThrow();
+        return getT(Position::getTradeCount).orElse(0);
     }
 
     @Override

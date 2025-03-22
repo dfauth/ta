@@ -1,10 +1,14 @@
 package com.github.dfauth.ta.functional;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functions.Reducers.groupBy;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 import static java.util.function.Function.identity;
@@ -13,6 +17,14 @@ public class Maps<K,V> extends HashMap<K,V> {
 
     public Maps(Map<K,V> map) {
         super(map);
+    }
+
+    public static <K,V> Map<K,V> merge(Map<K,V>... maps) {
+        return merge(oops("map merge not supported"), maps);
+    }
+
+    public static <K,V> Map<K,V> merge(BinaryOperator<V> mergeFunction, Map<K,V>... maps) {
+        return Arrays.stream(maps).flatMap(m -> m.entrySet().stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, mergeFunction));
     }
 
     public static <K,V,T> Map<K,T> mapValues(Map<K,V> l, Function<V,T> f) {
