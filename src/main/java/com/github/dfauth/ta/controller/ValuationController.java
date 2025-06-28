@@ -85,7 +85,7 @@ public class ValuationController {
             return "ASX:"+ o;
         } else if(o instanceof String){
             String s = (String) o;
-            if(s.length() > 0) {
+            if(!s.isEmpty()) {
                 return "ASX:"+ s;
             } else {
                 return s;

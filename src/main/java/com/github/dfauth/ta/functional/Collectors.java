@@ -14,6 +14,7 @@ import static com.github.dfauth.ta.functional.Tuple2.tuple2;
 import static com.github.dfauth.ta.util.BigDecimalOps.ONE3;
 import static com.github.dfauth.ta.util.BigDecimalOps.divide;
 import static java.math.BigDecimal.ZERO;
+import static java.util.Collections.emptySet;
 import static java.util.function.Function.identity;
 import static java.util.function.Predicate.not;
 
@@ -162,12 +163,20 @@ public class Collectors {
         };
     }
 
+    public static <K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> mapEntryMap() {
+        return java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
     public static <T,R,S> Collector<T, Map<R,S>,Map<R,S>> toMap(Function<T,R> keyMapper,Function<T,BiFunction<R,S,S>> reMapper) {
+        return toMap(new HashMap<>(), keyMapper, reMapper);
+    }
+
+    public static <T,R,S> Collector<T, Map<R,S>,Map<R,S>> toMap(Map<R,S> initial, Function<T,R> keyMapper,Function<T,BiFunction<R,S,S>> reMapper) {
         return new Collector<>() {
 
             @Override
             public Supplier<Map<R, S>> supplier() {
-                return HashMap::new;
+                return () -> initial;
             }
 
             @Override
@@ -188,6 +197,57 @@ public class Collectors {
             @Override
             public Set<Characteristics> characteristics() {
                 return Set.of();
+            }
+        };
+    }
+
+    public static <T,K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> toMap() {
+        return toMap(HashMap::new, Map.Entry::getKey, Map.Entry::getValue, oops());
+    }
+
+    public static <T,K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> toMap(BinaryOperator<V> mergeFunction) {
+        return toMap(HashMap::new, Map.Entry::getKey, Map.Entry::getValue, mergeFunction);
+    }
+
+    public static <T,K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> toMap(Supplier<Map<K,V>> supplier, BinaryOperator<V> mergeFunction) {
+        return toMap(supplier, Map.Entry::getKey, Map.Entry::getValue, mergeFunction);
+    }
+    public static <T,K,V> Collector<T, ?,Map<K,V>> toMap(Supplier<Map<K,V>> supplier, Function<T,K> keyMapper, Function<T,V> valueMapper, BinaryOperator<V> mergeFunction) {
+        return new Collector<T, Map<K, V>, Map<K, V>>() {
+            @Override
+            public Supplier<Map<K, V>> supplier() {
+                return supplier;
+            }
+
+            @Override
+            public BiConsumer<Map<K, V>, T> accumulator() {
+                return (m,t) -> m.compute(
+                        keyMapper.apply(t),
+                        (k,v) -> Optional.of(v)
+                                .map(_v -> mergeFunction.apply(_v, valueMapper.apply(t)))
+                                .orElse(valueMapper.apply(t)));
+            }
+
+            @Override
+            public BinaryOperator<Map<K, V>> combiner() {
+                return (l,r) -> {
+                    var m = supplier.get();
+                    m.putAll(l);
+                    r.entrySet().stream().forEach(e -> {
+                        m.merge(e.getKey(), e.getValue(), mergeFunction);
+                    });
+                    return m;
+                };
+            }
+
+            @Override
+            public Function<Map<K, V>, Map<K, V>> finisher() {
+                return identity();
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return emptySet();
             }
         };
     }

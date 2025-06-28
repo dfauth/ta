@@ -6,9 +6,10 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.Collectors.oops;
+import static com.github.dfauth.ta.functional.Collectors.*;
 import static com.github.dfauth.ta.functions.Reducers.groupBy;
 import static com.github.dfauth.ta.functions.Reducers.latest;
 import static java.util.function.Function.identity;
@@ -55,6 +56,10 @@ public class Maps<K,V> extends HashMap<K,V> {
         return new Maps<>(m);
     }
 
+    public static <K,V> Maps<K,V> maps(Map<K,V> m) {
+        return of(m);
+    }
+
     public <R> Maps<K,R> mapValues(Function<V,R> valueMapper) {
         return map(identity(), valueMapper);
     }
@@ -80,5 +85,9 @@ public class Maps<K,V> extends HashMap<K,V> {
                         valueMapper,
                         latest())
                 );
+    }
+
+    public Maps<K,V> filterValue(Predicate<V> predicate) {
+        return maps(entrySet().stream().filter(e -> predicate.test(e.getValue())).collect(mapEntryMap()));
     }
 }

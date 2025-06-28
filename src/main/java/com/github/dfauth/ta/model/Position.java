@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functions.CAGR;
 import com.github.dfauth.ta.model.txn.Payment;
+import com.github.dfauth.ta.model.txn.TxnType;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -25,11 +26,13 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functional.Optionals.bothPresent;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 import static java.math.BigDecimal.ZERO;
+import static java.util.Collections.emptyList;
 import static java.util.Optional.empty;
 
 @Slf4j
@@ -229,5 +232,13 @@ public class Position {
                             return m;
                         },
                         oops());
+    }
+
+    public boolean isReconciled() {
+        Map<TxnType, List<Payment>> paymentMap = payments.stream().collect(Collectors.groupingBy(Payment::getTxnType));
+        Optional<BigDecimal> sumPurchasePayments = paymentMap.getOrDefault(TxnType.PAYMENT, emptyList()).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        Optional<BigDecimal> sumSalePayments = paymentMap.getOrDefault(TxnType.DEP, emptyList()).stream().map(Payment::getValue).reduce(BigDecimal::add);
+        return sumPurchasePayments.map(spp -> getPurchaseValue().equals(spp.setScale(getPurchaseValue().scale(), RoundingMode.HALF_UP))).orElse(false) &&
+                sumSalePayments.map(ssp -> getSaleValue().equals(ssp.setScale(getSaleValue().scale(), RoundingMode.HALF_UP))).orElse(false);
     }
 }

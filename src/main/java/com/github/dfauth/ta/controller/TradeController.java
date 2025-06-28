@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.controller;
 
+import com.github.dfauth.ta.functional.Maps;
 import com.github.dfauth.ta.model.Side;
 import com.github.dfauth.ta.model.Theme;
 import com.github.dfauth.ta.model.Trade;
@@ -38,6 +39,12 @@ public class TradeController {
     @ResponseStatus(HttpStatus.CREATED)
     public Iterable<Trade> trades() {
         return tradeService.findAll();
+    }
+
+    @GetMapping("/trades/pending/payment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Maps<LocalDate, BigDecimal> tradesPendingPayment() {
+        return tradeService.findTradesPendingPayment();
     }
 
     @GetMapping("/trades/{code}")

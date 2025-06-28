@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.dfauth.ta.util.BigDecimalOps;
 import com.github.dfauth.ta.util.DateTimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,5 +40,10 @@ public class Trade {
 
     public LocalDate getLocalDate() {
         return DateTimeUtils.toLocalDate(getDate());
+    }
+
+    @JsonIgnore
+    public BigDecimal getValue() {
+        return BigDecimalOps.multiply(cost, getSide().getMultiplier());
     }
 }

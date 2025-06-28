@@ -27,7 +27,7 @@ public class GapUpController extends BaseController implements ControllerMixIn {
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Integer> gapUp(@RequestBody List<List<String>> codes) {
         try {
-            log.info("sma/{}/{}",codes);
+            log.info("gapup/{}/{}",codes);
             Map<String, Integer> result = mapCode(codes, code -> gapUp(code));
             return result;
         } catch (Exception e) {
@@ -39,7 +39,7 @@ public class GapUpController extends BaseController implements ControllerMixIn {
     @GetMapping("/gapup/{_code}")
     @ResponseStatus(HttpStatus.OK)
     public Integer gapUp(@PathVariable String _code) {
-        log.info("sma/{}",_code);
+        log.info("gapup/{}",_code);
         int period = 23;
         return tryCatch(() -> {
             List<Price> prices = prices(_code, period);

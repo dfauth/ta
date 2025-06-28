@@ -74,7 +74,7 @@ public class SMAController extends BaseController implements ControllerMixIn {
     @ResponseStatus(HttpStatus.OK)
     public Optional<Controller.OHLC> smaMomentum(@PathVariable String _code, @PathVariable int period) {
         RingBufferProcessor<PriceAction, Optional<PriceAction>> p = ringBufferProcessor(new PriceAction[period], SMA);
-        log.info("smaMomentum/{}/{}",_code,period);
+        log.info("sma/momentum/{}/{}",_code,period);
         return tryCatch(() -> {
             List<Price> prices = prices(_code, 2 * period);
             List<PriceAction> tmp = new ArrayList<>();

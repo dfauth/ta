@@ -22,6 +22,7 @@ import java.util.Set;
 import static com.github.dfauth.ta.model.MarketEnum.ASX;
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 import static com.github.dfauth.ta.util.StreamOps.stream;
+import static java.util.function.Predicate.not;
 
 @RestController
 @Slf4j
@@ -109,5 +110,17 @@ public class PositionController {
     @ResponseStatus(HttpStatus.OK)
     public List<Payment> findPayments(@PathVariable String code) {
         return stream(positionService.getPositions(code)).flatMap(p -> positionService.findPaymentsByPosition(p).stream()).toList();
+    }
+
+    @GetMapping("/positions/unreconciled")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Position> reconcilePositions() {
+        return stream(positionService.findAll()).filter(not(Position::isReconciled)).toList();
+    }
+
+    @GetMapping("/position/reconcile/{code}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Position> reconcilePosition(@PathVariable String code) {
+        return stream(positionService.getPositions(code)).filter(not(Position::isReconciled)).toList();
     }
 }
