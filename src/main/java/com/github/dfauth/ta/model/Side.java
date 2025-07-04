@@ -2,12 +2,13 @@ package com.github.dfauth.ta.model;
 
 import lombok.Getter;
 
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Getter
 public enum Side {
-    Sell, Buy;
+    Sell, Buy, Int, Div;
 
     public int getMultiplier() {
         return IntStream.range(0,values().length).filter(i -> values()[i] == this).map(i -> (int)(2.0d*((double)i-0.5d))).findFirst().orElseThrow();
@@ -45,5 +46,17 @@ public enum Side {
 
     public <T extends Number> Sided<T> sided(T t) {
         return Sided.sided(this, t);
+    }
+
+    public Side map(UnaryOperator<Side> f) {
+        return f.apply(this);
+    }
+
+    public boolean isInt() {
+        return this == Int;
+    }
+
+    public boolean isDiv() {
+        return this == Div;
     }
 }

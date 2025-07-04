@@ -3,6 +3,7 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functional.Consecutive;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Reduction;
+import com.github.dfauth.ta.model.Side;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnType;
 import com.github.dfauth.ta.repo.PaymentRepository;
@@ -45,6 +46,7 @@ public class TransactionController {
     @Autowired
     private TransactionService transactionService;
 
+    // used prioir to april 2025 when westpac changed their transaction detail format
     @PostMapping("/txns/sync/raw")
     @ResponseStatus(HttpStatus.OK)
     @Transactional
@@ -88,6 +90,55 @@ public class TransactionController {
             }
         }).toList());
         return reconcile();
+    }
+
+    // used after april 2025 when westpac changed their transaction detail format
+    @PostMapping("/txns/sync/raw2")
+    @ResponseStatus(HttpStatus.OK)
+    @Transactional
+    public List<Payment> txnSyncRaw2(@RequestBody List<List<String>> txns) {
+
+        txnSync(txns.stream().map(t -> {
+            try {
+                // 0 : account id - ignore
+                // 1 = date 2024-10-10T16:00:00.000Z
+                LocalDate date = LocalDate.parse(t.get(1), DateTimeUtils.dd_slash_MM_slash_yyyy);
+                // 2 - narrative
+                var detail = (String) t.get(2);
+                // 3 - debit
+                var debit = Optional.ofNullable(t.get(3)).filter(not(""::equals)).map(BigDecimal::new).orElse(null);
+                // 4 - credit
+                var credit = Optional.ofNullable(t.get(4)).filter(not(""::equals)).map(BigDecimal::new).orElse(null);
+                // 5 - balance
+                var balance = Optional.ofNullable(t.get(5)).filter(not(""::equals)).map(BigDecimal::new).orElseThrow();
+                // 6 - category
+                var txnType = TxnType.valueOf(t.get(6));
+                // 7 - SIDE
+                var side = Side.fromString(t.get(7));
+                // 6 - code
+                var code = Optional.ofNullable(t.get(8)).filter(not(""::equals)).orElse(null);
+                // 7 - ex-dividend date
+                var exDividendDate = Optional.ofNullable(t.get(9)).filter(not(""::equals)).map(str -> LocalDateTime.parse(str, DateTimeUtils.spreadsheetDateTime).toLocalDate()).orElse(null);
+                return new Payment(0l,
+                        side.isDiv() ? TxnType.DIV : txnType,
+                        date,
+                        detail,
+                        Optional.ofNullable(debit).orElse(credit),
+                        balance,
+                        side.map(s -> !s.isBuy() ? !s.isSell() ? null : s : s ),
+                        code,
+                        deriveContractNumber(side,detail),
+                        exDividendDate);
+            } catch (RuntimeException e) {
+                log.error("exception when processing transaction "+t+" exception message: "+e.getMessage(), e);
+                throw e;
+            }
+        }).toList());
+        return reconcile();
+    }
+
+    private String deriveContractNumber(Side side, String detail) {
+        return side.isInt() ? null : Optional.of(detail.split(" ")).map(arr -> arr[arr.length-1]).orElseThrow();
     }
 
     @PostMapping("/txns/sync")

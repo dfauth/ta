@@ -18,7 +18,8 @@ public class DateTimeUtils {
     public static <T> Comparator<T> localDateComparator(Function<T,LocalDate> extractor) {
         return (l,r) -> localDateComparator.compare(extractor.apply(l), extractor.apply(r));
     }
-    private static DateTimeFormatter yyyyMMdd = DateTimeFormatter.ofPattern("yyyyMMdd");
+    public static DateTimeFormatter dd_slash_MM_slash_yyyy = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    public static DateTimeFormatter yyyyMMdd = DateTimeFormatter.ofPattern("yyyyMMdd");
     public static DateTimeFormatter spreadsheetDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ENGLISH);
 //            new DateTimeFormatterBuilder()
 //                    .parseCaseInsensitive()

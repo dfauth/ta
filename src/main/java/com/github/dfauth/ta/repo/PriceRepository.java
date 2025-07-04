@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.repo;
 
+import com.github.dfauth.ta.functional.Collectors;
+import com.github.dfauth.ta.functional.Tuple2;
 import com.github.dfauth.ta.model.Market;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceCompositeKey;
@@ -9,10 +11,7 @@ import org.springframework.data.repository.CrudRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static com.github.dfauth.ta.util.DateTimeUtils.toTimestamp;
 
@@ -59,5 +58,18 @@ public interface PriceRepository extends CrudRepository<Price, PriceCompositeKey
     default Optional<Price> findLatestByCodeAndDate(String code, LocalDate date, Market market) {
         Instant i = market.atMarketCloseOnOrPriorTo(date);
         return findLatestByDate(code, new Timestamp(i.toEpochMilli()), 1).stream().findFirst();
+    }
+
+    @Query(value = "SELECT new com.github.dfauth.ta.functional.Tuple2(p._date, count(p)) FROM Price p group by p._date order by p._date desc")
+    List<Tuple2<Timestamp, Long>> _priceCountByDate();
+
+    default Map<LocalDate, Long> priceCountByDate() {
+        return priceCountByDate(LocalDate::compareTo);
+    }
+
+    default Map<LocalDate, Long> priceCountByDate(Comparator<LocalDate> comparator) {
+        return _priceCountByDate().stream()
+                .map(t -> t.map((k,v) -> Map.entry(k.toLocalDateTime().toLocalDate(), v)))
+                .collect(Collectors.toMap(new TreeMap<>(comparator)));
     }
 }

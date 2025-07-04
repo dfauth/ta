@@ -1,5 +1,6 @@
 package com.github.dfauth.ta.functional;
 
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -33,5 +34,9 @@ public class Tuple2<K,V> extends Tuple {
 
     public <T> Tuple2<K,T> mapValue(Function<V,T> f) {
         return new Tuple2<>(_1(), f.apply(_2()));
+    }
+
+    public Map.Entry<K, V> toMapEntry() {
+        return Map.entry(_1(), _2());
     }
 }

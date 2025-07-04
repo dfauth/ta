@@ -201,6 +201,10 @@ public class Collectors {
         };
     }
 
+    public static <T,K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> toMap(Map<K,V> inital) {
+        return toMap(() -> inital, Map.Entry::getKey, Map.Entry::getValue, oops());
+    }
+
     public static <T,K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> toMap() {
         return toMap(HashMap::new, Map.Entry::getKey, Map.Entry::getValue, oops());
     }
@@ -223,7 +227,7 @@ public class Collectors {
             public BiConsumer<Map<K, V>, T> accumulator() {
                 return (m,t) -> m.compute(
                         keyMapper.apply(t),
-                        (k,v) -> Optional.of(v)
+                        (k,v) -> Optional.ofNullable(v)
                                 .map(_v -> mergeFunction.apply(_v, valueMapper.apply(t)))
                                 .orElse(valueMapper.apply(t)));
             }
