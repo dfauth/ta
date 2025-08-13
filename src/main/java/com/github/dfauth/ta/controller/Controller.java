@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -162,7 +163,7 @@ public class Controller implements ControllerMixIn {
     @GetMapping("/price/summary")
     @ResponseStatus(HttpStatus.OK)
     Map<LocalDate, Long> priceSummary() {
-        return repository.priceCountByDate((l,r) -> r.compareTo(l));
+        return repository.priceCountByDate(Comparator.reverseOrder());
     }
 
     @Data

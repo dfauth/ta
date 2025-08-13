@@ -48,7 +48,7 @@ public class MktDepthController implements ControllerMixIn {
     public Map<String, MktDepth> mktDepth(@RequestBody List<List<String>> codes) {
         try {
             log.info("mktDepth/{}",codes);
-            Map<String, MktDepth> result = mapCode(codes, code -> mktDepthToday(code)).entrySet().stream().flatMap(e -> e.getValue().map(v -> Map.entry(e.getKey(), v)).stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<String, MktDepth> result = mapCode(codes, this::mktDepthToday).entrySet().stream().flatMap(e -> e.getValue().map(v -> Map.entry(e.getKey(), v)).stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             return result;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
