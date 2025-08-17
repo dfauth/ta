@@ -13,11 +13,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functional.Lists.sortBy;
+import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 import static com.github.dfauth.ta.util.StreamOps.stream;
 
 @RestController
@@ -43,12 +46,17 @@ public class MktDepthController implements ControllerMixIn {
         mktDepthService.sync(builder.build());
     }
 
-    @PostMapping("/mktDepth")
+    @PostMapping("/mktDepth/{date}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, MktDepth> mktDepth(@RequestBody List<List<String>> codes) {
+    public Map<String, MktDepth> mktDepth(@PathVariable String date, @RequestBody List<List<String>> codes) {
         try {
-            log.info("mktDepth/{}",codes);
-            Map<String, MktDepth> result = mapCode(codes, this::mktDepthToday).entrySet().stream().flatMap(e -> e.getValue().map(v -> Map.entry(e.getKey(), v)).stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            log.info("mktDepth/{}/{}",date,codes);
+//            Map<String, MktDepth> result = mapCode(codes, mktDepth((LocalDate)YYYYMMDD.parse(date))).entrySet().stream().flatMap(e -> e.getValue().map(v -> Map.entry(e.getKey(), v)).stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<String, MktDepth> result = codes.stream()
+                    .flatMap(List::stream)
+                    .flatMap(code -> mktDepthService.findByIdAndDate(code, (LocalDate)YYYYMMDD.parse(date)).stream())
+                    .collect(Collectors.toMap(MktDepth::getCode, Function.identity()));
+            log.info("mktDepth/{} returns {}",date, result);
             return result;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -56,26 +64,31 @@ public class MktDepthController implements ControllerMixIn {
         }
     }
 
+    @GetMapping("/mktDepth/date/{date}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<MktDepth> mktDepthByDate(@PathVariable String date) {
+        return this.mktDepthService.findByDate((LocalDate) YYYYMMDD.parse(date));
+    }
+
     @GetMapping("/mktDepth/{code}")
     @ResponseStatus(HttpStatus.OK)
-    public Optional<MktDepth> mktDepth(@PathVariable String code) {
-        return mktDepth(code, m -> true);
+    public List<MktDepth> mktDepth(@PathVariable String code) {
+        return mktDepth(code, m -> true, Stream::toList);
+    }
+
+    public Function<String, Optional<MktDepth>> mktDepth(LocalDate date) {
+        return code -> this.mktDepthService.findByIdAndDate(code, date);
     }
 
     @GetMapping("/mktDepth/today/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<MktDepth> mktDepthToday(@PathVariable String code) {
-        return mktDepth(code, m -> m.getLocalDate().equals(LocalDate.now()));
+        return mktDepth(code, m -> true, Stream::findFirst);
     }
 
-    private Optional<MktDepth> mktDepth(@PathVariable String code, @PathVariable Predicate<MktDepth> p) {
-        try {
-            log.info("mkt depth {} {}",code);
-            return mktDepthService.findById(code).stream().filter(p).reduce(new MarketDepth(), MarketDepth::add, oops()).byCode(code).stream().reduce(MktDepth::trend);
-        } catch (RuntimeException e) {
-            log.error(e.getMessage(), e);
-            return Optional.empty();
-        }
+    private <T> T mktDepth(@PathVariable String code, @PathVariable Predicate<MktDepth> p, Function<Stream<MktDepth>, T> f) {
+        log.info("mkt depth {} {}",code);
+        return f.apply(mktDepthService.findById(code).stream().filter(p));
     }
 
     @GetMapping("/mktDepth/ratio/{threshold}")

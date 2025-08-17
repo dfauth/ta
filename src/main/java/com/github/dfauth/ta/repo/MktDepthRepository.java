@@ -9,6 +9,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 public interface MktDepthRepository extends CrudRepository<MktDepth, CodeDateCompositeKey> {
 
@@ -21,4 +22,14 @@ public interface MktDepthRepository extends CrudRepository<MktDepth, CodeDateCom
 
     @Query(value = "SELECT md FROM MktDepth md where md.date >= ?1")
     List<MktDepth> findLatest(Timestamp date);
+
+    @Query(value = "SELECT md FROM MktDepth md where md.code = ?1 and md.date >= ?2")
+    List<MktDepth> findByIdAndDateAfter(String code, Timestamp date);
+
+    default Optional<MktDepth> findByIdAndDate(String code, Timestamp date) {
+        return findByIdAndDateAfter(code, date).stream().findFirst();
+    }
+
+    @Query(value = "SELECT md FROM MktDepth md where md.date >= ?1")
+    List<MktDepth> findByDate(Timestamp date);
 }

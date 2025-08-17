@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BinaryOperator;
 
 import static com.github.dfauth.ta.functional.Collectors.comparing;
 import static com.github.dfauth.ta.functional.HistoricalOffset.zipWithHistoricalOffset;
@@ -39,11 +40,23 @@ public class DaysSince {
         return recentHigh(input, input.size());
     }
 
+    public static Optional<RecentHigh> recentLow(List<Price> input) {
+        return recentLow(input, input.size());
+    }
+
     public static Optional<RecentHigh> recentHigh(List<Price> input, int period) {
+        return recentHigh(input, period, BigDecimal::max);
+    }
+
+    public static Optional<RecentHigh> recentLow(List<Price> input, int period) {
+        return recentHigh(input, period, BigDecimal::min);
+    }
+
+    public static Optional<RecentHigh> recentHigh(List<Price> input, int period, BinaryOperator<BigDecimal> comparator) {
         List<Price> last = splitAt(input, input.size() - period)._2();
         List<HistoricalOffset<Price>> zipped = zipWithHistoricalOffset(last).collect(toList());
         Optional<HistoricalOffset<Price>> l = last(zipped);
-        Optional<HistoricalOffset<Price>> result = last(zipped.stream().collect(comparing((m, t) -> compare(m, t, ho -> ho.getPayload().getClose(), BigDecimal::max))));
+        Optional<HistoricalOffset<Price>> result = last(zipped.stream().collect(comparing((m, t) -> compare(m, t, ho -> ho.getPayload().getClose(), comparator))));
         return result.flatMap(r -> l.map(_l -> new RecentHigh(r,_l)));
     }
 

@@ -61,12 +61,25 @@ public class MaxMinController implements ControllerMixIn {
         return flatMapCode(codes, code -> recentLastHigh(code, period).stream());
     }
 
+    @PostMapping("/recentLow/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Map<String, DaysSince.RecentHigh> recentLastLow(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        log.info("recentLow/{}/{}",codes,period);
+        return flatMapCode(codes, code -> recentLastLow(code, period).stream());
+    }
+
     @GetMapping("/recentHigh/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<DaysSince.RecentHigh> recentLastHigh(@PathVariable String _code, @PathVariable int period) {
         log.info("recentHigh/{}/{}",_code,period);
-        return DaysSince.recentHigh(prices(_code, period).stream()
-                .collect(Collectors.toList()));
+        return DaysSince.recentHigh(prices(_code, period));
+    }
+
+    @GetMapping("/recentLow/{_code}/{period}")
+    @ResponseStatus(HttpStatus.OK)
+    Optional<DaysSince.RecentHigh> recentLastLow(@PathVariable String _code, @PathVariable int period) {
+        log.info("recentLow/{}/{}",_code,period);
+        return DaysSince.recentLow(prices(_code, period));
     }
 
     // pct below previous high
