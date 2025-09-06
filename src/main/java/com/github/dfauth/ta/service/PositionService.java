@@ -1,19 +1,18 @@
 package com.github.dfauth.ta.service;
 
-import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.model.*;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.repo.PaymentRepository;
 import com.github.dfauth.ta.repo.PositionRepository;
 import com.github.dfauth.ta.repo.PriceRepository;
 import com.github.dfauth.ta.repo.TradeRepository;
+import com.github.dfauth.ta.util.PositionCollector;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.UnaryOperator;
@@ -44,26 +43,12 @@ public class PositionService {
     public int sync() {
 
         // group trades by code, ordered by date
-        Map<String, List<Trade>> tradeByCode = stream(tradeRepository.findAllByDate()).collect(Collectors.groupingBy(Trade::getCode, Collectors.toList()));
+        List<Position> positions = stream(tradeRepository.findAllByDate())
+                .collect(Collectors.groupingBy(Trade::getCode, new PositionCollector()))
+                .values().stream()
+                .flatMap(List::stream)
+                .toList();
 
-        // for each code, reduce to a series of positions
-        List<Position> positions = tradeByCode.entrySet().stream().map(e -> {
-            List<Position> tmp = new ArrayList<>();
-            Position last = e.getValue().stream().reduce(new Position(), (p, t) -> {
-                var p1 = p.onTrade(t);
-                if (p1.isClosed()) {
-                    tmp.add(p1);
-                    return new Position();
-                } else {
-                    return p1;
-                }
-            }, oops());
-            // add open positions
-            if(last.isOpen()) {
-                tmp.add(last);
-            }
-            return tmp;
-        }).flatMap(List::stream).collect(Collectors.toList());
         log.info("processing {} positions", positions.size());
         return save(positions);
     }
@@ -125,23 +110,6 @@ public class PositionService {
                 .stream()
                 .map(e -> Map.entry(e.getKey(), e.getValue().stream().reduce(new PositionSummary(), PositionSummary::add, oops())))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    public Iterable<Position> findOpenPositions() {
-        return findOpenPositions(LocalDate.now());
-    }
-
-    public Iterable<Position> findOpenPositions(LocalDate date) {
-        return findOpenPositions(date, MarketEnum.ASX);
-    }
-
-    public Iterable<Position> findOpenPositions(LocalDate date, Market market) {
-        Instant i = market.atMarketCloseOnOrPriorTo(date);
-        Map<String, Position> map = Lists.toMap1(positionRepository.findAllPriorTo(new Timestamp(i.toEpochMilli())), Position::getCode, p -> (k, v) -> Optional.ofNullable(v)
-                .map(prev -> prev.later(p))
-                .orElse(p));
-        // filter non zero
-        return map.values().stream().filter(p -> p.getSize() > 0).collect(Collectors.toList());
     }
 
     public Optional<Position> getPosition(String code, Timestamp date) {

@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functional.Optionals.bothPresent;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
+import static com.github.dfauth.ta.util.Utils.thenThrow;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.empty;
@@ -149,25 +150,6 @@ public class Position {
         ).apply(List.of(t));
     }
 
-    public Position later(Position other) {
-        if(!code.equals(other.getCode())) {
-            throw new IllegalArgumentException("Cant aggregate positions across codes: "+code+" and "+other.getCode());
-        }
-        return new Position(
-                this.date.toInstant().isBefore(other.date.toInstant()) ? this.date : other.date,
-                this.code,
-                this.last.toInstant().isAfter(other.last.toInstant()) ? this.last : other.last,
-                this.unitsPurchased + other.unitsPurchased,
-                this.unitsSold + other.unitsSold,
-                this.weightedHoldingTime + other.weightedHoldingTime,
-                this.purchaseValue.add(other.purchaseValue),
-                Optional.ofNullable(other.saleValue).map(sv -> this.saleValue.add(sv)).orElse(this.saleValue),
-                this.commission.add(other.commission),
-                this.trades = Lists.add(this.trades, other.trades),
-                this.payments = Lists.add(this.payments, other.payments)
-        );
-    }
-
     @JsonIgnore
     public boolean isClosed() {
         return getSize() == 0;
@@ -240,5 +222,21 @@ public class Position {
         Optional<BigDecimal> sumSalePayments = paymentMap.getOrDefault(TxnType.DEP, emptyList()).stream().map(Payment::getValue).reduce(BigDecimal::add);
         return sumPurchasePayments.map(spp -> getPurchaseValue().equals(spp.setScale(getPurchaseValue().scale(), RoundingMode.HALF_UP))).orElse(false) &&
                 sumSalePayments.map(ssp -> getSaleValue().equals(ssp.setScale(getSaleValue().scale(), RoundingMode.HALF_UP))).orElse(false);
+    }
+
+    public Position merge(Position other) {
+        return new Position(
+            date.toInstant().isBefore(other.date.toInstant()) ? date : other.date,
+            code.equals(other.code) ? code : thenThrow(UnsupportedOperationException::new),
+            last.toInstant().isAfter(other.getLast().toInstant()) ? last : other.last,
+            unitsPurchased + other.unitsPurchased,
+            unitsSold + other.unitsSold,
+            weightedHoldingTime + other.weightedHoldingTime,
+            purchaseValue.add(other.purchaseValue),
+            saleValue.add(other.saleValue),
+            commission.add(other.commission),
+            Lists.add(trades, other.trades),
+            Lists.add(payments, other.payments)
+        );
     }
 }

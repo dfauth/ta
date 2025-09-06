@@ -14,6 +14,7 @@ import java.util.function.Function;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 import static com.github.dfauth.ta.model.Position.nonNaN;
 import static com.github.dfauth.ta.model.Position.nonZero;
+import static com.github.dfauth.ta.util.Utils.thenThrow;
 import static java.math.BigDecimal.ZERO;
 
 @AllArgsConstructor
@@ -58,8 +59,8 @@ public class PositionSummary {
     private BigDecimal openProfit = ZERO;
 
     public PositionSummary add(Position p) {
-        return new PositionSummary(
-                p.getCode(),
+        var result = new PositionSummary(
+                Optional.ofNullable(code).map(p.getCode()::equals).orElse(true) ? code : thenThrow(() -> new IllegalStateException("codes dont match: "+code+"and "+p.getCode())),
                 p.isClosed() ? closedUnitsPurchased + p.getUnitsPurchased() : closedUnitsPurchased,
                 p.isOpen() ? openUnitsPurchased + p.getUnitsPurchased() : openUnitsPurchased,
                 p.isClosed() ? closedUnitsSold + p.getUnitsSold() : closedUnitsSold,
@@ -77,6 +78,7 @@ public class PositionSummary {
                 trades + p.getTradeCount(),
                 p.isOpen() ? Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(openProfit), p.getProfit(),BigDecimal::add).orElse(null) : openProfit
         );
+        return result;
     }
 
     @JsonProperty("osz")

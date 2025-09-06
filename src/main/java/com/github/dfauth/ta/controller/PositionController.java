@@ -6,6 +6,7 @@ import com.github.dfauth.ta.model.PositionSummary;
 import com.github.dfauth.ta.model.Theme;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.service.PositionService;
+import com.github.dfauth.ta.util.ComparableWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,12 +15,17 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
+import static com.github.dfauth.ta.controller.MetricsController.Mode.ALL;
+import static com.github.dfauth.ta.functional.Collectors.identityCollector;
 import static com.github.dfauth.ta.model.MarketEnum.ASX;
+import static com.github.dfauth.ta.model.PositionDatePredicate.END_DATE;
+import static com.github.dfauth.ta.model.PositionDatePredicate.START_DATE;
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 import static com.github.dfauth.ta.util.StreamOps.stream;
 import static java.util.function.Predicate.not;
@@ -35,6 +41,43 @@ public class PositionController {
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> positionValuation() {
         return positionService.findAll();
+    }
+
+    @GetMapping("/positions/sort")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String,Map<ComparableWrapper<LocalDate>,Position>> sortedPositions() {
+        return sortedPositions(Position::getCode, p -> new ComparableWrapper<>(p.getDate().toLocalDateTime().toLocalDate(), LocalDate::compareTo));
+    }
+
+    @GetMapping("/positions/sort/byDate")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<ComparableWrapper<LocalDate>, Map<String, Position>> sortedPositionsByDate(@RequestParam("startDate") Optional<String> startDate, @RequestParam("endDate") Optional<String> endDateDate, @RequestParam("mode") Optional<MetricsController.Mode> mode) {
+        Predicate<Position> pred = startDate.map(START_DATE).orElse(_p -> true)
+                .and(
+                        endDateDate.map(END_DATE).orElse(_p -> true))
+                .and(
+                        mode.orElse(ALL));
+
+        return stream(positionService.findAll())
+                .filter(pred)
+                .collect(sortedDoubleKeyedMapCollector(
+                        p -> new ComparableWrapper<>(p.getDate().toLocalDateTime().toLocalDate(), LocalDate::compareTo),
+                        Position::getCode));
+    }
+
+    private <K extends Comparable<K>, L extends Comparable<L>> Collector<Position, ?, Map<K, Map<L, Position>>> sortedDoubleKeyedMapCollector(Function<Position, K> primaryKeyMapper,
+                                                                                                                                      Function<Position, L> secondaryKeyMapper) {
+        return Collectors.groupingBy(primaryKeyMapper,
+                        TreeMap::new,
+                        Collectors.groupingBy(secondaryKeyMapper,
+                                TreeMap::new,
+                                identityCollector()));
+    }
+
+    private <K extends Comparable<K>, L extends Comparable<L>> Map<K,Map<L,Position>> sortedPositions(Function<Position, K> primaryKeyMapper,
+                                                                                                      Function<Position, L> secondaryKeyMapper) {
+        return stream(positionService.findAll())
+                .collect(sortedDoubleKeyedMapCollector(primaryKeyMapper, secondaryKeyMapper));
     }
 
     @GetMapping("/positions/summary")

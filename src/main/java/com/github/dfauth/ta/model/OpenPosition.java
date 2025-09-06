@@ -56,7 +56,7 @@ public class OpenPosition extends Position {
 
     @Override
     public LocalDate getClose() {
-        return getT(Position::getClose).orElseThrow();
+        return getT(Position::getClose).orElse(null);
     }
 
     @Override

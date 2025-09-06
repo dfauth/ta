@@ -25,11 +25,11 @@ import static java.lang.Math.abs;
 @Getter
 public class TradingMetrics {
 
-    public static final Function<Double, Function<Double, Function<Double, Double>>> expectancy = winRate -> avgGain -> avgLoss -> (winRate * avgGain) - (1.0d - winRate * avgLoss);
+    public static final Function<Double, Function<Double, Function<Double, Double>>> expectancy = winRate -> avgGain -> avgLoss -> (winRate * avgGain) - ((1.0d - winRate) * abs(avgLoss));
     public static final BiFunction<Double, Double, Double> riskRewardRatio = (avgGain, avgLoss) -> abs(avgGain / avgLoss);
     public static final BiFunction<Double, Double, Double> roi = (profit, investment) -> profit / investment;
     public static final BiFunction<Double, Double, Double> cagr = CAGR::cagr;
-    public static final Function<Double, Function<Double, Function<Double,Double>>> positiveExpectancy = avgWin -> avgLoss -> winRate -> (1 + (avgWin/avgLoss)) * winRate - 1.0d;
+    public static final Function<Double, Function<Double, Function<Double,Double>>> positiveExpectancy = avgWin -> avgLoss -> winRate -> (1 + (avgWin/abs(avgLoss))) * winRate - 1.0d;
 
     private int losingPositions;
     private int winningPositions;
@@ -90,7 +90,7 @@ public class TradingMetrics {
     }
 
     public Optional<BigDecimal> getReturn() {
-        return eitherOrBoth(getPurchaseValue(),getSaleValue(), BigDecimal::subtract).map(bd -> bd.divide(getPurchaseValue(), RoundingMode.HALF_UP));
+        return eitherOrBoth(getSaleValue(), getPurchaseValue(), BigDecimal::subtract).map(bd -> bd.divide(getPurchaseValue(), RoundingMode.HALF_UP));
     }
 
     public Optional<BigDecimal> getTurnover() {

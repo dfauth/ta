@@ -256,4 +256,32 @@ public class Collectors {
         };
     }
 
+    public static <T> Collector<T, AtomicReference<T>, T> identityCollector() {
+        return new Collector<>() {
+            @Override
+            public Supplier<AtomicReference<T>> supplier() {
+                return AtomicReference::new;
+            }
+
+            @Override
+            public BiConsumer<AtomicReference<T>, T> accumulator() {
+                return AtomicReference::set;
+            }
+
+            @Override
+            public BinaryOperator<AtomicReference<T>> combiner() {
+                return oops();
+            }
+
+            @Override
+            public Function<AtomicReference<T>, T> finisher() {
+                return AtomicReference::get;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return emptySet();
+            }
+        };
+    }
 }

@@ -52,6 +52,13 @@ public class Controller implements ControllerMixIn {
     }
 
     // sma
+    @GetMapping("/prices/{_code}")
+    @ResponseStatus(HttpStatus.OK)
+    List<Price> prices(@PathVariable String _code) {
+        log.info("prices/{}",_code);
+        return repository.findByCodeOrderByDate(_code).stream().toList();
+    }
+
     @GetMapping("/prices/{_code}/sma/{period}")
     @ResponseStatus(HttpStatus.OK)
     Optional<BigDecimal> sma(@PathVariable String _code, @PathVariable int period) {
