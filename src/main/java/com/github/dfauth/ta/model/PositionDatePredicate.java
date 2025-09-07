@@ -12,9 +12,15 @@ import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 @Slf4j
 public enum PositionDatePredicate implements Function<String, Predicate<Position>> {
 
-    START_DATE((p, ld) -> p.getDate().toLocalDateTime().toLocalDate().isAfter(ld)),
-    END_DATE((p, ld) -> p.getLast().toLocalDateTime().toLocalDate().isBefore(ld));
+    START_BEFORE((p, ld) -> p.getDate().toLocalDateTime().toLocalDate().isBefore(ld)),
+    START_AFTER((p, ld) -> p.getDate().toLocalDateTime().toLocalDate().isAfter(ld)),
+    END_BEFORE((p, ld) -> p.getLast().toLocalDateTime().toLocalDate().isBefore(ld)),
+    END_AFTER((p, ld) -> p.getLast().toLocalDateTime().toLocalDate().isAfter(ld));
     private BiPredicate<Position, LocalDate> p2;
+
+    public static Predicate<Position> ignore() {
+        return p -> true;
+    }
 
     PositionDatePredicate(BiPredicate<Position, LocalDate> p2) {
         this.p2 = p2;

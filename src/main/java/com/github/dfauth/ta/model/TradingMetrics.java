@@ -10,13 +10,16 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.*;
+import java.util.stream.Collector;
 
 import static com.github.dfauth.ta.functional.Optionals.*;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 import static com.github.dfauth.ta.util.BigDecimalOps.valueOf;
 import static java.lang.Math.abs;
+import static java.util.Collections.emptySet;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -148,5 +151,37 @@ public class TradingMetrics {
                 p.isOpen() ? openPositions + 1 : openPositions,
                 trades + p.getTrades().size()
         );
+    }
+
+    public static Collector<Position, ?, TradingMetrics> collector() {
+        return new Collector<Position, AtomicReference<TradingMetrics>, TradingMetrics>() {
+            @Override
+            public Supplier<AtomicReference<TradingMetrics>> supplier() {
+                return () -> new AtomicReference<>(new TradingMetrics());
+            }
+
+            @Override
+            public BiConsumer<AtomicReference<TradingMetrics>, Position> accumulator() {
+                return (ref, p) -> ref.getAndUpdate(tm -> tm.add(p));
+            }
+
+            @Override
+            public BinaryOperator<AtomicReference<TradingMetrics>> combiner() {
+                return (l , r) -> {
+                    l.getAndUpdate(tm -> tm.add(r.get()));
+                    return l;
+                };
+            }
+
+            @Override
+            public Function<AtomicReference<TradingMetrics>, TradingMetrics> finisher() {
+                return AtomicReference::get;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return emptySet();
+            }
+        };
     }
 }
