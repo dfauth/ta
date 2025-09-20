@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.util;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.function.BiFunction;
@@ -9,6 +10,7 @@ import java.util.function.BiFunction;
 @AllArgsConstructor
 public class ComparableWrapper<T> implements Comparable<ComparableWrapper<T>> {
 
+    @Getter
     private final T nested;
     private final BiFunction<T, T, Integer> comparator;
 

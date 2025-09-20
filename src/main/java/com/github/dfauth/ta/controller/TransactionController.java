@@ -3,11 +3,15 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functional.Consecutive;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Reduction;
+import com.github.dfauth.ta.model.OpenPosition;
+import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.Side;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnType;
 import com.github.dfauth.ta.repo.PaymentRepository;
+import com.github.dfauth.ta.service.PositionService;
 import com.github.dfauth.ta.service.TransactionService;
+import com.github.dfauth.ta.util.ComparableWrapper;
 import com.github.dfauth.ta.util.DateTimeUtils;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -18,15 +22,12 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.Collectors.aggregate;
-import static com.github.dfauth.ta.functional.Collectors.toTreeMap;
+import static com.github.dfauth.ta.functional.Collectors.*;
 import static com.github.dfauth.ta.functional.Reduction.SUM_PAYMENTS;
 import static com.github.dfauth.ta.model.txn.TxnType.DIV;
 import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
@@ -317,4 +318,27 @@ public class TransactionController {
         tmp.remove(last);
         return Lists.add(reorderSameDayPayments(tmp), last);
     }
+
+    @GetMapping("/txns/balance")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<ComparableWrapper<LocalDate>, BigDecimal> balance() {
+        return stream(transactionService.findAll())
+                .map(p -> Map.entry(new ComparableWrapper<>(p.getDate(), LocalDate::compareTo), p.getBalance()))
+                .map(e -> {
+                    var d = e.getKey().getNested().minusDays(2);
+                    var x = positionService.getPositionAsAt(d);
+                    var y = stream(x)
+                            .filter(Position::isOpen)
+                            .map(OpenPosition.class::cast)
+                            .map(OpenPosition::getMarketValue)
+                            .reduce(BigDecimal::add)
+                            .map(v -> v.add(e.getValue()))
+                            .orElse(e.getValue());
+                    return Map.entry(e.getKey(), y);
+                })
+                .collect(mapEntryMap(() -> new TreeMap<ComparableWrapper<LocalDate>, BigDecimal>(ComparableWrapper::compareTo)));
+    }
+
+    @Autowired
+    private PositionService positionService;
 }

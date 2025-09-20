@@ -239,4 +239,13 @@ public class Position {
             Lists.add(payments, other.payments)
         );
     }
+
+    public Position positionAsAt(LocalDate asAt) {
+        return trades.stream()
+                .filter(t -> t.getDate().toLocalDateTime().toLocalDate().isBefore(asAt))
+                .reduce(null,
+                        (p, t) -> Optional.ofNullable(p).map(_p -> _p.onTrade(t)).orElseGet(() -> new Position(t)),
+                        Position::merge
+                );
+    }
 }

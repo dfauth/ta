@@ -164,7 +164,36 @@ public class Collectors {
     }
 
     public static <K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> mapEntryMap() {
-        return java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue);
+        return mapEntryMap(HashMap::new);
+    }
+
+    public static <K,V> Collector<Map.Entry<K,V>, ?,Map<K,V>> mapEntryMap(Supplier<Map<K,V>> supplier) {
+        return new java.util.stream.Collector<Map.Entry<K,V>, Map<K,V>,Map<K,V>>() {
+            @Override
+            public Supplier<Map<K, V>> supplier() {
+                return supplier;
+            }
+
+            @Override
+            public BiConsumer<Map<K, V>, Map.Entry<K, V>> accumulator() {
+                return (m, e) -> m.put(e.getKey(), e.getValue());
+            }
+
+            @Override
+            public BinaryOperator<Map<K, V>> combiner() {
+                return Maps::merge;
+            }
+
+            @Override
+            public Function<Map<K, V>, Map<K, V>> finisher() {
+                return identity();
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return emptySet();
+            }
+        };
     }
 
     public static <T,R,S> Collector<T, Map<R,S>,Map<R,S>> toMap(Function<T,R> keyMapper,Function<T,BiFunction<R,S,S>> reMapper) {

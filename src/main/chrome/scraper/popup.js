@@ -1,6 +1,4 @@
-function showMessage() {
-  console.log('This is a popup');
-  alert( 'Hello everyone!' );
+function codes() {
 }
-showMessage();
+codes()
 

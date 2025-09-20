@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collector;
 
 import static com.github.dfauth.ta.controller.MetricsController.Mode.ALL;
+import static com.github.dfauth.ta.functional.Predicates.alwaysTrue;
 import static com.github.dfauth.ta.model.MarketEnum.ASX;
 import static com.github.dfauth.ta.model.PositionCollectors.sortedDoubleKeyedMapCollector;
 import static com.github.dfauth.ta.model.PositionDatePredicate.*;
@@ -54,16 +55,19 @@ public class PositionController {
                                         @RequestParam("endBefore") Optional<String> endBefore,
                                         @RequestParam("endAfter") Optional<String> endAfter,
                                         @RequestParam("mode") Optional<MetricsController.Mode> mode,
+                                        @RequestParam("theme") Optional<String> theme,
                                         @RequestParam("collector") Optional<PositionCollectors> collector) {
         Predicate<Position> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
         Predicate<Position> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
         Predicate<Position> modePredicate = mode.orElse(ALL);
+        Predicate<Position> themePredicate = theme.flatMap(t -> Optional.ofNullable(Theme.fromString(t))).orElse(alwaysTrue());
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
         return stream(positionService.findAll())
                 .filter(startDatePredicate
                         .and(endDatePredicate)
-                        .and(modePredicate))
+                        .and(modePredicate)
+                        .and(themePredicate))
                 .collect(collector.map(PositionCollectors::toCollector).orElse(d));
     }
 

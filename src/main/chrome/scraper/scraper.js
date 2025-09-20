@@ -7,6 +7,44 @@ function blah() {
         }).then(() => console.log('Injected a function!'));
   })
 }
+function popupInput() {
+   let codes = prompt("gimme codes:", "ASX codes")
+   var l = codes.split('\r').map(c => c.split(':')[1])
+   console.log('codes are '+l)
+   doit(l)
+}
+var quoteWindow = null;
+function doit(codes) {
+        codes.forEach(c => {
+            var tabUrl = "https://sharetrading.westpac.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx?stockCode="+c;
+            if(quoteWindow == null) {
+              quoteWindow = chrome.windows.create({ url: tabUrl});
+            } else {
+              quoteWindow.then(w => {
+                   (async () => {
+                       await chrome.tabs.create({windowId: w.id, url: tabUrl});
+                   })();
+              });
+            }
+        });
+//    const [head, ...tail] = codes
+//    chrome.windows.create({
+//        url: "https://sharetrading.westpac.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx?stockCode="+head,
+//        type: "popup"
+//    }).then(w => {
+//        console.log('window id is '+w.id)
+//        tail.forEach(c => {
+//            var url = "https://sharetrading.westpac.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx?stockCode="+c;
+//            (async () => {
+//                console.log('window id is '+w.id+' url is '+url)
+//                await chrome.tabs.create({windowId: w.id, url: url});
+//            })();
+//        });
+//    })
+};
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 function retrieveCodes() {
   let codes = $.ajax({
     url: 'http://localhost:8080/rank',
@@ -18,6 +56,7 @@ function retrieveCodes() {
   });
 }
 document.getElementById('scraper').addEventListener('click', () => blah());
+document.getElementById('custom').addEventListener('click', () => popupInput());
 
 var quoteWindow = null;
 chrome.runtime.onMessage.addListener(

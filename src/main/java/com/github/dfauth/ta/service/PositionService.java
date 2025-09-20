@@ -149,7 +149,7 @@ public class PositionService {
     }
 
     public Iterable<Position> getPositionAsAt(LocalDate date) {
-        return openPositionStream(date).apply(stream(positionRepository.findAllPriorTo(date))).toList();
+        return openPositionStream(date).apply(stream(positionRepository.findAllPriorTo(date)).map(p -> p.positionAsAt(date))).toList();
     }
 
     public Optional<Position> getPositionAsAt(String code, LocalDate date) {
