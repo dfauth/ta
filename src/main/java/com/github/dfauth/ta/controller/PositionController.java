@@ -60,7 +60,7 @@ public class PositionController {
         Predicate<Position> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
         Predicate<Position> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
         Predicate<Position> modePredicate = mode.orElse(ALL);
-        Predicate<Position> themePredicate = theme.flatMap(t -> Optional.ofNullable(Theme.fromString(t))).orElse(alwaysTrue());
+        Predicate<Position> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
         return stream(positionService.findAll())

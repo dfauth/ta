@@ -18,7 +18,9 @@ import java.util.stream.Collector;
 import static com.github.dfauth.ta.functional.Optionals.*;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 import static com.github.dfauth.ta.util.BigDecimalOps.valueOf;
+import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.lang.Math.abs;
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptySet;
 
 @AllArgsConstructor
@@ -93,7 +95,7 @@ public class TradingMetrics {
     }
 
     public Optional<BigDecimal> getReturn() {
-        return eitherOrBoth(getSaleValue(), getPurchaseValue(), BigDecimal::subtract).map(bd -> bd.divide(getPurchaseValue(), RoundingMode.HALF_UP));
+        return eitherOrBoth(getSaleValue(), getPurchaseValue(), BigDecimal::subtract).map(bd -> tryCatch(() -> bd.divide(getPurchaseValue(), RoundingMode.HALF_UP), e -> ZERO));
     }
 
     public Optional<BigDecimal> getTurnover() {
