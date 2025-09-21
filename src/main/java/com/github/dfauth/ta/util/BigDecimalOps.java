@@ -57,6 +57,10 @@ public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
         return divide(bd, valueOf(i));
     }
 
+    static BigDecimal divide(BigDecimal bd, Long l) {
+        return divide(bd, valueOf(l));
+    }
+
     static BigDecimalOps divide(BigDecimal bd1) {
         return bd -> divide(bd1,bd);
     }

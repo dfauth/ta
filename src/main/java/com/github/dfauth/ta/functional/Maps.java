@@ -3,10 +3,7 @@ package com.github.dfauth.ta.functional;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Collectors.*;
@@ -25,7 +22,11 @@ public class Maps<K,V> extends HashMap<K,V> {
     }
 
     public static <K,V> Map<K,V> merge(BinaryOperator<V> mergeFunction, Map<K,V>... maps) {
-        return Arrays.stream(maps).flatMap(m -> m.entrySet().stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, mergeFunction));
+        return merge(HashMap::new, mergeFunction, maps);
+    }
+
+    public static <K,V, T extends Map<K,V>> T merge(Supplier<T> supplier, BinaryOperator<V> mergeFunction, Map<K,V>... maps) {
+        return Arrays.stream(maps).flatMap(m -> m.entrySet().stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, mergeFunction, supplier));
     }
 
     public static <K,V,T> Map<K,T> mapValues(Map<K,V> l, Function<V,T> f) {
