@@ -12,10 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -38,8 +35,28 @@ public class PositionController {
 
     @GetMapping("/positions")
     @ResponseStatus(HttpStatus.OK)
-    public Iterable<Position> positionValuation() {
-        return positionService.findAll();
+    public Object positions(@RequestParam("startBefore") Optional<String> startBefore,
+                                        @RequestParam("startAfter") Optional<String> startAfter,
+                                        @RequestParam("endBefore") Optional<String> endBefore,
+                                        @RequestParam("endAfter") Optional<String> endAfter,
+                                        @RequestParam("mode") Optional<MetricsController.Mode> mode,
+                                        @RequestParam("theme") Optional<String> theme,
+                                        @RequestParam("excludeCodes") Optional<String> excludeCodes,
+                                        @RequestParam("collector") Optional<PositionCollectors> collector) {
+        Predicate<Position> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
+        Predicate<Position> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
+        Predicate<Position> modePredicate = mode.orElse(ALL);
+        Predicate<Position> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
+        Predicate<Position> excludeCodesPredicate = excludeCodes.map(str -> (Predicate<Position>)(p -> !Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
+
+        Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
+        return stream(positionService.findAll())
+                .filter(startDatePredicate
+                        .and(endDatePredicate)
+                        .and(modePredicate)
+                        .and(themePredicate)
+                        .and(excludeCodesPredicate))
+                .collect(collector.map(PositionCollectors::toCollector).orElse(d));
     }
 
     @GetMapping("/positions/sort")

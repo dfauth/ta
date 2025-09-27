@@ -1,6 +1,5 @@
 package com.github.dfauth.ta.model;
 
-import com.github.dfauth.ta.util.ComparableWrapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,16 +16,20 @@ import static com.github.dfauth.ta.functional.Collectors.identityCollector;
 @AllArgsConstructor
 public enum PositionCollectors {
 
-    DOUBLE_KEYED_MAP(() -> PositionCollectors.<Comparable, Comparable>sortedDoubleKeyedMapCollector(
-                     p -> new ComparableWrapper<>(p.getDate().toLocalDateTime().toLocalDate(), java.time.LocalDate::compareTo),
+    SORT_BY_DATE_THEN_CODE(() -> PositionCollectors.<Comparable, Comparable>sortedDoubleKeyedMapCollector(
+                     p -> p.getDate().toLocalDateTime().toLocalDate(),
                      Position::getCode)),
+
+    SORT_BY_CODE_THEN_DATE(() -> PositionCollectors.<Comparable, Comparable>sortedDoubleKeyedMapCollector(
+                    Position::getCode,
+                     p -> p.getDate().toLocalDateTime().toLocalDate())),
 
     METRICS(TradingMetrics::collector);
 
     private final Supplier<Collector<Position, ?, ?>> supplier;
 
     public static <T> Collector<Position, Object, T> defaultCollector() {
-        return DOUBLE_KEYED_MAP.toCollector();
+        return SORT_BY_DATE_THEN_CODE.toCollector();
     }
 
     public <R> Collector<Position, Object, R> toCollector() {

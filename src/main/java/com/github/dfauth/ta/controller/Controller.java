@@ -3,8 +3,10 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functions.Accumulator;
 import com.github.dfauth.ta.functions.MovingAverages;
 import com.github.dfauth.ta.functions.RateOfChange;
+import com.github.dfauth.ta.model.Code;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
+import com.github.dfauth.ta.repo.CodeRepository;
 import com.github.dfauth.ta.repo.PriceRepository;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,12 +39,17 @@ public class Controller implements ControllerMixIn {
     @Autowired
     private PriceRepository repository;
 
+    @Autowired
+    private CodeRepository codeRepository;
+
     private DateTimeFormatter dtf = DateTimeFormatter.ISO_DATE_TIME;
 
     // Save
     @PostMapping("/sync/{_code}")
     @ResponseStatus(HttpStatus.CREATED)
     Integer sync(@PathVariable String _code, @RequestBody Object[][] args) {
+
+        codeRepository.findById(_code).stream().findAny().ifPresentOrElse(ignored -> {}, () -> codeRepository.save(new Code(_code)));
         List<Price> prices = Stream.of(args)
                 .map(a -> new Price(_code, parseDate((String) a[0]), parsePrice(a[1]), parsePrice(a[2]), parsePrice(a[3]), parsePrice(a[4]), (Integer) a[5]))
                 .filter(p -> repository.findById(p.getKey()).map(_p -> _p.getOpen() == null).orElse(true))
