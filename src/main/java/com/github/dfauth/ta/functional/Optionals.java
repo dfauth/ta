@@ -1,6 +1,5 @@
 package com.github.dfauth.ta.functional;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -8,9 +7,18 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
 import static com.github.dfauth.ta.functional.Lists.headAndTail;
+import static java.util.Arrays.stream;
 import static java.util.Optional.empty;
 
 public class Optionals {
+
+    public static <T> BinaryOperator<Optional<T>> reduce(BinaryOperator<T> f2) {
+        return (l, r) -> reduce(f2, l, r);
+    }
+
+    public static <T> Optional<T> reduce(BinaryOperator<T> f2, Optional<T>... ts) {
+        return stream(ts).flatMap(Optional::stream).reduce(f2);
+    }
 
     public static <T> Optional<T> eitherOrBoth(T t1, T t2, BinaryOperator<T> f2) {
         return eitherOrBoth(Optional.ofNullable(t1), Optional.ofNullable(t2), f2);
@@ -29,11 +37,11 @@ public class Optionals {
     }
 
     public static <T> Optional<T> allPresent(Function<T,?> fn, T... ts) {
-        return allPresent(fn, Arrays.stream(ts).map(Optional::ofNullable).toList());
+        return allPresent(fn, stream(ts).map(Optional::ofNullable).toList());
     }
 
     public static <T> Optional<T> allPresent(Function<T,?> fn, Optional<T>... ts) {
-        return allPresent(fn, Arrays.stream(ts).toList());
+        return allPresent(fn, stream(ts).toList());
     }
 
     public static <T> Optional<T> allPresent(Function<T,?> fn, List<Optional<T>> ts) {

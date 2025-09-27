@@ -3,7 +3,9 @@ package com.github.dfauth.ta.model;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -11,6 +13,8 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Collectors.identityCollector;
+import static com.github.dfauth.ta.functional.Optionals.reduce;
+import static java.util.Optional.empty;
 
 @Slf4j
 @AllArgsConstructor
@@ -24,10 +28,17 @@ public enum PositionCollectors {
                     Position::getCode,
                      p -> p.getDate().toLocalDateTime().toLocalDate())),
 
-    METRICS(TradingMetrics::collector);
+    METRICS(TradingMetrics::collector),
+
+    PROFIT(Position::getProfit),
+
+    DIVIDEND(Position::getDividends);
 
     private final Supplier<Collector<Position, ?, ?>> supplier;
 
+    PositionCollectors(Function<Position, Optional<BigDecimal>> extractor) {
+        this(() -> summing(extractor));
+    }
     public static <T> Collector<Position, Object, T> defaultCollector() {
         return SORT_BY_DATE_THEN_CODE.toCollector();
     }
@@ -43,6 +54,10 @@ public enum PositionCollectors {
                 Collectors.groupingBy(secondaryKeyMapper,
                         TreeMap::new,
                         identityCollector()));
+    }
+
+    public static Collector<Position, ?, Optional<BigDecimal>> summing(Function<Position, Optional<BigDecimal>> extractor) {
+        return Collectors.reducing(empty(),extractor, reduce(BigDecimal::add));
     }
 
 

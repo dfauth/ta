@@ -28,12 +28,13 @@ import static java.util.function.Predicate.not;
 
 @RestController
 @Slf4j
+@RequestMapping("position")
 public class PositionController {
 
     @Autowired
     private PositionService positionService;
 
-    @GetMapping("/positions")
+    @GetMapping()
     @ResponseStatus(HttpStatus.OK)
     public Object positions(@RequestParam("startBefore") Optional<String> startBefore,
                                         @RequestParam("startAfter") Optional<String> startAfter,
@@ -42,12 +43,14 @@ public class PositionController {
                                         @RequestParam("mode") Optional<MetricsController.Mode> mode,
                                         @RequestParam("theme") Optional<String> theme,
                                         @RequestParam("excludeCodes") Optional<String> excludeCodes,
+                                        @RequestParam("includeCodes") Optional<String> includeCodes,
                                         @RequestParam("collector") Optional<PositionCollectors> collector) {
         Predicate<Position> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
         Predicate<Position> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
         Predicate<Position> modePredicate = mode.orElse(ALL);
         Predicate<Position> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
         Predicate<Position> excludeCodesPredicate = excludeCodes.map(str -> (Predicate<Position>)(p -> !Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
+        Predicate<Position> includeCodesPredicate = includeCodes.map(str -> (Predicate<Position>)(p -> Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
         return stream(positionService.findAll())
@@ -55,17 +58,18 @@ public class PositionController {
                         .and(endDatePredicate)
                         .and(modePredicate)
                         .and(themePredicate)
-                        .and(excludeCodesPredicate))
+                        .and(excludeCodesPredicate)
+                        .and(includeCodesPredicate))
                 .collect(collector.map(PositionCollectors::toCollector).orElse(d));
     }
 
-    @GetMapping("/positions/sort")
+    @GetMapping("/sort")
     @ResponseStatus(HttpStatus.OK)
     public Map<String,Map<ComparableWrapper<LocalDate>,Position>> sortedPositions() {
         return sortedPositions(Position::getCode, p -> new ComparableWrapper<>(p.getDate().toLocalDateTime().toLocalDate(), LocalDate::compareTo));
     }
 
-    @GetMapping("/positions/sort/byDate")
+    @GetMapping("/sort/byDate")
     @ResponseStatus(HttpStatus.OK)
     public Object sortedPositionsByDate(@RequestParam("startBefore") Optional<String> startBefore,
                                         @RequestParam("startAfter") Optional<String> startAfter,
@@ -94,88 +98,88 @@ public class PositionController {
                 .collect(sortedDoubleKeyedMapCollector(primaryKeyMapper, secondaryKeyMapper));
     }
 
-    @GetMapping("/positions/summary")
+    @GetMapping("/summary")
     @ResponseStatus(HttpStatus.OK)
     public Map<String, PositionSummary> positionSummary(@RequestParam("theme") Optional<Theme> theme) {
         return theme.map(t -> positionService.findPositionSummaries(t)).orElseGet(() -> positionService.findPositionSummaries());
     }
 
-    @GetMapping("/position/summary/{code}")
+    @GetMapping("/summary/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<PositionSummary> positionSummary(@PathVariable String code, @RequestParam("theme") Optional<Theme> theme) {
         return theme.map(t -> positionService.findPositionSummaries(code, t)).orElse(positionService.findPositionSummaries(code));
     }
 
-    @GetMapping("/position/{code}")
+    @GetMapping("/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> position(@PathVariable String code) {
         return positionService.getPositions(code);
     }
 
-    @GetMapping("/position/{code}/{date}")
+    @GetMapping("/{code}/{date}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<Position> position(@PathVariable String code,@PathVariable String date) {
         return position(code,date, ASX);
     }
 
-    @GetMapping("/position/{code}/{date}/{market}")
+    @GetMapping("/{code}/{date}/{market}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<Position> position(@PathVariable String code,@PathVariable String date,@PathVariable MarketEnum market) {
         ZonedDateTime ts = market.atCloseOn(date);
         return positionService.getPosition(code,new Timestamp(ts.toInstant().toEpochMilli()));
     }
 
-    @GetMapping("/position/sync")
+    @GetMapping("/sync")
     @ResponseStatus(HttpStatus.OK)
     public int sync() {
         return positionService.sync();
     }
 
-    @GetMapping("/position/all")
+    @GetMapping("/all")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions() {
         return getAllPositions(ASX);
     }
 
-    @GetMapping("/position/all/{market}")
+    @GetMapping("/all/{market}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions(@PathVariable MarketEnum market) {
         return positionService.getAllPositions(market);
     }
 
-    @GetMapping("/positions/asAt/{yyyyMMdd}")
+    @GetMapping("/asAt/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getPositionAsAt(@PathVariable String yyyyMMdd) {
         LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
         return positionService.getPositionAsAt(date);
     }
 
-    @GetMapping("/position/{code}/asAt/{yyyyMMdd}")
+    @GetMapping("/{code}/asAt/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<Position> getPositionCodeAsAt(@PathVariable String code, @PathVariable String yyyyMMdd) {
         LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
         return positionService.getPositionAsAt(code, date);
     }
 
-    @GetMapping("/position/unassigned/payments")
+    @GetMapping("/unassigned/payments")
     @ResponseStatus(HttpStatus.OK)
     public Set<Payment> unAssignedPayments() {
         return positionService.findUnAssignedPayments();
     }
 
-    @GetMapping("/position/find/payments/{code}")
+    @GetMapping("/find/payments/{code}")
     @ResponseStatus(HttpStatus.OK)
     public List<Payment> findPayments(@PathVariable String code) {
         return stream(positionService.getPositions(code)).flatMap(p -> positionService.findPaymentsByPosition(p).stream()).toList();
     }
 
-    @GetMapping("/positions/unreconciled")
+    @GetMapping("/unreconciled")
     @ResponseStatus(HttpStatus.OK)
     public List<Position> reconcilePositions() {
         return stream(positionService.findAll()).filter(not(Position::isReconciled)).toList();
     }
 
-    @GetMapping("/position/reconcile/{code}")
+    @GetMapping("/reconcile/{code}")
     @ResponseStatus(HttpStatus.OK)
     public List<Position> reconcilePosition(@PathVariable String code) {
         return stream(positionService.getPositions(code)).filter(not(Position::isReconciled)).toList();

@@ -7,10 +7,7 @@ import com.github.dfauth.ta.functions.CAGR;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnType;
 import com.github.dfauth.ta.util.BigDecimalOps;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.IdClass;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,6 +70,7 @@ public class Position {
     private BigDecimal saleValue = ZERO;
     @JsonProperty("c")
     private BigDecimal commission = ZERO;
+    @JsonProperty("mv")
     @JsonIgnore
     @OneToMany(targetEntity = Trade.class, orphanRemoval = false)
     protected List<Trade> trades;
@@ -163,6 +161,11 @@ public class Position {
     @JsonProperty("sz")
     public int getSize() {
         return unitsPurchased - unitsSold;
+    }
+
+    @JsonProperty("mv")
+    public BigDecimal getMarketValue() {
+        return ZERO;
     }
 
     @JsonProperty("p")
