@@ -1,14 +1,16 @@
 package com.github.dfauth.ta.functional;
 
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
-import static com.github.dfauth.ta.functional.Collectors.*;
+import static com.github.dfauth.ta.functional.Collectors.mapEntryMap;
+import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functions.Reducers.groupBy;
 import static com.github.dfauth.ta.functions.Reducers.latest;
+import static java.util.Arrays.stream;
 import static java.util.function.Function.identity;
 
 public class Maps<K,V> extends HashMap<K,V> {
@@ -21,12 +23,16 @@ public class Maps<K,V> extends HashMap<K,V> {
         return merge(oops("map merge not supported"), maps);
     }
 
-    public static <K,V> Map<K,V> merge(BinaryOperator<V> mergeFunction, Map<K,V>... maps) {
+    public static <K,V> BinaryOperator<Map<K,V>> merge(BinaryOperator<V> mergeFunction) {
+        return (l, r) -> merge(HashMap::new, mergeFunction, l, r);
+    }
+
+    public static <K,V,T extends Map<K,V>> Map<K,V> merge(BinaryOperator<V> mergeFunction, T... maps) {
         return merge(HashMap::new, mergeFunction, maps);
     }
 
     public static <K,V, T extends Map<K,V>> T merge(Supplier<T> supplier, BinaryOperator<V> mergeFunction, Map<K,V>... maps) {
-        return Arrays.stream(maps).flatMap(m -> m.entrySet().stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, mergeFunction, supplier));
+        return stream(maps).flatMap(m -> m.entrySet().stream()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, mergeFunction, supplier));
     }
 
     public static <K,V,T> Map<K,T> mapValues(Map<K,V> l, Function<V,T> f) {
@@ -57,8 +63,23 @@ public class Maps<K,V> extends HashMap<K,V> {
         return new Maps<>(m);
     }
 
+    public static <K,T, M extends Map<K,List<T>>> M from(Supplier<M> initial, Function<T,K> keyMapper, T... ts) {
+        return stream(ts).reduce(initial.get(),
+                (m,t) -> {
+                    m.computeIfPresent(keyMapper.apply(t), (k,v) -> Lists.add(v, t));
+                    m.computeIfAbsent(keyMapper.apply(t), k -> List.of(t));
+                    return m;
+                },
+                (l,r) -> merge(initial, listMerge(), l, r)
+        );
+    }
+
     public static <K,V> Maps<K,V> maps(Map<K,V> m) {
         return of(m);
+    }
+
+    public static <T> BinaryOperator<List<T>> listMerge() {
+        return Lists::add;
     }
 
     public <R> Maps<K,R> mapValues(Function<V,R> valueMapper) {

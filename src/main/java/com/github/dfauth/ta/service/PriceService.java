@@ -50,4 +50,8 @@ public class PriceService {
         result.sort((a,b) -> comparator.compare(a._2(), b._2()));
         return result;
     }
+
+    public Price getPrice(String code) {
+        return priceRepository.findLatestByCode(code).orElseThrow(() -> new IllegalArgumentException("No price available for code "+code));
+    }
 }

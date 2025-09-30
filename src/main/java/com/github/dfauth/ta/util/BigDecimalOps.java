@@ -4,6 +4,7 @@ import com.github.dfauth.ta.functions.MovingAverages;
 import io.github.dfauth.trycatch.Try;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Optional;
@@ -152,6 +153,10 @@ public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
         return valueOf(BigDecimal.valueOf(v));
     }
 
+    static <N extends Number> BigDecimal valueOf(N n) {
+        return fromType().apply(n);
+    }
+
     static BigDecimal valueOf(BigDecimal bd) {
         return valueOf(bd, 3);
     }
@@ -183,4 +188,47 @@ public interface BigDecimalOps extends UnaryOperator<BigDecimal> {
     default BigDecimal by(BigDecimal divisor) {
         return apply(divisor);
     }
+
+    static <T extends Number> Function<BigDecimal,T> toType(Class<T> classOfT) {
+        return bd -> {
+            if(Integer.class.isAssignableFrom(classOfT)) {
+                return (T) Integer.valueOf(bd.intValue());
+            } else if(Double.class.isAssignableFrom(classOfT)) {
+                return (T) Double.valueOf(bd.doubleValue());
+            } else if(Long.class.isAssignableFrom(classOfT)) {
+                return (T) Long.valueOf(bd.longValue());
+            } else if(Float.class.isAssignableFrom(classOfT)) {
+                return (T) Float.valueOf(bd.floatValue());
+            } else if(Short.class.isAssignableFrom(classOfT)) {
+                return (T) Short.valueOf(bd.shortValue());
+            } else if(BigDecimal.class.isAssignableFrom(classOfT)) {
+                return (T) bd;
+            } else if(BigInteger.class.isAssignableFrom(classOfT)) {
+                return (T) bd.toBigInteger();
+            }
+            throw new IllegalArgumentException("Unknown or unsupported type: "+classOfT);
+        };
+    }
+
+    static <T extends Number> Function<T, BigDecimal> fromType() {
+        return n -> {
+            if(n instanceof Integer) {
+                return valueOf(n.intValue());
+            } else if(n instanceof Double) {
+                return valueOf(n.doubleValue());
+            } else if(n instanceof Long) {
+                return valueOf(n.longValue());
+            } else if(n instanceof Float) {
+                return valueOf(n.floatValue());
+            } else if(n instanceof Short) {
+                return valueOf(n.shortValue());
+            } else if(n instanceof BigDecimal bd) {
+                return bd;
+            } else if(n instanceof BigInteger bi) {
+                return new BigDecimal(bi);
+            }
+            throw new IllegalArgumentException("Unknown or unsupported type: "+n);
+        };
+    }
+
 }

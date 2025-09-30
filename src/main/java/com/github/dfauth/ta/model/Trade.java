@@ -3,7 +3,10 @@ package com.github.dfauth.ta.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import com.github.dfauth.ta.util.DateTimeUtils;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,5 +48,9 @@ public class Trade {
     @JsonIgnore
     public BigDecimal getValue() {
         return BigDecimalOps.multiply(cost, getSide().getMultiplier());
+    }
+
+    public <N extends Number> N sided(N n) {
+        return getSide().sided(n).getSignedValue();
     }
 }

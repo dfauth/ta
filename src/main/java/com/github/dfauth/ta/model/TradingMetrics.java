@@ -13,14 +13,17 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
 import java.util.stream.Collector;
 
-import static com.github.dfauth.ta.functional.Collectors.oops;
 import static com.github.dfauth.ta.functional.Optionals.*;
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
+import static com.github.dfauth.ta.model.Dated.dated;
 import static com.github.dfauth.ta.util.BigDecimalOps.valueOf;
 import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.lang.Math.abs;
@@ -65,12 +68,12 @@ public class TradingMetrics {
     @JsonGetter("maxInvestment")
     public MaxInvestment getMaxInvestment() {
         return trades.entrySet().stream()
-                .map(e -> Map.entry(e.getKey(), e.getValue().stream()
+                .map(e -> dated(e.getKey(), e.getValue().stream()
                         .map(Trade::getValue)
                         .reduce(BigDecimal::add).orElse(ZERO)))
                 .reduce(new MaxInvestment(),
-                        (mi, e) -> mi.apply(e.getKey(), e.getValue()),
-                        oops());
+                        MaxInvestment::apply,
+                        MaxInvestment::merge);
     }
 
     public Optional<BigDecimal> getAverageLoss() {
@@ -209,25 +212,4 @@ public class TradingMetrics {
         };
     }
 
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Data
-    public static class MaxInvestment {
-        public LocalDate date;
-        private BigDecimal value;
-        private BigDecimal maxValue;
-
-        public MaxInvestment apply(LocalDate date, BigDecimal value) {
-            if(this.date == null) {
-                this.value = value;
-                this.maxValue = value;
-                this.date = date;
-            } else {
-                this.value = this.value.add(value);
-                this.maxValue = maxValue.max(this.value);
-                this.date = this.value.compareTo(this.maxValue) == 0 ? date : this.date;
-            }
-            return this;
-        }
-    }
 }
