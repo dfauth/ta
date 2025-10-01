@@ -103,7 +103,7 @@ public class TransactionController {
             try {
                 // 0 : account id - ignore
                 // 1 = date 2024-10-10T16:00:00.000Z
-                LocalDate date = LocalDate.parse(t.get(1), DateTimeUtils.dd_slash_MM_slash_yyyy);
+                LocalDate date = LocalDate.parse(t.get(1), DateTimeUtils.spreadsheetDateTime);
                 // 2 - narrative
                 var detail = (String) t.get(2);
                 // 3 - debit

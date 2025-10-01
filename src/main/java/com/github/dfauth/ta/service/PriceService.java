@@ -51,7 +51,7 @@ public class PriceService {
         return result;
     }
 
-    public Price getPrice(String code) {
-        return priceRepository.findLatestByCode(code).orElseThrow(() -> new IllegalArgumentException("No price available for code "+code));
+    public Optional<Price> getPrice(String code) {
+        return priceRepository.findLatestByCode(code);
     }
 }

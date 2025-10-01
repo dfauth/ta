@@ -1,10 +1,11 @@
 package com.github.dfauth.ta.controller;
 
-import com.github.dfauth.ta.model.NewPosition;
+import com.github.dfauth.ta.model.PositionFactory;
 import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.PositionCollectors;
 import com.github.dfauth.ta.service.PriceService;
 import com.github.dfauth.ta.service.TradeService;
+import com.github.dfauth.ta.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,8 @@ public class NewPositionController {
 
     private final PriceService priceService;
 
+    private final TransactionService transactionService;
+
     @GetMapping()
     @ResponseStatus(HttpStatus.OK)
     public Object positions(@RequestParam("startBefore") Optional<String> startBefore,
@@ -44,12 +47,12 @@ public class NewPositionController {
 //        Predicate<NewPosition> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
 //        Predicate<NewPosition> modePredicate = mode.orElse(ALL);
 //        Predicate<NewPosition> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
-        Predicate<NewPosition> excludeCodesPredicate = excludeCodes.map(str -> (Predicate<NewPosition>)(p -> !Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
-        Predicate<NewPosition> includeCodesPredicate = includeCodes.map(str -> (Predicate<NewPosition>)(p -> Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
+        Predicate<PositionFactory.Position> excludeCodesPredicate = excludeCodes.map(str -> (Predicate<PositionFactory.Position>)(p -> !Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
+        Predicate<PositionFactory.Position> includeCodesPredicate = includeCodes.map(str -> (Predicate<PositionFactory.Position>)(p -> Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
-        List<NewPosition> positions = stream(tradeService.findAll())
-                .collect(NewPosition.collector(priceService::getPrice));
+        List<PositionFactory.Position> positions = stream(tradeService.findAll())
+                .collect(new PositionFactory(c -> priceService.getPrice(c).orElse(null), t3 -> transactionService.findByCodeAndDates(t3._1(), t3._2(), t3._3())));
 
                 return positions.stream()
 //                        .filter(startDatePredicate
@@ -78,8 +81,8 @@ public class NewPositionController {
 //        Predicate<NewPosition> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
-        List<NewPosition> positions = stream(tradeService.findByCode(code))
-                .collect(NewPosition.collector(priceService::getPrice));
+        List<PositionFactory.Position> positions = stream(tradeService.findByCode(code))
+                .collect(new PositionFactory(c -> priceService.getPrice(c).orElse(null), t3 -> transactionService.findByCodeAndDates(t3._1(), t3._2(), t3._3())));
 
                 return positions.stream()
 //                        .filter(startDatePredicate
