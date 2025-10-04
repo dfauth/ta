@@ -14,5 +14,9 @@
   "permissions": ["activeTab", "scripting", "tabs"],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "host_permissions": [
+    "https://sharetrading.westpac.com.au/Private/MyPortfolio/AccountDetails/Holdings/EquityHoldings.aspx",
+    "https://sharetrading.westpac.com.au/Private/Watchlist/WatchlistHome.aspx"
+  ]
 }
