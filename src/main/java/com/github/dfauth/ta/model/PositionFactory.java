@@ -40,6 +40,7 @@ import static java.time.ZoneOffset.UTC;
 @ToString
 public class PositionFactory implements Collector<Trade, Map<String, List<PositionFactory.Position>>, List<PositionFactory.Position>> {
 
+    private final LocalDate asAt;
     private final Function<String, Price> priceLookup;
     private final Function<Tuple3<String, LocalDate, LocalDate>, List<Payment>> paymentLookup;
 
@@ -51,11 +52,13 @@ public class PositionFactory implements Collector<Trade, Map<String, List<Positi
     @Override
     public BiConsumer<Map<String, List<PositionFactory.Position>>, Trade> accumulator() {
         return (m, t) -> {
-            m.computeIfPresent(t.getCode(), (k,v) -> last(v).filter(PositionFactory.Position::isOpen).map(p -> {
-                p.addTrade(t);
-                return v;
-            }).orElseGet(() -> Lists.add(v, new Position(t))));
-            m.computeIfAbsent(t.getCode(), k -> List.of(new Position(t)));
+            if(t.getDate().toLocalDateTime().toLocalDate().isBefore(asAt)) {
+                m.computeIfPresent(t.getCode(), (k,v) -> last(v).filter(PositionFactory.Position::isOpen).map(p -> {
+                    p.addTrade(t);
+                    return v;
+                }).orElseGet(() -> Lists.add(v, new Position(t))));
+                m.computeIfAbsent(t.getCode(), k -> List.of(new Position(t)));
+            }
         };
     }
 

@@ -52,7 +52,6 @@ public class PositionController {
         Predicate<Position> excludeCodesPredicate = excludeCodes.map(str -> (Predicate<Position>)(p -> !Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
         Predicate<Position> includeCodesPredicate = includeCodes.map(str -> (Predicate<Position>)(p -> Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
 
-        Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
         return stream(positionService.findAll())
                 .filter(startDatePredicate
                         .and(endDatePredicate)
@@ -60,7 +59,7 @@ public class PositionController {
                         .and(themePredicate)
                         .and(excludeCodesPredicate)
                         .and(includeCodesPredicate))
-                .collect(collector.map(PositionCollectors::toCollector).orElse(d));
+                .collect(collector.map(PositionCollectors::toCollector).orElse(PositionCollectors.defaultCollector()));
     }
 
     @GetMapping("/sort")

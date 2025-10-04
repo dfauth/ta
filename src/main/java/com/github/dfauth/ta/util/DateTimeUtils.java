@@ -73,6 +73,10 @@ public class DateTimeUtils {
             return parser.apply(str);
         }
 
+        public LocalDate toLocalDate(String str) {
+            return LocalDate.from(parse(str));
+        }
+
         public String format(Temporal temporal) {
             return formatter.apply(temporal);
         }

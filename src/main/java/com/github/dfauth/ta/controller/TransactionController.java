@@ -4,6 +4,7 @@ import com.github.dfauth.ta.functional.Consecutive;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Reduction;
 import com.github.dfauth.ta.model.OpenPosition;
+import com.github.dfauth.ta.model.PaymentCollectors;
 import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.Side;
 import com.github.dfauth.ta.model.txn.Payment;
@@ -174,8 +175,8 @@ public class TransactionController {
 
     @GetMapping("/txns")
     @ResponseStatus(HttpStatus.OK)
-    public Iterable<Payment> txns() {
-        return transactionService.findAll();
+    public Object txns(@RequestParam("collector") Optional<PaymentCollectors> collectorOpt) {
+        return stream(transactionService.findAll()).collect(collectorOpt.map(PaymentCollectors::collector).orElse(PaymentCollectors.defaultCollector()));
     }
 
 //    @GetMapping("/txns/asAt/{yyyyMMdd}")

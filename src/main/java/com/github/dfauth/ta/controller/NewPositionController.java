@@ -1,8 +1,8 @@
 package com.github.dfauth.ta.controller;
 
-import com.github.dfauth.ta.model.PositionFactory;
 import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.PositionCollectors;
+import com.github.dfauth.ta.model.PositionFactory;
 import com.github.dfauth.ta.service.PriceService;
 import com.github.dfauth.ta.service.TradeService;
 import com.github.dfauth.ta.service.TransactionService;
@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +19,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collector;
 
 import static com.github.dfauth.ta.functional.Predicates.alwaysTrue;
+import static com.github.dfauth.ta.util.DateTimeUtils.Format.YYYYMMDD;
 import static com.github.dfauth.ta.util.StreamOps.stream;
+import static java.time.LocalDate.now;
 
 @RestController
 @Slf4j
@@ -34,15 +37,17 @@ public class NewPositionController {
 
     @GetMapping()
     @ResponseStatus(HttpStatus.OK)
-    public Object positions(@RequestParam("startBefore") Optional<String> startBefore,
-                                        @RequestParam("startAfter") Optional<String> startAfter,
-                                        @RequestParam("endBefore") Optional<String> endBefore,
-                                        @RequestParam("endAfter") Optional<String> endAfter,
-                                        @RequestParam("mode") Optional<MetricsController.Mode> mode,
-                                        @RequestParam("theme") Optional<String> theme,
-                                        @RequestParam("excludeCodes") Optional<String> excludeCodes,
-                                        @RequestParam("includeCodes") Optional<String> includeCodes,
-                                        @RequestParam("collector") Optional<PositionCollectors> collector) {
+    public Object positions(@RequestParam("asAt") Optional<String> asAtOpt,
+                            @RequestParam("startBefore") Optional<String> startBefore,
+                            @RequestParam("startAfter") Optional<String> startAfter,
+                            @RequestParam("endBefore") Optional<String> endBefore,
+                            @RequestParam("endAfter") Optional<String> endAfter,
+                            @RequestParam("mode") Optional<MetricsController.Mode> mode,
+                            @RequestParam("theme") Optional<String> theme,
+                            @RequestParam("excludeCodes") Optional<String> excludeCodes,
+                            @RequestParam("includeCodes") Optional<String> includeCodes,
+                            @RequestParam("collector") Optional<PositionCollectors> collector) {
+        LocalDate asAt = asAtOpt.map(YYYYMMDD::toLocalDate).orElse(now());
 //        Predicate<NewPosition> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
 //        Predicate<NewPosition> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
 //        Predicate<NewPosition> modePredicate = mode.orElse(ALL);
@@ -52,7 +57,7 @@ public class NewPositionController {
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
         List<PositionFactory.Position> positions = stream(tradeService.findAll())
-                .collect(new PositionFactory(c -> priceService.getPrice(c).orElse(null), t3 -> transactionService.findByCodeAndDates(t3._1(), t3._2(), t3._3())));
+                .collect(new PositionFactory(asAt, c -> priceService.getPrice(c, asAt).orElse(null), t3 -> transactionService.findByCodeAndDates(t3._1(), t3._2(), t3._3())));
 
                 return positions.stream()
 //                        .filter(startDatePredicate
@@ -68,13 +73,15 @@ public class NewPositionController {
     @GetMapping("/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Object position(@PathVariable("code") String code,
+                           @RequestParam("asAt") Optional<String> asAtOpt,
                            @RequestParam("startBefore") Optional<String> startBefore,
-                                        @RequestParam("startAfter") Optional<String> startAfter,
-                                        @RequestParam("endBefore") Optional<String> endBefore,
-                                        @RequestParam("endAfter") Optional<String> endAfter,
-                                        @RequestParam("mode") Optional<MetricsController.Mode> mode,
-                                        @RequestParam("theme") Optional<String> theme,
-                                        @RequestParam("collector") Optional<PositionCollectors> collector) {
+                           @RequestParam("startAfter") Optional<String> startAfter,
+                           @RequestParam("endBefore") Optional<String> endBefore,
+                           @RequestParam("endAfter") Optional<String> endAfter,
+                           @RequestParam("mode") Optional<MetricsController.Mode> mode,
+                           @RequestParam("theme") Optional<String> theme,
+                           @RequestParam("collector") Optional<PositionCollectors> collector) {
+        LocalDate asAt = asAtOpt.map(YYYYMMDD::toLocalDate).orElse(now());
 //        Predicate<NewPosition> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
 //        Predicate<NewPosition> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
 //        Predicate<NewPosition> modePredicate = mode.orElse(ALL);
@@ -82,7 +89,7 @@ public class NewPositionController {
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
         List<PositionFactory.Position> positions = stream(tradeService.findByCode(code))
-                .collect(new PositionFactory(c -> priceService.getPrice(c).orElse(null), t3 -> transactionService.findByCodeAndDates(t3._1(), t3._2(), t3._3())));
+                .collect(new PositionFactory(asAt, c -> priceService.getPrice(c, asAt).orElse(null), t3 -> transactionService.findByCodeAndDates(t3._1(), t3._2(), t3._3())));
 
                 return positions.stream()
 //                        .filter(startDatePredicate
