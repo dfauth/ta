@@ -40,6 +40,10 @@ public class Maps<K,V> extends HashMap<K,V> {
         return new Maps<>(l).mapValues(f);
     }
 
+    public static <K,V,T> Map<K,T> mapValues(Map<K,V> l, BiFunction<K,V,T> f) {
+        return new Maps<>(l).mapValues(f);
+    }
+
     public static <K,V,T,R> Map<T,R> map(Map<K,V> l, Function<K,T> keyMapper, Function<V,R> valueMapper) {
         return new Maps<>(l).map(keyMapper, valueMapper);
     }
@@ -95,6 +99,10 @@ public class Maps<K,V> extends HashMap<K,V> {
         return map(identity(), valueMapper);
     }
 
+    public <R> Map<K,R> mapValues(BiFunction<K,V,R> valueMapper) {
+        return map(identity(), valueMapper);
+    }
+
     public <T,R> Maps<T,R> mapEntries(BiFunction<K,V,Map.Entry<T,R>> f2) {
         return entrySet()
                 .stream()
@@ -105,6 +113,10 @@ public class Maps<K,V> extends HashMap<K,V> {
                         identity(),
                         latest())
                 );
+    }
+
+    public <T,R> Map<T,R> map(Function<K,T> keyMapper, BiFunction<K,V,R> valueMapper) {
+        return entrySet().stream().map(e -> Map.entry(keyMapper.apply(e.getKey()), valueMapper.apply(e.getKey(), e.getValue()))).collect(mapEntryMap());
     }
 
     public <T,R> Maps<T,R> map(Function<K,T> keyMapper, Function<V,R> valueMapper) {

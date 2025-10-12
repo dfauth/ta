@@ -61,4 +61,7 @@ public interface PaymentRepository extends CrudRepository<Payment, Integer> {
 
     @Query(value = "SELECT p from Payment p where p.code = ?1 AND p.txnType = DIV AND p.date >= ?2 AND (p.date <= ?3 OR (p.exDividendDate is not null AND p.exDividendDate >= ?2 and p.exDividendDate < ?3))")
     List<Payment> findByCodeAndDate(String code, LocalDate start, LocalDate end);
+
+    @Query(value = "SELECT p from Payment p where p.code = ?1 AND p.txnType = DIV AND p.date >= ?2")
+    List<Payment> findByCodeAndDate(String code, LocalDate start);
 }

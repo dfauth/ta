@@ -43,7 +43,11 @@ public class TransactionService {
         return paymentRepository.findByCode(code);
     }
 
-    public List<Payment> findByCodeAndDates(String code, LocalDate start, LocalDate end) {
+    public List<Payment> findByCodeAndDate(String code, LocalDate start) {
+        return paymentRepository.findByCodeAndDate(code, start);
+    }
+
+    public List<Payment> findByCodeAndDate(String code, LocalDate start, LocalDate end) {
         return paymentRepository.findByCodeAndDate(code, start, end);
     }
 }

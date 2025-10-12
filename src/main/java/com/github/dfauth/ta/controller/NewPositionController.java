@@ -106,9 +106,11 @@ public class NewPositionController {
         Predicate<PositionFactoryCollector.Position> includeCodesPredicate = includeCodes.map(str -> (Predicate<PositionFactoryCollector.Position>)(p -> Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
 
         Map<String, List<PositionFactoryCollector.PositionFactory>> positions = tradeStream
-                .collect(new PositionFactoryCollector((c,d) -> priceService.getPrice(c, d).orElse(null),
-                        (c,d) -> start -> transactionService.findByCodeAndDates(c, start, d)
-                ));
+                .collect(new PositionFactoryCollector(
+                            (c,d) -> priceService.getPrice(c, d).orElse(null),
+                            transactionService
+                        )
+                );
 
         Collector<? super PositionFactoryCollector.Position, ? extends Object, ? extends Object> d = toList();
         return positions.values().stream().flatMap(List::stream)

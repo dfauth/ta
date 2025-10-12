@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Maps;
 import com.github.dfauth.ta.model.txn.Payment;
+import com.github.dfauth.ta.service.TransactionService;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -30,41 +31,63 @@ import static com.github.dfauth.ta.util.BigDecimalOps.valueOf;
 import static java.math.BigDecimal.ZERO;
 import static java.time.LocalDate.now;
 import static java.time.ZoneOffset.UTC;
-import static java.util.function.Function.identity;
 
 @Slf4j
 @RequiredArgsConstructor
 @EqualsAndHashCode
 @ToString
-public class PositionFactoryCollector implements Collector<Trade, Map<String, List<PositionFactoryCollector.PositionFactory>>, Map<String,List<PositionFactoryCollector.PositionFactory>>> {
+public class PositionFactoryCollector implements Collector<Trade, Map<String, List<TreeMap<LocalDate,List<Trade>>>>, Map<String,List<PositionFactoryCollector.PositionFactory>>> {
 
     private final BiFunction<String, LocalDate, Price> priceLookup;
-    private final BiFunction<String, LocalDate, Function<LocalDate,List<Payment>>> paymentLookup;
+    private final TransactionService transactionService;
 
     @Override
-    public Supplier<Map<String, List<PositionFactoryCollector.PositionFactory>>> supplier() {
+    public Supplier<Map<String, List<TreeMap<LocalDate,List<Trade>>>>> supplier() {
         return HashMap::new;
     }
 
     @Override
-    public BiConsumer<Map<String, List<PositionFactoryCollector.PositionFactory>>, Trade> accumulator() {
+    public BiConsumer<Map<String, List<TreeMap<LocalDate,List<Trade>>>>, Trade> accumulator() {
         return (m, t) -> {
-            m.computeIfPresent(t.getCode(), (k,v) -> last(v).filter(PositionFactoryCollector.PositionFactory::isOpen).map(p -> {
-                p.addTrade(t);
-                return v;
-            }).orElseGet(() -> Lists.add(v, new PositionFactory(t.getCode(), Maps.from(() -> new TreeMap<>(LocalDate::compareTo), Trade::getLocalDate, t), priceLookup, paymentLookup))));
-            m.computeIfAbsent(t.getCode(), k -> List.of(new PositionFactory(t.getCode(), Maps.from(() -> new TreeMap<>(LocalDate::compareTo), Trade::getLocalDate, t), priceLookup, paymentLookup)));
+            m.computeIfPresent(t.getCode(), (k,v) -> last(v).filter(isOpen()).map(_m -> {
+                    _m.compute(t.getLocalDate(), (_k,_v) -> Optional.ofNullable(_v).map(__v -> Lists.add(_v, t)).orElseGet(() -> List.of(t)));
+                    return v;
+                }).orElseGet(() -> {
+                    TreeMap<LocalDate, List<Trade>> tmp = new TreeMap<>(LocalDate::compareTo);
+                    tmp.put(t.getLocalDate(), List.of(t));
+                    return Lists.add(v, tmp);
+                })
+            );
+            m.computeIfAbsent(t.getCode(), k -> {
+                TreeMap<LocalDate, List<Trade>> tmp = new TreeMap<>(LocalDate::compareTo);
+                tmp.put(t.getLocalDate(), List.of(t));
+                return List.of(tmp);
+            });
         };
     }
 
+    private Predicate<? super TreeMap<LocalDate, List<Trade>>> isOpen() {
+        return tm -> tm.values().stream().flatMap(List::stream).mapToInt(t -> t.sided(t.getSize())).sum() > 0;
+    }
+
     @Override
-    public BinaryOperator<Map<String, List<PositionFactoryCollector.PositionFactory>>> combiner() {
+    public BinaryOperator<Map<String, List<TreeMap<LocalDate,List<Trade>>>>> combiner() {
         return Maps.merge(listMerge());
     }
 
     @Override
-    public Function<Map<String, List<PositionFactoryCollector.PositionFactory>>, Map<String,List<PositionFactoryCollector.PositionFactory>>> finisher() {
-        return identity();
+    public Function<Map<String, List<TreeMap<LocalDate,List<Trade>>>>, Map<String,List<PositionFactoryCollector.PositionFactory>>> finisher() {
+        BiFunction<String, List<TreeMap<LocalDate, List<Trade>>>, List<PositionFactoryCollector.PositionFactory>> f2 = (code, tradesLists) -> tradesLists
+                .stream()
+                .map(trades -> {
+                    TreeMap<LocalDate, List<Payment>> payments = from(() -> new TreeMap<>(LocalDate::compareTo), Payment::getDate, transactionService.findByCodeAndDate(code, trades.firstKey(), trades.lastKey()).toArray(Payment[]::new));
+                    return new PositionFactory(
+                            code,
+                            trades,
+                            payments,
+                            priceLookup);
+                }).toList();
+        return m -> mapValues(m, f2);
     }
 
     @Override
@@ -77,6 +100,7 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
         @Getter
         protected final String code;
         protected final TreeMap<LocalDate, List<Trade>> trades;
+        protected final TreeMap<LocalDate, List<Payment>> payments;
 
         public AbstractPositionFactory addTrade(Trade t) {
             trades.computeIfPresent(t.getLocalDate(), (k,v) -> Lists.add(v, t));
@@ -120,12 +144,10 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
 
     public static class PositionFactory extends AbstractPositionFactory {
         private final BiFunction<String, LocalDate, Price> priceLookup;
-        private final BiFunction<String, LocalDate, Function<LocalDate,List<Payment>>> paymentLookup;
 
-        public PositionFactory(String code, TreeMap<LocalDate, List<Trade>> trades, BiFunction<String, LocalDate, Price> priceLookup, BiFunction<String, LocalDate, Function<LocalDate,List<Payment>>> paymentLookup) {
-            super(code, trades);
+        public PositionFactory(String code, TreeMap<LocalDate, List<Trade>> trades, TreeMap<LocalDate,List<Payment>> payments, BiFunction<String, LocalDate, Price> priceLookup) {
+            super(code, trades, payments);
             this.priceLookup = priceLookup;
-            this.paymentLookup = paymentLookup;
         }
 
         public Optional<Position> create() {
@@ -138,7 +160,7 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
                     .map(_asAt -> new Position(
                             code,
                             trades.values().stream().flatMap(List::stream).filter(t -> t.getLocalDate().isBefore(asAt)).map(mapEntry(Trade::getLocalDate)).collect(mapEntries(() -> new TreeMap<>(LocalDate::compareTo), listMerge())),
-                            Maps.from(() -> new TreeMap<>(LocalDate::compareTo), Payment::getDate, paymentLookup.apply(code, asAt).apply(getStart()).toArray(Payment[]::new)),
+                            new TreeMap<>(payments.headMap(_asAt, true)),
                             priceLookup.apply(code, asAt)
                         )
                     );
@@ -147,13 +169,11 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
 
     public static class Position extends AbstractPositionFactory {
 
-        private final TreeMap<LocalDate, List<Payment>> payments;
         @Setter
         private Price price;
 
         public Position(String code, TreeMap<LocalDate, List<Trade>> trades, TreeMap<LocalDate, List<Payment>> payments, Price price) {
-            super(code, trades);
-            this.payments = payments;
+            super(code, trades, payments);
             this.price = price;
         }
 
