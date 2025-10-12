@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static com.github.dfauth.ta.functional.Collectors.mapEntryMap;
@@ -43,8 +44,8 @@ public class Maps<K,V> extends HashMap<K,V> {
         return new Maps<>(l).map(keyMapper, valueMapper);
     }
 
-    public static <K,V,T,R> Map<T,R> mapEntries(Map<K,V> l, BiFunction<K,V,Map.Entry<T,R>> f) {
-        return new Maps<>(l).mapEntries(f);
+    public static <K,V,M extends Map<K,V>> Collector<Entry<K, V>, ?, M> mapEntries(Supplier<M> supplier, BinaryOperator<V> f) {
+        return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, f, supplier);
     }
 
     public static <K,V> Maps<K,V> of() {
@@ -64,13 +65,17 @@ public class Maps<K,V> extends HashMap<K,V> {
     }
 
     public static <K,T, M extends Map<K,List<T>>> M from(Supplier<M> initial, Function<T,K> keyMapper, T... ts) {
+        return from(initial, keyMapper, List::of, listMerge(), ts);
+    }
+
+    public static <T,K,V,M extends Map<K,V>> M from(Supplier<M> initial, Function<T,K> keyMapper, Function<T,V> valueMapper, BinaryOperator<V> mergeFn, T... ts) {
         return stream(ts).reduce(initial.get(),
                 (m,t) -> {
-                    m.computeIfPresent(keyMapper.apply(t), (k,v) -> Lists.add(v, t));
-                    m.computeIfAbsent(keyMapper.apply(t), k -> List.of(t));
+                    m.computeIfPresent(keyMapper.apply(t), (k,v) -> mergeFn.apply(v, valueMapper.apply(t)));
+                    m.computeIfAbsent(keyMapper.apply(t), k -> valueMapper.apply(t));
                     return m;
                 },
-                (l,r) -> merge(initial, listMerge(), l, r)
+                (l,r) -> merge(initial, mergeFn, l, r)
         );
     }
 
@@ -80,6 +85,10 @@ public class Maps<K,V> extends HashMap<K,V> {
 
     public static <T> BinaryOperator<List<T>> listMerge() {
         return Lists::add;
+    }
+
+    public static <K,T> Function<T, Map.Entry<K,List<T>>> mapEntry(Function<T,K> f) {
+        return t -> Map.entry(f.apply(t), List.of(t));
     }
 
     public <R> Maps<K,R> mapValues(Function<V,R> valueMapper) {

@@ -57,6 +57,7 @@ public class TradingMetrics {
     private long duration;
     private int positions;
     private int openPositions;
+    private BigDecimal dividends;
     @JsonIgnore
     private TreeMap<LocalDate, List<Trade>> trades = new TreeMap<>(LocalDate::compareTo);
 
@@ -156,6 +157,7 @@ public class TradingMetrics {
                 duration + other.duration,
                 positions + other.positions,
                 openPositions + other.openPositions,
+                dividends.add(other.dividends),
                 Maps.merge(() -> new TreeMap<>(LocalDate::compareTo), Lists::add, trades, other.trades)
         );
     }
@@ -176,6 +178,7 @@ public class TradingMetrics {
                 duration + p.getDuration(),
                 positions + 1,
                 p.isOpen() ? openPositions + 1 : openPositions,
+                p.getDividends().map(_p -> _p.add(dividends)).orElse(dividends),
                 Maps.merge(() -> new TreeMap<>(LocalDate::compareTo), Lists::add,trades, p.trades.stream().collect(groupingBy(t -> t.getDate().toLocalDateTime().toLocalDate())))
         );
     }
