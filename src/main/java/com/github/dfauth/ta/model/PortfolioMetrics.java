@@ -1,5 +1,7 @@
 package com.github.dfauth.ta.model;
 
+import com.github.dfauth.ta.repo.OpenPosition;
+import com.github.dfauth.ta.repo.Position;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -63,8 +65,8 @@ public class PortfolioMetrics {
         return new PortfolioMetrics(
                 p.isProfitable() ? losingPositions : losingPositions + 1,
                 p.isProfitable() ? winningPositions+1 : winningPositions,
-                weightedHoldingTime + p.getWeightedHoldingTime(),
-                marketValue.add(p.getMarketValue()),
+                weightedHoldingTime + p.getUnitsHoldingDays(),
+                p.getMarketValue().map(mv -> marketValue.add(mv)).orElse(marketValue),
                 purchaseValue.add(p.getPurchaseValue()),
                 saleValue.add(p.getSaleValue()),
                 closedProfit,

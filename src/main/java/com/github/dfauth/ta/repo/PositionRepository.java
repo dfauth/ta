@@ -1,7 +1,6 @@
 package com.github.dfauth.ta.repo;
 
 import com.github.dfauth.ta.model.CodeDateCompositeKey;
-import com.github.dfauth.ta.model.Position;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 

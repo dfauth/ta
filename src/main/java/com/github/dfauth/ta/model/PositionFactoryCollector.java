@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.Maps.*;
 import static com.github.dfauth.ta.functional.Optionals.bothPresent;
-import static com.github.dfauth.ta.functional.Optionals.reduce;
 import static com.github.dfauth.ta.functions.CAGR.cagr;
 import static com.github.dfauth.ta.model.Dated.dated;
 import static com.github.dfauth.ta.util.BigDecimalOps.multiply;
@@ -49,7 +48,7 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
     @Override
     public BiConsumer<Map<String, List<TreeMap<LocalDate,List<Trade>>>>, Trade> accumulator() {
         return (m, t) -> {
-            m.computeIfPresent(t.getCode(), (k,v) -> last(v).filter(isOpen()).map(_m -> {
+            m.computeIfPresent(t.getCode(), (k,v) -> last(v).filter(PositionFactoryCollector::isOpen).map(_m -> {
                     _m.compute(t.getLocalDate(), (_k,_v) -> Optional.ofNullable(_v).map(__v -> Lists.add(_v, t)).orElseGet(() -> List.of(t)));
                     return v;
                 }).orElseGet(() -> {
@@ -66,8 +65,8 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
         };
     }
 
-    private Predicate<? super TreeMap<LocalDate, List<Trade>>> isOpen() {
-        return tm -> tm.values().stream().flatMap(List::stream).mapToInt(t -> t.sided(t.getSize())).sum() > 0;
+    private static boolean isOpen(TreeMap<LocalDate, List<Trade>> tm) {
+        return tm.values().stream().flatMap(List::stream).mapToInt(t -> t.sided(t.getSize())).sum() > 0;
     }
 
     @Override
@@ -108,19 +107,30 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
             return this;
         }
 
-        @JsonProperty("sz")
         public int getSize() {
             return streamTrades().mapToInt(t -> t.getSide().getMultiplier() * t.getSize()).sum();
         }
 
-        @JsonIgnore
-        public boolean isOpen() {
-            return getSize() != 0;
+        @JsonProperty("pv")
+        public BigDecimal getPurchaseValue() {
+            return streamTrades(Side::isBuy).map(Position.getValue()).reduce(BigDecimal::add).orElse(ZERO);
         }
 
-        @JsonIgnore
-        public boolean isClosed() {
-            return !isOpen();
+        @JsonProperty("c")
+        public BigDecimal getCommission() {
+            return streamTrades().map(Trade::getCommission).reduce(BigDecimal::add).orElse(ZERO);
+        }
+
+        public BigDecimal getSaleValue() {
+            return streamTrades(Side::isSell).map(Position.getValue()).reduce(BigDecimal::add).orElse(ZERO);
+        }
+
+        public Optional<BigDecimal> getProfit() {
+            return isOpen(trades) ? Optional.of(ZERO) : Optional.of(getSaleValue().add(getPurchaseValue()));
+        }
+
+        public List<Trade> getTrades() {
+            return streamTrades().toList();
         }
 
         protected Stream<Trade> streamTrades(Predicate<Side> p) {
@@ -131,15 +141,35 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
             return trades.values().stream().flatMap(List::stream);
         }
 
-        @JsonProperty("s")
-        public LocalDate getStart() {
+        public LocalDate getOpen() {
             return trades.ceilingKey(LocalDate.EPOCH);
         }
 
-        @JsonProperty("l")
         public LocalDate getLast() {
             return trades.floorKey(now());
         }
+
+        public Optional<BigDecimal> getDividends() {
+            return payments.values().stream().flatMap(List::stream).map(Payment::getValue).reduce(BigDecimal::add);
+        }
+
+        public long getDuration() {
+            return isOpen(trades) ? Duration.between(getOpen().atStartOfDay(UTC), now().atStartOfDay(UTC)).toDays() : Duration.between(getOpen().atStartOfDay(UTC), getLast().atStartOfDay(UTC)).toDays();
+        }
+
+        public BigDecimal getWeightedHoldingTime() {
+            var now = now().atStartOfDay(UTC);
+            ToLongFunction<Trade> f = t -> t.getSize() * (t.getSide().isBuy() ?
+                    Duration.between(t.getLocalDate().atStartOfDay(UTC), now).toDays() :
+                    Duration.between(now, t.getLocalDate().atStartOfDay(UTC)).toDays());
+            return BigDecimalOps.divide(valueOf(streamTrades().mapToLong(f).sum()), getUnitsPurchased());
+        }
+
+        @JsonIgnore
+        public int getUnitsPurchased() {
+            return streamTrades(Side::isBuy).mapToInt(Trade::getSize).sum();
+        }
+
     }
 
     public static class PositionFactory extends AbstractPositionFactory {
@@ -156,7 +186,7 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
 
         public Optional<Position> create(LocalDate asAt) {
             return Optional.of(asAt)
-                    .filter(_asAt -> _asAt.isAfter(getStart()))
+                    .filter(_asAt -> _asAt.isAfter(getOpen()))
                     .map(_asAt -> new Position(
                             code,
                             trades.values().stream().flatMap(List::stream).filter(t -> t.getLocalDate().isBefore(asAt)).map(mapEntry(Trade::getLocalDate)).collect(mapEntries(() -> new TreeMap<>(LocalDate::compareTo), listMerge())),
@@ -167,7 +197,7 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
         }
     }
 
-    public static class Position extends AbstractPositionFactory {
+    public static class Position extends AbstractPositionFactory implements com.github.dfauth.ta.model.Position {
 
         @Setter
         private Price price;
@@ -185,53 +215,13 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
             return t -> Direction.fromString(t.getSide().name()).map(d -> d.getValue(t.getCost())).orElseThrow();
         }
 
-        @JsonProperty("pv")
-        public Optional<BigDecimal> getPurchaseValue() {
-            return streamTrades(Side::isBuy).map(Position.getValue()).reduce(BigDecimal::add);
-        }
-
-        @JsonProperty("c")
-        public Optional<BigDecimal> getCommission() {
-            return streamTrades().map(Trade::getCommission).reduce(BigDecimal::add);
-        }
-
-        @JsonProperty("sv")
-        public Optional<BigDecimal> getSaleValue() {
-            return streamTrades(Side::isSell).map(Position.getValue()).reduce(BigDecimal::add);
-        }
-
-        @JsonProperty("p")
-        public Optional<BigDecimal> getProfit() {
-            return isOpen() ? Optional.of(ZERO) : reduce(BigDecimal::add, getSaleValue(), getPurchaseValue());
-        }
-
         @JsonProperty("r")
         public Optional<BigDecimal> getReturn() {
             return bothPresent(getProfit(), Optional.of(getMaxInv()).filter(BigDecimalOps::isGreaterThanZero), (BigDecimal l, BigDecimal r) -> BigDecimalOps.divide(l, r));
         }
 
-        @JsonProperty("t")
-        public long getTrades() {
-            return streamTrades().count();
-        }
-
-        @JsonProperty("mv")
-        public BigDecimal getMarketValue() {
-            return getPrice().map(p -> multiply(p.getClose(), getSize())).orElse(ZERO);
-        }
-
-        @JsonProperty("duration")
-        public long getDuration() {
-            return isOpen() ? Duration.between(getStart().atStartOfDay(UTC), now().atStartOfDay(UTC)).toDays() : Duration.between(getStart().atStartOfDay(UTC), getLast().atStartOfDay(UTC)).toDays();
-        }
-
-        @JsonProperty("wht")
-        public BigDecimal getWeightedHoldingTime() {
-            var now = now().atStartOfDay(UTC);
-            ToLongFunction<Trade> f = t -> t.getSize() * (t.getSide().isBuy() ?
-                    Duration.between(t.getLocalDate().atStartOfDay(UTC), now).toDays() :
-                    Duration.between(now, t.getLocalDate().atStartOfDay(UTC)).toDays());
-            return BigDecimalOps.divide(valueOf(streamTrades().mapToLong(f).sum()), getUnitsPurchased());
+        public Optional<BigDecimal> getMarketValue() {
+            return getPrice().map(p -> multiply(p.getClose(), getSize()));
         }
 
         @JsonProperty("cagr")
@@ -258,16 +248,6 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
         @JsonIgnore
         public Optional<Price> getPrice() {
             return Optional.ofNullable(price);
-        }
-
-        @JsonIgnore
-        public int getUnitsPurchased() {
-            return streamTrades(Side::isBuy).mapToInt(Trade::getSize).sum();
-        }
-
-        @JsonProperty("d")
-        public BigDecimal getDividends() {
-            return payments.values().stream().flatMap(List::stream).map(Payment::getValue).reduce(BigDecimal::add).orElse(ZERO);
         }
 
         public void addPayments(List<Payment> payments) {

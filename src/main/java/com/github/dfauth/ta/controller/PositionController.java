@@ -47,8 +47,8 @@ public class PositionController {
                                         @RequestParam("collector") Optional<PositionCollectors> collector) {
         Predicate<Position> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
         Predicate<Position> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
-        Predicate<Position> modePredicate = mode.orElse(ALL);
-        Predicate<Position> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
+        Predicate<com.github.dfauth.ta.model.Position> modePredicate = mode.orElse(ALL);
+        Predicate<com.github.dfauth.ta.model.Position> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
         Predicate<Position> excludeCodesPredicate = excludeCodes.map(str -> (Predicate<Position>)(p -> !Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
         Predicate<Position> includeCodesPredicate = includeCodes.map(str -> (Predicate<Position>)(p -> Arrays.stream(str.split(",")).map(c -> "ASX:"+c.trim()).toList().contains(p.getCode()))).orElse(alwaysTrue());
 
@@ -65,7 +65,7 @@ public class PositionController {
     @GetMapping("/sort")
     @ResponseStatus(HttpStatus.OK)
     public Map<String,Map<ComparableWrapper<LocalDate>,Position>> sortedPositions() {
-        return sortedPositions(Position::getCode, p -> new ComparableWrapper<>(p.getDate().toLocalDateTime().toLocalDate(), LocalDate::compareTo));
+        return sortedPositions(Position::getCode, p -> new ComparableWrapper<>(p.getOpen(), LocalDate::compareTo));
     }
 
     @GetMapping("/sort/byDate")
@@ -79,8 +79,8 @@ public class PositionController {
                                         @RequestParam("collector") Optional<PositionCollectors> collector) {
         Predicate<Position> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
         Predicate<Position> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
-        Predicate<Position> modePredicate = mode.orElse(ALL);
-        Predicate<Position> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
+        Predicate<com.github.dfauth.ta.model.Position> modePredicate = mode.orElse(ALL);
+        Predicate<com.github.dfauth.ta.model.Position> themePredicate = theme.map(Theme::fromString).orElse(alwaysTrue());
 
         Collector<Position, Object, Object> d = PositionCollectors.defaultCollector();
         return stream(positionService.findAll())
@@ -112,7 +112,7 @@ public class PositionController {
     @GetMapping("/{code}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> position(@PathVariable String code) {
-        return positionService.getPositions(code);
+        return stream(positionService.getPositions(code)).map(Position.class::cast).toList();
     }
 
     @GetMapping("/{code}/{date}")
@@ -125,7 +125,7 @@ public class PositionController {
     @ResponseStatus(HttpStatus.OK)
     public Optional<Position> position(@PathVariable String code,@PathVariable String date,@PathVariable MarketEnum market) {
         ZonedDateTime ts = market.atCloseOn(date);
-        return positionService.getPosition(code,new Timestamp(ts.toInstant().toEpochMilli()));
+        return positionService.getPosition(code,new Timestamp(ts.toInstant().toEpochMilli())).map(Position.class::cast);
     }
 
     @GetMapping("/sync")
@@ -143,21 +143,21 @@ public class PositionController {
     @GetMapping("/all/{market}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getAllPositions(@PathVariable MarketEnum market) {
-        return positionService.getAllPositions(market);
+        return stream(positionService.getAllPositions(market)).map(Position.class::cast).toList();
     }
 
     @GetMapping("/asAt/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Position> getPositionAsAt(@PathVariable String yyyyMMdd) {
         LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
-        return positionService.getPositionAsAt(date);
+        return stream(positionService.getPositionAsAt(date)).map(Position.class::cast).toList();
     }
 
     @GetMapping("/{code}/asAt/{yyyyMMdd}")
     @ResponseStatus(HttpStatus.OK)
     public Optional<Position> getPositionCodeAsAt(@PathVariable String code, @PathVariable String yyyyMMdd) {
         LocalDate date = (LocalDate) YYYYMMDD.parse(yyyyMMdd);
-        return positionService.getPositionAsAt(code, date);
+        return positionService.getPositionAsAt(code, date).map(Position.class::cast);
     }
 
     @GetMapping("/unassigned/payments")
@@ -175,12 +175,12 @@ public class PositionController {
     @GetMapping("/unreconciled")
     @ResponseStatus(HttpStatus.OK)
     public List<Position> reconcilePositions() {
-        return stream(positionService.findAll()).filter(not(Position::isReconciled)).toList();
+        return stream(positionService.findAll()).filter(not(com.github.dfauth.ta.repo.Position::isReconciled)).map(Position.class::cast).toList();
     }
 
     @GetMapping("/reconcile/{code}")
     @ResponseStatus(HttpStatus.OK)
     public List<Position> reconcilePosition(@PathVariable String code) {
-        return stream(positionService.getPositions(code)).filter(not(Position::isReconciled)).toList();
+        return stream(positionService.getPositions(code)).filter(not(com.github.dfauth.ta.repo.Position::isReconciled)).map(Position.class::cast).toList();
     }
 }

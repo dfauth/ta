@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.dfauth.ta.functional.Optionals;
 import com.github.dfauth.ta.functions.CAGR;
+import com.github.dfauth.ta.repo.Position;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -12,8 +13,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.github.dfauth.ta.functions.CAGR.bdMapper;
-import static com.github.dfauth.ta.model.Position.nonNaN;
-import static com.github.dfauth.ta.model.Position.nonZero;
+import static com.github.dfauth.ta.repo.Position.nonNaN;
+import static com.github.dfauth.ta.repo.Position.nonZero;
 import static com.github.dfauth.ta.util.Utils.thenThrow;
 import static java.math.BigDecimal.ZERO;
 
@@ -65,8 +66,8 @@ public class PositionSummary {
                 p.isOpen() ? openUnitsPurchased + p.getUnitsPurchased() : openUnitsPurchased,
                 p.isClosed() ? closedUnitsSold + p.getUnitsSold() : closedUnitsSold,
                 p.isOpen() ? openUnitsSold + p.getUnitsSold() : openUnitsSold,
-                p.isClosed() ? closedWeightedHoldingTime + p.getWeightedHoldingTime() : closedWeightedHoldingTime,
-                p.isOpen() ? openWeightedHoldingTime + p.getWeightedHoldingTime() : openWeightedHoldingTime,
+                p.isClosed() ? closedWeightedHoldingTime + p.getUnitsHoldingDays() : closedWeightedHoldingTime,
+                p.isOpen() ? openWeightedHoldingTime + p.getUnitsHoldingDays() : openWeightedHoldingTime,
                 p.isClosed() ? closedPurchaseValue.add(p.getPurchaseValue()) : closedPurchaseValue,
                 p.isOpen() ? openPurchaseValue.add(p.getPurchaseValue()) : openPurchaseValue,
                 p.isClosed() ? closedSaleValue.add(p.getSaleValue()) : closedSaleValue,

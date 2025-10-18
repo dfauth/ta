@@ -2,10 +2,8 @@ package com.github.dfauth.ta.service;
 
 import com.github.dfauth.ta.model.*;
 import com.github.dfauth.ta.model.txn.Payment;
-import com.github.dfauth.ta.repo.PaymentRepository;
-import com.github.dfauth.ta.repo.PositionRepository;
-import com.github.dfauth.ta.repo.PriceRepository;
-import com.github.dfauth.ta.repo.TradeRepository;
+import com.github.dfauth.ta.repo.Position;
+import com.github.dfauth.ta.repo.*;
 import com.github.dfauth.ta.util.PositionCollector;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -64,10 +62,10 @@ public class PositionService {
                     p.setPayments(payments);
                     return positionRepository.findById(new CodeDateCompositeKey(p.getCode(), p.getDate()))
                             .map(_p -> {
-                                _p.setLast(p.getLast());
+                                _p.setLast(p.getLastTimestamp());
                                 _p.setUnitsPurchased(p.getUnitsPurchased());
                                 _p.setUnitsSold(p.getUnitsSold());
-                                _p.setWeightedHoldingTime(p.getWeightedHoldingTime());
+                                _p.setUnitsHoldingDays(p.getUnitsHoldingDays());
                                 _p.setPurchaseValue(p.getPurchaseValue());
                                 _p.setSaleValue(p.getSaleValue());
                                 _p.setCommission(p.getCommission());

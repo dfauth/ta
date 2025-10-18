@@ -3,14 +3,14 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functional.Consecutive;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Reduction;
-import com.github.dfauth.ta.model.OpenPosition;
 import com.github.dfauth.ta.model.PaymentCollectors;
-import com.github.dfauth.ta.model.Position;
+import com.github.dfauth.ta.model.PositionFactoryCollector;
 import com.github.dfauth.ta.model.Side;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnType;
 import com.github.dfauth.ta.repo.PaymentRepository;
-import com.github.dfauth.ta.service.PositionService;
+import com.github.dfauth.ta.service.NewPositionService;
+import com.github.dfauth.ta.service.TradeService;
 import com.github.dfauth.ta.service.TransactionService;
 import com.github.dfauth.ta.util.ComparableWrapper;
 import com.github.dfauth.ta.util.DateTimeUtils;
@@ -47,6 +47,12 @@ public class TransactionController {
 
     @Autowired
     private TransactionService transactionService;
+
+    @Autowired
+    private NewPositionService newPositionService;
+
+    @Autowired
+    private TradeService tradeService;
 
     // used prioir to april 2025 when westpac changed their transaction detail format
     @PostMapping("/txns/sync/raw")
@@ -326,20 +332,12 @@ public class TransactionController {
         return stream(transactionService.findAll())
                 .map(p -> Map.entry(new ComparableWrapper<>(p.getDate(), LocalDate::compareTo), p.getBalance()))
                 .map(e -> {
-                    var d = e.getKey().getNested().minusDays(2);
-                    var x = positionService.getPositionAsAt(d);
-                    var y = stream(x)
-                            .filter(Position::isOpen)
-                            .map(OpenPosition.class::cast)
-                            .map(OpenPosition::getMarketValue)
-                            .reduce(BigDecimal::add)
-                            .map(v -> v.add(e.getValue()))
-                            .orElse(e.getValue());
-                    return Map.entry(e.getKey(), y);
+                    LocalDate d = e.getKey().getNested().minusDays(2);
+//                    Object x = newPositionService.getPositionFactory(d, MetricsController.Mode.OPEN, Optional.of(MARKET_VALUE), stream(tradeService.findAll()));
+                    Map<String, List<PositionFactoryCollector.PositionFactory>> factory = newPositionService.getPositionFactory(stream(tradeService.findAll()));
+                    return e;
                 })
                 .collect(mapEntryMap(() -> new TreeMap<ComparableWrapper<LocalDate>, BigDecimal>(ComparableWrapper::compareTo)));
     }
 
-    @Autowired
-    private PositionService positionService;
 }

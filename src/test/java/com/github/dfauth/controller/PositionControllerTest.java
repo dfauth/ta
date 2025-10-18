@@ -2,7 +2,7 @@ package com.github.dfauth.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.dfauth.ta.controller.PositionController;
-import com.github.dfauth.ta.model.Position;
+import com.github.dfauth.ta.repo.Position;
 import com.github.dfauth.ta.repo.PositionRepository;
 import com.github.dfauth.ta.service.PositionService;
 import lombok.extern.slf4j.Slf4j;

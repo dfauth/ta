@@ -100,16 +100,16 @@ public class MetricsController {
                 .reduce(new TradingMetrics(), TradingMetrics::add, TradingMetrics::add);
     }
 
-    enum Mode implements Predicate<Position> {
-        OPEN(Position::isOpen), CLOSE(Position::isClosed), ALL(ignore -> true);
+    public enum Mode implements Predicate<com.github.dfauth.ta.model.Position> {
+        OPEN(com.github.dfauth.ta.model.Position::isOpen), CLOSE(com.github.dfauth.ta.model.Position::isClosed), ALL(ignore -> true);
 
-        private Predicate<Position> nested;
+        private Predicate<com.github.dfauth.ta.model.Position> nested;
 
-        Mode(Predicate<Position> nested) {
+        Mode(Predicate<com.github.dfauth.ta.model.Position> nested) {
             this.nested = nested;
         }
 
-        public boolean test(Position p) {
+        public boolean test(com.github.dfauth.ta.model.Position p) {
             return nested.test(p);
         }
     }

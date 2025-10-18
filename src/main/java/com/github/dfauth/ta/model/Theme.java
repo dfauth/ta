@@ -1,6 +1,7 @@
 package com.github.dfauth.ta.model;
 
 import com.github.dfauth.ta.functional.Predicates;
+import com.github.dfauth.ta.model.Position;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,14 +20,6 @@ public enum Theme implements Predicate<Position> {
 
     public static Predicate<Position> fromString(String theme) {
         return Predicates.fromString(theme, t -> Optional.ofNullable(Theme.allMatch(t)));
-//        return isNegated(theme, p -> test(p, theme::equals));
-//        return stream(values())
-//                .filter(v -> theme.contains(v.name()))
-//                .map(v -> theme.startsWith("!") ?
-//                        predicate(t -> !t.equals(v)) :
-//                        predicate(v))
-//                .findFirst()
-//                .orElse(alwaysTrue());
     }
 
     private static Theme allMatch(Position p) {

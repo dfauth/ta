@@ -1,6 +1,5 @@
 package com.github.dfauth.ta.repo;
 
-import com.github.dfauth.ta.model.Position;
 import com.github.dfauth.ta.model.txn.Payment;
 import com.github.dfauth.ta.model.txn.TxnType;
 import org.springframework.data.jpa.repository.Query;
@@ -18,7 +17,7 @@ public interface PaymentRepository extends CrudRepository<Payment, Integer> {
     @Query(value = "SELECT p from Payment p where p.code = :#{#position.code} AND p.date >= :#{#position.open}")
     List<Payment> findByOpenPosition(@Param("position") Position position);
 
-    @Query(value = "SELECT p from Payment p where p.code = :#{#position.code} AND (p.txnType = DEP OR (p.date >= :#{#position.open} and p.date < :#{#position.close}) OR (p.exDividendDate is not null AND p.exDividendDate >= :#{#position.open} and p.exDividendDate < :#{#position.close}))")
+    @Query(value = "SELECT p from Payment p where p.code = :#{#position.code} AND (p.txnType = DEP OR (p.date >= :#{#position.open} and p.date < :#{#position.last}) OR (p.exDividendDate is not null AND p.exDividendDate >= :#{#position.open} and p.exDividendDate < :#{#position.last}))")
     List<Payment> findByClosedPosition(@Param("position") Position position);
 
     @Query(value = "SELECT p from Payment p where p.code = ?1 AND p.date >= ?2 and p.date < ?3")

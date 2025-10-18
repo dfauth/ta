@@ -99,7 +99,7 @@ public class TestData {
 //        private final String code;
 //        private final int size;
 //        private final BigDecimal cost;
-//        public static Map<String, List<com.github.dfauth.ta.model.Position>> getPositions() {
+//        public static Map<String, List<com.github.dfauth.ta.repo.Position>> getPositions() {
 //            log.info("AZ1 zipped: "+zipBytes(AX1.getBytes()));
 //            return Map.of();
 ////            return Map.of("ASX:AX1", unzipListPosition(zip(AX1)));

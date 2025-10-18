@@ -1,7 +1,7 @@
 package com.github.dfauth.ta.util;
 
 import com.github.dfauth.ta.functional.Lists;
-import com.github.dfauth.ta.model.Position;
+import com.github.dfauth.ta.repo.Position;
 import com.github.dfauth.ta.model.Trade;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

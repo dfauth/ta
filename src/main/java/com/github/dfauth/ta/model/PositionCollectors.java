@@ -21,18 +21,20 @@ import static java.util.Optional.empty;
 public enum PositionCollectors {
 
     SORT_BY_DATE_THEN_CODE(() -> PositionCollectors.<Comparable, Comparable>sortedDoubleKeyedMapCollector(
-                     p -> p.getDate().toLocalDateTime().toLocalDate(),
+            Position::getOpen,
                      Position::getCode)),
 
     SORT_BY_CODE_THEN_DATE(() -> PositionCollectors.<Comparable, Comparable>sortedDoubleKeyedMapCollector(
                     Position::getCode,
-                     p -> p.getDate().toLocalDateTime().toLocalDate())),
+            Position::getOpen)),
 
     METRICS(TradingMetrics::collector),
 
     PROFIT(Position::getProfit),
 
-    DIVIDEND(Position::getDividends);
+    DIVIDEND(Position::getDividends),
+
+    MARKET_VALUE(Position::getMarketValue);
 
     private final Supplier<Collector<Position, ?, ?>> supplier;
 

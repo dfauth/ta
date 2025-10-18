@@ -1,12 +1,14 @@
-package com.github.dfauth.ta.model;
+package com.github.dfauth.ta.repo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.dfauth.ta.model.Price;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -28,10 +30,10 @@ public class OpenPosition extends Position {
     public OpenPosition(Position position, Price price) {
         super(position.getDate(),
             position.getCode(),
-            position.getLast(),
+            position.getLastTimestamp(),
             position.getUnitsPurchased(),
             position.getUnitsSold(),
-            position.getWeightedHoldingTime(),
+            position.getUnitsHoldingDays(),
             position.getPurchaseValue(),
             position.getSaleValue(),
             position.getCommission(),
@@ -45,18 +47,13 @@ public class OpenPosition extends Position {
     public Optional<BigDecimal> getProfit() {
         Function<BigDecimal, Function<BigDecimal, Function<BigDecimal, BigDecimal>>> f = mv -> pv -> c -> mv.subtract(pv).subtract(c);
         return super.getProfit()
-                .map(p -> p.add(getMarketValue()))
-                .or(() -> allPresent(f,getMarketValue(),getPurchaseValue(),getCommission()));
+                .map(p -> getMarketValue().map(p::add).orElse(p))
+                .or(() -> getMarketValue().map(mv -> f.apply(mv).apply(getPurchaseValue()).apply(getSaleValue())));
     }
 
     @Override
-    public long getWeightedHoldingTime() {
-        return getT(Position::getWeightedHoldingTime).orElse(0l);
-    }
-
-    @Override
-    public LocalDate getClose() {
-        return getT(Position::getClose).orElse(null);
+    public long getUnitsHoldingDays() {
+        return getT(Position::getUnitsHoldingDays).orElse(0l);
     }
 
     @Override
@@ -96,8 +93,8 @@ public class OpenPosition extends Position {
 
     @Override
     public Optional<Double> getCagr() {
-        long openWeightedHoldingTime = calculateWeightedHoldingTime(getLast().toInstant(), getSize());
-        Optional<Double> p = periods.apply(getWeightedHoldingTime() + openWeightedHoldingTime, getUnitsPurchased()).or(() -> Optional.of(((double)openWeightedHoldingTime) / getUnitsPurchased()));
+        long openWeightedHoldingTime = calculateWeightedHoldingTime(getLast().atStartOfDay().toInstant(ZoneOffset.UTC), getSize());
+        Optional<Double> p = periods.apply(getUnitsHoldingDays() + openWeightedHoldingTime, getUnitsPurchased()).or(() -> Optional.of(((double)openWeightedHoldingTime) / getUnitsPurchased()));
         return p.flatMap(_p -> getReturn()
                 .flatMap(_r -> cagr.apply(_r,_p)));
     }
@@ -106,7 +103,7 @@ public class OpenPosition extends Position {
         return Optional.ofNullable(progression.floorEntry(price.getDate())).map(Map.Entry::getValue).map(f);
     }
 
-    public BigDecimal getMarketValue() {
-        return price.getClose().multiply(BigDecimal.valueOf(getSize()));
+    public Optional<BigDecimal> getMarketValue() {
+        return Optional.of(price.getClose().multiply(BigDecimal.valueOf(getSize())));
     }
 }

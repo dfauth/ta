@@ -46,7 +46,7 @@ public class TradingMetrics {
 
     private int losingPositions;
     private int winningPositions;
-    private long weightedHoldingTime;
+    private BigDecimal weightedHoldingTime;
     private int unitsPurchased;
     private BigDecimal purchaseValue;
     private BigDecimal saleValue;
@@ -138,7 +138,7 @@ public class TradingMetrics {
     }
 
     public Optional<Double> getCagr() {
-        double periods = ((double)getWeightedHoldingTime())/(getUnitsPurchased() * 365L);
+        double periods = getWeightedHoldingTime().doubleValue();
         return getReturn().map(BigDecimal::doubleValue).filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
     }
 
@@ -146,7 +146,7 @@ public class TradingMetrics {
         return new TradingMetrics(
                 losingPositions + other.losingPositions,
                 winningPositions + other.winningPositions,
-                weightedHoldingTime + other.weightedHoldingTime,
+                weightedHoldingTime.add(other.weightedHoldingTime),
                 unitsPurchased + other.unitsPurchased,
                 purchaseValue.add(other.purchaseValue),
                 saleValue.add(other.saleValue),
@@ -167,19 +167,19 @@ public class TradingMetrics {
         return new TradingMetrics(
                 p.isProfitable() ? losingPositions : losingPositions + 1,
                 p.isProfitable() ? winningPositions+1 : winningPositions,
-                weightedHoldingTime + p.getWeightedHoldingTime(),
+                eitherOrBoth(weightedHoldingTime, p.getWeightedHoldingTime(), BigDecimal::add).orElse(null),
                 unitsPurchased + p.getUnitsPurchased(),
                 eitherOrBoth(purchaseValue, p.getPurchaseValue(), BigDecimal::add).orElse(null),
                 eitherOrBoth(saleValue, p.getSaleValue(), BigDecimal::add).orElse(null),
                 p.isProfitable() ? totalLoss : Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(totalLoss), p.getProfit(), BigDecimal::add).orElse(null),
                 p.isProfitable() ? Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(totalGain), p.getProfit(), BigDecimal::add).orElse(null) : totalGain,
-                eitherOrBoth(start, p.getDate().toLocalDateTime().toLocalDate(), (s, d) -> s.isBefore(d) ? s : d).orElse(null),
-                eitherOrBoth(end, p.getLast().toLocalDateTime().toLocalDate(), (s, d) -> s.isAfter(d) ? s : d).orElse(null),
+                eitherOrBoth(start, p.getOpen(), (s, d) -> s.isBefore(d) ? s : d).orElse(null),
+                eitherOrBoth(end, p.getLast(), (s, d) -> s.isAfter(d) ? s : d).orElse(null),
                 duration + p.getDuration(),
                 positions + 1,
                 p.isOpen() ? openPositions + 1 : openPositions,
-                p.getDividends().map(_p -> _p.add(dividends)).orElse(dividends),
-                Maps.merge(() -> new TreeMap<>(LocalDate::compareTo), Lists::add,trades, p.trades.stream().collect(groupingBy(t -> t.getDate().toLocalDateTime().toLocalDate())))
+                p.getDividends().map(_p -> Optional.ofNullable(dividends).map(_p::add).orElse(_p)).orElse(dividends),
+                Maps.merge(() -> new TreeMap<>(LocalDate::compareTo), Lists::add,trades, p.getTrades().stream().collect(groupingBy(t -> t.getDate().toLocalDateTime().toLocalDate())))
         );
     }
 
