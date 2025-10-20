@@ -85,8 +85,8 @@ public class NewPositionController {
                                                   Optional<String> endAfter,
                                                   Optional<MetricsController.Mode> mode,
                                                   Optional<String> theme,
-                                                  @RequestParam("excludeCodes") Optional<String> excludeCodes,
-                                                  @RequestParam("includeCodes") Optional<String> includeCodes) {
+                                                  Optional<String> excludeCodes,
+                                                  Optional<String> includeCodes) {
         Predicate<Position> startDatePredicate = startBefore.map(START_BEFORE).orElse(ignore()).and(startAfter.map(START_AFTER).orElse(ignore()));
         Predicate<Position> endDatePredicate = endBefore.map(END_BEFORE).orElse(ignore()).and(endAfter.map(END_AFTER).orElse(ignore()));
         Predicate<Position> modePredicate = mode.orElse(ALL);

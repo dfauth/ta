@@ -28,11 +28,17 @@ public enum PositionCollectors {
                     Position::getCode,
             Position::getOpen)),
 
+    SORT_BY_PROFIT_THEN_DATE(() -> PositionCollectors.<Comparable, Comparable>sortedDoubleKeyedMapCollector(
+                    p -> p.getProfit().orElseGet(() -> p.getMarketValue().map(mv -> mv.add(p.getPurchaseValue())).orElse(BigDecimal.ZERO)),
+            Position::getOpen)),
+
     METRICS(TradingMetrics::collector),
 
     PROFIT(Position::getProfit),
 
     DIVIDEND(Position::getDividends),
+
+    TRACK_RECORD(TrackRecord::collector),
 
     MARKET_VALUE(Position::getMarketValue);
 

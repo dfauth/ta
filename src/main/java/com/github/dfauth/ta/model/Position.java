@@ -2,12 +2,16 @@ package com.github.dfauth.ta.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.dfauth.ta.util.BigDecimalOps;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BinaryOperator;
+
+import static com.github.dfauth.ta.functional.Optionals.eitherOrBoth;
+import static com.github.dfauth.ta.util.BigDecimalOps.isGreaterThanZero;
+import static java.util.Optional.empty;
 
 public interface Position {
 
@@ -38,8 +42,15 @@ public interface Position {
     @JsonProperty("sz")
     int getSize();
 
+    @JsonProperty("tp")
+    default Optional<BigDecimal> getTradingProfit() {
+        return isOpen() ? empty() : Optional.of(getSaleValue().add(getPurchaseValue()));
+    }
+
     @JsonProperty("p")
-    Optional<BigDecimal> getProfit();
+    default Optional<BigDecimal> getProfit() {
+        return isOpen() ? getDividends() : eitherOrBoth(getDividends(), getTradingProfit(), (BinaryOperator<BigDecimal>) BigDecimal::add);
+    }
 
     @JsonProperty("d")
     Optional<BigDecimal> getDividends();
@@ -54,7 +65,10 @@ public interface Position {
 
     @JsonIgnore
     default boolean isProfitable() {
-        return getProfit().map(BigDecimalOps::isGreaterThanZero).orElse(false);
+        return isGreaterThanZero(getProfit().orElseGet(() -> getMarketValue()
+                        .map(mv -> mv.add(getPurchaseValue()))
+                        .orElseThrow()
+                ));
     }
 
     @JsonProperty("duration")

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.functional.Maps;
-import com.github.dfauth.ta.functional.Optionals;
 import com.github.dfauth.ta.functions.CAGR;
 import com.github.dfauth.ta.util.BigDecimalOps;
 import lombok.*;
@@ -22,13 +21,11 @@ import java.util.function.*;
 import java.util.stream.Collector;
 
 import static com.github.dfauth.ta.functional.Optionals.*;
-import static com.github.dfauth.ta.functions.CAGR.bdMapper;
 import static com.github.dfauth.ta.model.Dated.dated;
-import static com.github.dfauth.ta.util.BigDecimalOps.valueOf;
-import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.lang.Math.abs;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptySet;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.groupingBy;
 
 @AllArgsConstructor
@@ -50,6 +47,7 @@ public class TradingMetrics {
     private int unitsPurchased;
     private BigDecimal purchaseValue;
     private BigDecimal saleValue;
+    private BigDecimal mktValue;
     private BigDecimal totalLoss;
     private BigDecimal totalGain;
     private LocalDate start;
@@ -61,9 +59,14 @@ public class TradingMetrics {
     @JsonIgnore
     private TreeMap<LocalDate, List<Trade>> trades = new TreeMap<>(LocalDate::compareTo);
 
+    @JsonGetter("mv")
+    public Optional<BigDecimal> getMarketValue() {
+        return ofNullable(mktValue);
+    }
+
     @JsonGetter("trades")
-    public Integer getTrades() {
-        return trades.values().stream().map(List::size).mapToInt(Integer::intValue).sum();
+    public long getTrades() {
+        return trades.values().stream().flatMap(List::stream).count();
     }
 
     @JsonGetter("maxInvestment")
@@ -78,11 +81,11 @@ public class TradingMetrics {
     }
 
     public Optional<BigDecimal> getAverageLoss() {
-        return bothPresent(getTotalLoss(), getLosingPositions(), (tl,lp) -> tl.divide(valueOf(lp), RoundingMode.HALF_UP));
+        return bothPresent(getTotalLoss(), getLosingPositions(), BigDecimalOps::divide);
     }
 
     public Optional<BigDecimal> getAverageGain() {
-        return bothPresent(getTotalGain(), getWinningPositions(), (tg,wp) -> tg.divide(valueOf(wp), RoundingMode.HALF_UP));
+        return bothPresent(getTotalGain(), getWinningPositions(), BigDecimalOps::divide);
     }
 
     public double getWinRate() {
@@ -104,16 +107,16 @@ public class TradingMetrics {
                 Optional.of(getWinRate()));
     }
 
-    public Optional<BigDecimal> getAvergePositionSize() {
+    public Optional<BigDecimal> getAveragePositionSize() {
         return bothPresent(getPurchaseValue(), getPositions(), BigDecimalOps::divide);
     }
 
     public Optional<BigDecimal> getAverageTradeSize() {
-        return bothPresent(getPurchaseValue(), getTrades(), BigDecimalOps::divide);
+        return getTurnover().map(t -> BigDecimalOps.divide(t, getTrades()));
     }
 
     public Optional<Double> getRoi() {
-        return getProfit().map(BigDecimal::doubleValue).map(p -> p/getPurchaseValue().doubleValue());
+        return getProfit().map(BigDecimal::doubleValue).map(p -> p/getMaxInvestment().getMaxValue().getPayload().doubleValue());
     }
 
     public Optional<BigDecimal> getProfit() {
@@ -121,11 +124,11 @@ public class TradingMetrics {
     }
 
     public Optional<BigDecimal> getReturn() {
-        return eitherOrBoth(getSaleValue(), getPurchaseValue(), BigDecimal::subtract).map(bd -> tryCatch(() -> bd.divide(getPurchaseValue(), RoundingMode.HALF_UP), e -> ZERO));
+        return getProfit().map(p -> p.divide(getMaxInvestment().getMaxValue().getPayload(),RoundingMode.HALF_UP));
     }
 
     public Optional<BigDecimal> getTurnover() {
-        return eitherOrBoth(getPurchaseValue(), getSaleValue(), BigDecimal::add);
+        return eitherOrBoth(getPurchaseValue(), getSaleValue(), (pv,sv) -> pv.abs().add(sv));
     }
 
     public int getClosedPositions() {
@@ -138,8 +141,8 @@ public class TradingMetrics {
     }
 
     public Optional<Double> getCagr() {
-        double periods = getWeightedHoldingTime().doubleValue();
-        return getReturn().map(BigDecimal::doubleValue).filter(r -> periods !=0).flatMap(r -> CAGR.cagr(r,periods,bdMapper(3)).map(BigDecimal::doubleValue));
+        Optional<Double> periods = ofNullable(getWeightedHoldingTime()).map(BigDecimal::doubleValue).map(d -> d / (365.25 * getPositions()));
+        return getReturn().map(BigDecimal::doubleValue).flatMap(r -> periods.map(p -> CAGR.cagr(r,p)));
     }
 
     public TradingMetrics add(TradingMetrics other) {
@@ -150,6 +153,7 @@ public class TradingMetrics {
                 unitsPurchased + other.unitsPurchased,
                 purchaseValue.add(other.purchaseValue),
                 saleValue.add(other.saleValue),
+                eitherOrBoth(getMarketValue(), other.getMarketValue(), (BigDecimal l, BigDecimal r) -> l.add(r)).orElse(null),
                 totalLoss.add(other.totalLoss),
                 totalGain.add(other.totalGain),
                 start.isBefore(other.start) ? start : other.start,
@@ -171,14 +175,15 @@ public class TradingMetrics {
                 unitsPurchased + p.getUnitsPurchased(),
                 eitherOrBoth(purchaseValue, p.getPurchaseValue(), BigDecimal::add).orElse(null),
                 eitherOrBoth(saleValue, p.getSaleValue(), BigDecimal::add).orElse(null),
-                p.isProfitable() ? totalLoss : Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(totalLoss), p.getProfit(), BigDecimal::add).orElse(null),
-                p.isProfitable() ? Optionals.<BigDecimal>eitherOrBoth(Optional.ofNullable(totalGain), p.getProfit(), BigDecimal::add).orElse(null) : totalGain,
+                eitherOrBoth(getMarketValue(), p.getMarketValue(), (BigDecimal l, BigDecimal r) -> l.add(r)).orElse(null),
+                p.getProfit().filter(BigDecimalOps::isLessThanZero).map(_p -> Optional.ofNullable(totalLoss).map(tl -> tl.add(_p)).orElse(_p)).orElse(totalLoss),
+                p.getProfit().filter(BigDecimalOps::isGreaterThanZero).map(_p -> Optional.ofNullable(totalGain).map(tl -> tl.add(_p.abs())).orElse(_p)).orElse(totalGain),
                 eitherOrBoth(start, p.getOpen(), (s, d) -> s.isBefore(d) ? s : d).orElse(null),
                 eitherOrBoth(end, p.getLast(), (s, d) -> s.isAfter(d) ? s : d).orElse(null),
                 duration + p.getDuration(),
                 positions + 1,
                 p.isOpen() ? openPositions + 1 : openPositions,
-                p.getDividends().map(_p -> Optional.ofNullable(dividends).map(_p::add).orElse(_p)).orElse(dividends),
+                p.getDividends().map(_p -> ofNullable(dividends).map(_p::add).orElse(_p)).orElse(dividends),
                 Maps.merge(() -> new TreeMap<>(LocalDate::compareTo), Lists::add,trades, p.getTrades().stream().collect(groupingBy(t -> t.getDate().toLocalDateTime().toLocalDate())))
         );
     }

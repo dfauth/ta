@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import static com.github.dfauth.ta.functional.Lists.last;
 import static com.github.dfauth.ta.functional.Maps.*;
 import static com.github.dfauth.ta.functional.Optionals.bothPresent;
+import static com.github.dfauth.ta.functional.Optionals.eitherOrBoth;
 import static com.github.dfauth.ta.functions.CAGR.cagr;
 import static com.github.dfauth.ta.model.Dated.dated;
 import static com.github.dfauth.ta.util.BigDecimalOps.multiply;
@@ -30,6 +31,7 @@ import static com.github.dfauth.ta.util.BigDecimalOps.valueOf;
 import static java.math.BigDecimal.ZERO;
 import static java.time.LocalDate.now;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Optional.empty;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -111,12 +113,10 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
             return streamTrades().mapToInt(t -> t.getSide().getMultiplier() * t.getSize()).sum();
         }
 
-        @JsonProperty("pv")
         public BigDecimal getPurchaseValue() {
             return streamTrades(Side::isBuy).map(Position.getValue()).reduce(BigDecimal::add).orElse(ZERO);
         }
 
-        @JsonProperty("c")
         public BigDecimal getCommission() {
             return streamTrades().map(Trade::getCommission).reduce(BigDecimal::add).orElse(ZERO);
         }
@@ -125,8 +125,13 @@ public class PositionFactoryCollector implements Collector<Trade, Map<String, Li
             return streamTrades(Side::isSell).map(Position.getValue()).reduce(BigDecimal::add).orElse(ZERO);
         }
 
+        @JsonIgnore
+        public Optional<BigDecimal> getTradingProfit() {
+            return isOpen(trades) ? empty() : Optional.of(getSaleValue().add(getPurchaseValue()));
+        }
+
         public Optional<BigDecimal> getProfit() {
-            return isOpen(trades) ? Optional.of(ZERO) : Optional.of(getSaleValue().add(getPurchaseValue()));
+            return isOpen(trades) ? getDividends() : eitherOrBoth(getDividends(), getTradingProfit(), (BigDecimal l, BigDecimal r) -> l.add(r));
         }
 
         public List<Trade> getTrades() {
