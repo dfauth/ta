@@ -8,14 +8,14 @@ function extractMktDepth() {
   var tables = $(document).find("table");
   var buyersStr = decomposeMktDepthString(tables[1].tFoot.children[0].children[0].textContent);
   var sellersStr = decomposeMktDepthString(tables[1].tFoot.children[0].children[1].textContent);
-  var buyers=buyersStr[0];
-  var buyerShares=buyersStr[1];
-  var sellers=sellersStr[0];
-  var sellerShares=sellersStr[1];
+  var buyers=parseInt(buyersStr[0]);
+  var buyerShares=parseInt(buyersStr[1]);
+  var sellers=parseInt(sellersStr[0]);
+  var sellerShares=parseInt(sellersStr[1]);
   var data = JSON.stringify({ 'buyers':buyers, 'buyerShares':buyerShares, 'sellers':sellers, 'sellerShares':sellerShares, 'price':parseFloat(price), 'change':parseFloat(change), 'volume':sanitiseInt(volume) });
   console.info("code: "+code+" data: "+data);
   $.ajax({
-    url: 'http://localhost:8080/mktDepth/sync/ASX:'+code,
+    url: 'http://localhost:8081/api/depth/ASX:'+code,
     type: 'POST',
     contentType: "application/json",
     data: data
