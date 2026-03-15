@@ -7,10 +7,16 @@
     "default_popup": "scraper.html",
     "default_icon": "icon.png"
   },
-  "content_scripts": [{
+  "content_scripts": [
+    {
         "matches": ["https://sharetrading.westpac.com.au/Private/MarketPrices/QuoteSearch/QuoteSearch.aspx?stockCode=*"],
         "js": ["jquery-3.7.1.min.js","onload.js"]
-    }],
+    },
+    {
+        "matches": ["https://sharetrading.westpac.com.au/Private/MarketPrices/CompanyProfile/Financials.aspx?*"],
+        "js": ["jquery-3.7.1.min.js","revenue.js"]
+    }
+  ],
   "permissions": ["activeTab", "scripting", "tabs"],
   "background": {
     "service_worker": "background.js"
