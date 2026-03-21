@@ -2,6 +2,7 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.model.Dated;
 import com.github.dfauth.ta.model.PriceAction;
+import io.github.dfauth.trycatch.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -33,8 +34,8 @@ public class RSIController extends PriceController implements ControllerMixIn {
 
     @PostMapping("/rsi/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String,BigDecimal> rsi(@RequestBody List<List<String>> codes, @PathVariable int period) {
-        return flatMapCode(codes, code -> rsi(code, period).stream());
+    public List<Try<BigDecimal>> rsi(@RequestBody List<List<String>> codes, @PathVariable int period) {
+        return flatMapCode(codes, code -> rsi(code, period)).map(Map.Entry::getValue).toList();
     }
 
 }

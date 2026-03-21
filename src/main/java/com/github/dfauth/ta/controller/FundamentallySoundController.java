@@ -14,7 +14,6 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -36,7 +35,7 @@ public class FundamentallySoundController implements ControllerMixIn {
 
     @PostMapping("/sound")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Boolean> fundamentallySound(@RequestBody List<List<String>> codes) {
+    public List<Boolean> fundamentallySound(@RequestBody List<List<String>> codes) {
         log.info("is fundamentally sound {}",codes);
         return mapCode(codes, code -> fundamentallySound(code));
     }

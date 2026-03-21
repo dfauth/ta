@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.github.dfauth.ta.functional.Lists.mapList;
 
@@ -18,10 +17,10 @@ public class DrawDownController extends BaseController implements ControllerMixI
 
     @PostMapping("/drawDown")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Drawdown> drawDown(@RequestBody List<List<String>> codes) {
+    public List<Drawdown> drawDown(@RequestBody List<List<String>> codes) {
         try {
             log.info("drawDown/{}",codes);
-            Map<String, Drawdown> result = mapCode(codes, code -> drawDown(code));
+            List<Drawdown> result = mapCode(codes, code -> drawDown(code));
             return result;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -36,7 +35,7 @@ public class DrawDownController extends BaseController implements ControllerMixI
         int period = 252;
         return ExceptionalRunnable.<Drawdown>tryCatch(() -> {
             List<PriceAction> prices = mapList(prices(_code, period),PriceAction.class::cast);
-            return Drawdown.drawDownPrice(prices);
+            return Drawdown.drawDownPrice(_code, prices);
         }, ControllerMixIn.logAndReturn(new Drawdown()));
     }
 }

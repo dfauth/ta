@@ -2,9 +2,9 @@ package com.github.dfauth.ta.controller;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.dfauth.ta.functional.Maps;
 import com.github.dfauth.ta.functional.Trend;
 import com.github.dfauth.ta.model.PriceAction;
+import io.github.dfauth.trycatch.Try;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +28,10 @@ public class TrendController extends BaseController implements ControllerMixIn {
 
     @PostMapping("/trend2/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Trend2> trend2(@PathVariable int period, @RequestBody List<List<String>> codes) {
+    public List<Try<Trend2>> trend2(@PathVariable int period, @RequestBody List<List<String>> codes) {
         try {
             log.info("trend2/{}",codes);
-            return Maps.mapValues(trend(period, codes), t -> t.map(Trend2::new));
+            return trend(period, codes).stream().map(t -> t.map(v -> v.map(Trend2::new))).toList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
@@ -47,11 +47,10 @@ public class TrendController extends BaseController implements ControllerMixIn {
 
     @PostMapping("/trend/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Trend> trend(@PathVariable int period, @RequestBody List<List<String>> codes) {
+    public List<Try<Trend>> trend(@PathVariable int period, @RequestBody List<List<String>> codes) {
         try {
             log.info("trend/{}",codes);
-            Map<String, Trend> result = flatMapCode(codes, code -> trend(period, code).stream());
-            return result;
+            return flatMapCode(codes, code -> trend(period, code)).map(Map.Entry::getValue).toList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);

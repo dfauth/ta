@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Slf4j
@@ -20,7 +19,7 @@ public class ConsecutiveUpDaysController extends PriceController implements Cont
 
     @PostMapping("/consecutiveUpDays/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Integer> consecutiveUpDays(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    public List<Integer> consecutiveUpDays(@RequestBody List<List<String>> codes, @PathVariable int period) {
         return mapCode(codes, code -> consecutiveUpDays(code, period));
     }
 

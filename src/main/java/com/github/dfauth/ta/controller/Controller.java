@@ -8,6 +8,7 @@ import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.repo.CodeRepository;
 import com.github.dfauth.ta.repo.PriceRepository;
+import io.github.dfauth.trycatch.Try;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -145,11 +146,10 @@ public class Controller implements ControllerMixIn {
 
     @PostMapping("/price")
     @ResponseStatus(HttpStatus.OK)
-    Map<String, OHLC> price(@RequestBody List<List<String>> codes) {
+    List<Try<OHLC>> price(@RequestBody List<List<String>> codes) {
         try {
             log.info("price/{}",codes);
-            Map<String, OHLC> result = flatMapCode(codes, code -> price(code).stream());
-            return result;
+            return flatMapCode(codes, code -> price(code)).map(Map.Entry::getValue).toList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);

@@ -14,7 +14,6 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -36,7 +35,7 @@ public class IndexController implements ControllerMixIn {
 
     @PostMapping("/index/{idx}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Boolean> isInIndex(@PathVariable String idx, @RequestBody List<List<String>> codes) {
+    public List<Boolean> isInIndex(@PathVariable String idx, @RequestBody List<List<String>> codes) {
         log.info("is in index {} {}",idx, codes);
         return mapCode(codes, code -> isInIndex(idx,code));
     }

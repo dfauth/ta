@@ -3,6 +3,7 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functional.ForceIndex;
 import com.github.dfauth.ta.model.PriceAction;
 import com.github.dfauth.ta.repo.PriceRepository;
+import io.github.dfauth.trycatch.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,8 +35,8 @@ public class ForceIndexController implements ControllerMixIn {
 
     @PostMapping("/force/index/{smaPeriod}/{emaPeriod}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, ForceIndex> forceIndex(@RequestBody List<List<String>> codes, @PathVariable int smaPeriod, @PathVariable int emaPeriod) {
+    public List<Try<ForceIndex>> forceIndex(@RequestBody List<List<String>> codes, @PathVariable int smaPeriod, @PathVariable int emaPeriod) {
         log.info("force index {} {} {}",codes,smaPeriod,emaPeriod);
-        return flatMapCode(codes, code -> forceIndex(code, smaPeriod, emaPeriod).stream());
+        return flatMapCode(codes, code -> forceIndex(code, smaPeriod, emaPeriod)).map(Map.Entry::getValue).toList();
     }
 }

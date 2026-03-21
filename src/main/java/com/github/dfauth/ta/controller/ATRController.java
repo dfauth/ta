@@ -3,6 +3,7 @@ package com.github.dfauth.ta.controller;
 import com.github.dfauth.ta.functional.ATR;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
+import io.github.dfauth.trycatch.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static com.github.dfauth.ta.functional.Collectors.mapEntryMap;
 
 @RestController
 @Slf4j
@@ -46,8 +49,8 @@ public class ATRController implements ControllerMixIn {
 
     @PostMapping("/avgTrueRange/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String,ATR.AverageTrueRange> avgTrueRange(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    public Map<String, Try<ATR.AverageTrueRange>> avgTrueRange(@RequestBody List<List<String>> codes, @PathVariable int period) {
         log.info("avgTrueRange/{}/{}",codes,period);
-        return flatMapCode(codes, code -> avgTrueRange(code, period).stream());
+        return flatMapCode(codes, code -> avgTrueRange(code, period)).collect(mapEntryMap());
     }
 }

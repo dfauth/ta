@@ -78,7 +78,7 @@ public class RankingController implements ControllerMixIn {
 
     @PostMapping("/ranks/int/{list}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String,Map<Integer,Integer>> ranksByInt(@PathVariable String list, @RequestBody List<List<String>> codes) {
+    public List<Map<Integer, Integer>> ranksByInt(@PathVariable String list, @RequestBody List<List<String>> codes) {
         log.info("ranking list {} code {}",list,codes);
         return mapCode(codes, code -> ranksByInt(list,code));
     }

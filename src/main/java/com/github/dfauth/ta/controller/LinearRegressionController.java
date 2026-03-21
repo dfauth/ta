@@ -2,6 +2,7 @@ package com.github.dfauth.ta.controller;
 
 import com.github.dfauth.ta.functions.ref.LinearRegression;
 import com.github.dfauth.ta.model.Price;
+import io.github.dfauth.trycatch.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -25,10 +26,9 @@ public class LinearRegressionController extends PriceController implements Contr
     // lobf
     @PostMapping("/lobf/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Map<String, LinearRegression> lobf(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    List<Try<LinearRegression>> lobf(@RequestBody List<List<String>> codes, @PathVariable int period) {
         log.info("lobf/{}/{}",codes,period);
-        return flatMapCode(codes, code -> lobf(code, period)
-                .stream());
+        return flatMapCode(codes, code -> lobf(code, period)).map(Map.Entry::getValue).toList();
     }
 
     @GetMapping("/lobf/{_code}/{period}")
@@ -47,33 +47,31 @@ public class LinearRegressionController extends PriceController implements Contr
 
     @PostMapping("/lobf/slope/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Map<String, BigDecimal> lobfSlope(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    List<Try<BigDecimal>> lobfSlope(@RequestBody List<List<String>> codes, @PathVariable int period) {
         log.info("lobf/slope/{}/{}",codes,period);
-        return flatMapCode(codes, code -> lobfSlope(code, period)
-                .stream());
+        return flatMapCode(codes, code -> _lobfSlope(code, period)).map(Map.Entry::getValue).toList();
     }
 
     @GetMapping("/lobf/slope/{_code}/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Optional<BigDecimal> lobfSlope(@PathVariable String _code, @PathVariable int period) {
-        try {
-            log.info("lobf/slope/{}/{}",_code,period);
-            List<Price> prices = prices(_code, period);
-            Optional<LinearRegression> result = linearRegression(prices);
-            return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).getClose(), HALF_UP));
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return empty();
-        }
+    Try<BigDecimal> lobfSlope(@PathVariable String _code, @PathVariable int period) {
+        log.info("lobf/slope/{}/{}",_code,period);
+        return ControllerMixIn.<String, BigDecimal>tryWrap(c -> _lobfSlope(c, period)).apply(_code);
+    }
+
+    private Optional<BigDecimal> _lobfSlope(@PathVariable String _code, @PathVariable int period) {
+        List<Price> prices = prices(_code, period);
+        Optional<LinearRegression> result = linearRegression(prices);
+        return result.map(LinearRegression::getSlope).map(BigDecimal::valueOf).map(bd -> bd.divide(prices.get(prices.size()-1).getClose(), HALF_UP));
     }
 
     @PostMapping("/lr/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Map<String, com.github.dfauth.ta.functions.LinearRegression.LineOfBestFit> linearRegression(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    List<Try<com.github.dfauth.ta.functions.LinearRegression.LineOfBestFit>> linearRegression(@RequestBody List<List<String>> codes, @PathVariable int period) {
         try {
             log.info("lr/{}/{}",codes,period);
             Timestamp marketDate = latestPriceDate();
-            return flatMapCode(codes, code -> linearRegression(code, marketDate, period).stream());
+            return flatMapCode(codes, code -> linearRegression(code, marketDate, period)).map(Map.Entry::getValue).toList();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);

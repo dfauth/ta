@@ -5,6 +5,7 @@ import com.github.dfauth.ta.functional.BollingerBand;
 import com.github.dfauth.ta.functional.Lists;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.model.PriceAction;
+import io.github.dfauth.trycatch.Try;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,9 +31,9 @@ public class BBController extends BaseController implements ControllerMixIn {
 
     @PostMapping("/bb/{period}")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, BollingerBand.BBPoint> bb(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    public List<Try<BollingerBand.BBPoint>> bb(@RequestBody List<List<String>> codes, @PathVariable int period) {
         log.info("bb/{}/{}",codes,period);
-        return flatMapCode(codes, code -> bb(code, period).stream());
+        return flatMapCode(codes, code -> bb(code, period)).map(Map.Entry::getValue).toList();
     }
 
     @GetMapping("/bb/{_code}/{period}")

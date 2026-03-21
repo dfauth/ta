@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.Map;
 
 import static io.github.dfauth.trycatch.ExceptionalRunnable.tryCatch;
 import static java.math.BigDecimal.ONE;
@@ -25,10 +24,10 @@ public class GapUpController extends BaseController implements ControllerMixIn {
 
     @PostMapping("/gapup")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, Integer> gapUp(@RequestBody List<List<String>> codes) {
+    public List<Integer> gapUp(@RequestBody List<List<String>> codes) {
         try {
             log.info("gapup/{}/{}",codes);
-            Map<String, Integer> result = mapCode(codes, code -> gapUp(code));
+            List<Integer> result = mapCode(codes, code -> gapUp(code));
             return result;
         } catch (Exception e) {
             log.error(e.getMessage(), e);

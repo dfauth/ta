@@ -1,7 +1,8 @@
 package com.github.dfauth.ta.controller;
 
-import com.github.dfauth.ta.functional.Collectors;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.dfauth.trycatch.ExceptionalRunnable;
+import io.github.dfauth.trycatch.Try;
 
 import java.util.List;
 import java.util.Map;
@@ -20,23 +21,77 @@ public interface ControllerMixIn {
         };
     }
 
-    default  <T> Map<String,T> mapCode(List<List<String>> codes, Function<String,T> f) {
+    default  <T> List<T> mapCode(List<List<String>> codes, Function<String,T> f) {
         return codes.stream()
                 .flatMap(List::stream)
                 .filter(not(String::isEmpty))
-                .map(code -> Map.entry(code, f.apply(code)))
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> (k,v) -> Optional.ofNullable(v).map(_v -> e.getValue()).orElseGet(e::getValue))
-                );
+                .map(code -> f.apply(code))
+                .toList();
     }
 
-    default  <T> Map<String,T> flatMapCode(List<List<String>> codes, Function<String, Stream<T>> f) {
+    default  <T> Stream<Map.Entry<String, Try<T>>> flatMapCode(List<List<String>> codes, Function<String, Optional<T>> f) {
         return codes.stream()
                 .flatMap(List::stream)
                 .filter(not(String::isEmpty))
-                .flatMap(code -> tryCatch(() -> f.apply(code),e -> Optional.<T>empty().stream()).map(v -> Map.entry(code, v)))
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> (k,v) -> Optional.ofNullable(v).map(_v -> e.getValue()).orElseGet(e::getValue))
-                );
+                .map(c -> Map.entry(c, tryWrap(f).apply(c)));
+    }
+
+    static <R,T> Function<R, Try<T>> tryWrap(Function<R, Optional<T>> f) {
+        return r -> tryCatch(() -> new SuccessWrapper<>(f.apply(r).orElseThrow(() -> new IllegalStateException("No value returned for argument "+r))), ex -> new FailureWrapper<T>(new IllegalStateException("exception for argument "+r+":"+ex.getMessage(), ex)));
+    }
+
+    public static class SuccessWrapper<T> extends Try.Success<T> {
+
+        public SuccessWrapper(T value) {
+            super(value);
+        }
+
+        @JsonIgnore
+        @Override
+        public boolean isSuccess() {
+            return super.isSuccess();
+        }
+
+        @JsonIgnore
+        @Override
+        public boolean isFailure() {
+            return super.isFailure();
+        }
+    }
+
+    public static class FailureWrapper<T> extends Try.Failure<T> {
+
+
+        public FailureWrapper(Throwable throwable) {
+            super(throwable);
+        }
+
+        @JsonIgnore
+        @Override
+        public boolean isSuccess() {
+            return super.isSuccess();
+        }
+
+        @JsonIgnore
+        @Override
+        public boolean isFailure() {
+            return super.isFailure();
+        }
+
+        @JsonIgnore
+        @Override
+        public Throwable getThrowable() {
+            return super.getThrowable();
+        }
+
+        @JsonIgnore
+        @Override
+        public T getValue() {
+            return super.getValue();
+        }
+
+        public String getError() {
+            return getThrowable().getMessage();
+        }
     }
 }

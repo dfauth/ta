@@ -21,28 +21,29 @@ import static com.github.dfauth.ta.util.BigDecimalOps.*;
 @Getter
 public class Drawdown {
 
+    private String code;
     private BigDecimal max;
     private BigDecimal min;
     private BigDecimal current;
 
-    public Drawdown(BigDecimal bd) {
-        this(bd, bd, bd);
+    public Drawdown(String code, BigDecimal bd) {
+        this(code, bd, bd, bd);
     }
 
-    public static Drawdown drawDownPrice(List<PriceAction> prices) {
-        return drawDown(prices, PriceAction::getClose);
+    public static Drawdown drawDownPrice(String code, List<PriceAction> prices) {
+        return drawDown(code, prices, PriceAction::getClose);
     }
 
-    public static Drawdown drawDown(List<PriceAction> prices, Function<PriceAction, BigDecimal> f) {
-        return drawDown(Lists.mapList(prices, f));
+    public static Drawdown drawDown(String code, List<PriceAction> prices, Function<PriceAction, BigDecimal> f) {
+        return drawDown(code, Lists.mapList(prices, f));
     }
 
-    public static Drawdown drawDown(List<BigDecimal> prices) {
-        return drawDown(prices.stream());
+    public static Drawdown drawDown(String code, List<BigDecimal> prices) {
+        return drawDown(code, prices.stream());
     }
 
-    public static Drawdown drawDown(Stream<BigDecimal> prices) {
-        return prices.reduce(new Drawdown(), Drawdown::accumulate, Drawdown::combine);
+    public static Drawdown drawDown(String code, Stream<BigDecimal> prices) {
+        return prices.reduce(new Drawdown(code, BigDecimal.ZERO), Drawdown::accumulate, Drawdown::combine);
     }
 
     private Drawdown combine(Drawdown drawdown) {
@@ -51,16 +52,16 @@ public class Drawdown {
 
     public Drawdown accumulate(BigDecimal bd) {
         if(max == null) {
-            return new Drawdown(bd);
+            return new Drawdown(code, bd);
         }
         if(isGreaterThan(max, bd)) {
             if(isLessThan(min, bd)) {
-                return new Drawdown(max, min, bd);
+                return new Drawdown(code, max, min, bd);
             } else {
-                return new Drawdown(max, bd, bd);
+                return new Drawdown(code, max, bd, bd);
             }
         } else {
-            return new Drawdown(bd,min,bd);
+            return new Drawdown(code, bd,min,bd);
         }
     }
 

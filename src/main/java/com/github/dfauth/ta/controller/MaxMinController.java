@@ -5,6 +5,7 @@ import com.github.dfauth.ta.functional.LastHigh;
 import com.github.dfauth.ta.functions.HighLow;
 import com.github.dfauth.ta.model.Price;
 import com.github.dfauth.ta.repo.PriceRepository;
+import io.github.dfauth.trycatch.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -56,16 +57,16 @@ public class MaxMinController implements ControllerMixIn {
     // days since
     @PostMapping("/recentHigh/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Map<String, DaysSince.RecentHigh> recentLastHigh(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    List<Try<DaysSince.RecentHigh>> recentLastHigh(@RequestBody List<List<String>> codes, @PathVariable int period) {
         log.info("recentHigh/{}/{}",codes,period);
-        return flatMapCode(codes, code -> recentLastHigh(code, period).stream());
+        return flatMapCode(codes, code -> recentLastHigh(code, period)).map(Map.Entry::getValue).toList();
     }
 
     @PostMapping("/recentLow/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Map<String, DaysSince.RecentHigh> recentLastLow(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    List<Try<DaysSince.RecentHigh>> recentLastLow(@RequestBody List<List<String>> codes, @PathVariable int period) {
         log.info("recentLow/{}/{}",codes,period);
-        return flatMapCode(codes, code -> recentLastLow(code, period).stream());
+        return flatMapCode(codes, code -> recentLastLow(code, period)).map(Map.Entry::getValue).toList();
     }
 
     @GetMapping("/recentHigh/{_code}/{period}")
@@ -85,9 +86,9 @@ public class MaxMinController implements ControllerMixIn {
     // pct below previous high
     @PostMapping("/pctBelowPreviousHigh/{period}")
     @ResponseStatus(HttpStatus.OK)
-    Map<String, BigDecimal> pctBelowPreviousHigh(@RequestBody List<List<String>> codes, @PathVariable int period) {
+    List<Try<BigDecimal>> pctBelowPreviousHigh(@RequestBody List<List<String>> codes, @PathVariable int period) {
         log.info("pctBelowPreviousHigh/{}/{}",codes,period);
-        return flatMapCode(codes, code -> pctBelowPreviousHigh(code, period).stream());
+        return flatMapCode(codes, code -> pctBelowPreviousHigh(code, period)).map(Map.Entry::getValue).toList();
     }
 
     @GetMapping("/pctBelowPreviousHigh/{_code}/{period}")
